@@ -1,6 +1,6 @@
 # Credits and data sources
 
-This project (the stage builder at https://stagebuilder.wyans.net, the roadbook editor, and the rally.raid Earth mod for BeamNG.drive) is made for [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth). It is not an official BeamNG, FIM or FIA product. BeamNG.drive is a trademark of BeamNG GmbH. BeamNG's own files and terms are unchanged.
+This project (the stage builder at https://stagebuilder.wyans.net, the roadbook editor, and the rally.raid Earth mod for BeamNG.drive; source code at https://github.com/wyans-r/rally.raid-earth) is made for [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth). It is not an official BeamNG, FIM or FIA product. BeamNG.drive is a trademark of BeamNG GmbH. BeamNG's own files and terms are unchanged.
 
 The project's own code is offered under the MIT Licence in `LICENSE` (Copyright (c) 2026 wyans). The data and libraries below keep their own licences. If you share a stage or a roadbook built here, you must keep the OpenStreetMap credit, because that work is built from OSM data.
 

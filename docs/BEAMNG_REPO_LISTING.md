@@ -46,7 +46,9 @@ A full key list and a longer how-to are on the website's [mod page](https://stag
 
 **Credits.** Map data © OpenStreetMap contributors (ODbL). Land cover © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Built for BeamNG.Earth. Full credits: https://stagebuilder.wyans.net/credits.html
 
-**Bugs.** Please report them with a console screenshot (`~` in game), your BeamNG and BeamNG.Earth versions, and the stage file if you can share it.
+**Source code.** MIT licence, on GitHub: https://github.com/wyans-r/rally.raid-earth
+
+**Bugs.** Please report them (on GitHub issues or the BeamNG.Earth Discord) with a console screenshot (`~` in game), your BeamNG and BeamNG.Earth versions, and the stage file if you can share it.
 
 ## Checklist against the official rules
 

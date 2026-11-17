@@ -4,6 +4,8 @@ Dakar-style rally raid for [BeamNG.Earth](https://github.com/tecnagamer/beamng.e
 
 The public website (no login) is **[stagebuilder.wyans.net](https://stagebuilder.wyans.net)**.
 
+Source code: **[github.com/wyans-r/rally.raid-earth](https://github.com/wyans-r/rally.raid-earth)** (MIT).
+
 This is a fan project. It is not an official BeamNG, FIM or FIA product. You need [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth) installed for the stages to sit on the real world.
 
 **Async Events** (online organised events, logins, official result uploads) is not released yet. The public website has no Events section. The public mod zip leaves that app out.
@@ -153,7 +155,7 @@ Do not include a README inside a zip you submit to BeamNG.com — their rules as
 1. Press `~` in the game to open the console, and take a screenshot of any red errors.
 2. Note the BeamNG.drive version, the BeamNG.Earth version, and what you were doing (which stage, which app, which key).
 3. If you can, attach the stage `.json` and the roadbook file (or a share link from the website).
-4. Open a GitHub issue with the **bug report** template once the repository is published. Until then, report it to wyans on the BeamNG.Earth Discord.
+4. Open an issue at [github.com/wyans-r/rally.raid-earth/issues](https://github.com/wyans-r/rally.raid-earth/issues), or report it to wyans on the BeamNG.Earth Discord.
 
 Please do not paste secret keys (Cloudflare, Discord, email, or anything similar) into an issue or a chat.
 
