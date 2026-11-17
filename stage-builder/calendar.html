@@ -57,7 +57,7 @@
   function get(u) { return fetch(u, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(u + ': HTTP ' + r.status); return r.json() }) }
   function calendar(cal) {
     document.title = cal.name + ' - rally.raid Earth'
-    var h = '<h1>' + esc(cal.name) + ' <span class="exp">EXPERIMENTAL</span></h1><p class="sub">' + esc(cal.description) + '</p><div class="rounds">'
+    var h = '<h1>' + esc(cal.name) + ' <span class="exp">EXPERIMENTAL – not yet tested in game</span></h1><p class="sub">' + esc(cal.description) + '</p><div class="rounds">'
     cal.rounds.forEach(function (r) {
       var id = r.rally ? r.rally.replace(/^.*\//, '').replace(/\.rally\.json$/, '') : null
       h += '<div class="round' + (r.status === 'ready' ? '' : ' ph') + '"><div class="n">' + r.n + '</div><div class="b"><div class="t">' + esc(r.name) + '</div>' +
@@ -65,14 +65,14 @@
         (r.disclaimer ? '<div class="disc" style="margin:2px 0 0">' + esc(r.disclaimer) + '</div>' : '') + (r.note ? '<div class="note">' + esc(r.note) + '</div>' : '') + '</div>' +
         (id ? '<a class="btn go" href="calendar.html?rally=' + encodeURIComponent(id) + '">Open</a>' : '<span class="tag">placeholder</span>') + '</div>'
     })
-    app.innerHTML = h + '</div><p class="note">Rally mode in the game is experimental and not tested in game yet. A rally file and its stages load in the rally.raid Earth Rally app (dev build).</p>'
+    app.innerHTML = h + '</div><p class="note"><span class="exp">EXPERIMENTAL – not yet tested in game</span> Rally mode (the rally.raid Earth Rally app) and these events have not been tested in game yet.</p>'
   }
   function rally(r, id) {
     document.title = r.name + ' - rally.raid Earth'
     var base = 'rallies/'
     var biv = {}; r.bivouacs.forEach(function (b) { biv[b.id] = b })
     var T = r.totals
-    var h = '<p><a href="calendar.html">&larr; Calendar</a></p><h1>' + esc(r.name) + ' <span class="exp">EXPERIMENTAL</span></h1>' +
+    var h = '<p><a href="calendar.html">&larr; Calendar</a></p><h1>' + esc(r.name) + ' <span class="exp">EXPERIMENTAL – not yet tested in game</span></h1>' +
       '<div class="disc">' + esc(r.disclaimer) + '</div><p class="sub">' + esc(r.description) + '</p>' +
       '<div class="tot"><span>' + fmtD(r.startDate) + ' &ndash; ' + fmtD(r.endDate) + ' ' + r.startDate.slice(0, 4) + '</span><span><b>' + T.days + '</b> days</span><span><b>' + T.stages + '</b> special stages</span>' +
       '<span>SS <b>' + Math.round(T.ssKm || 0) + ' km</b> (target ' + T.ssTargetKm + ')</span><span>liaisons <b>' + T.liaisonKm + ' km</b></span></div>' +

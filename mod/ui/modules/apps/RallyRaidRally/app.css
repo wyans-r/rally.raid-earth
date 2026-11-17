@@ -34,3 +34,5 @@
 .rrl-btn.go { background: #2f5a2a; border-color: #5c9a52; }
 .rrl-btn.bad { background: #5a2a26; border-color: #a0524a; }
 .rrl-msg { color: #ffb36b; font-size: 11px; margin: 2px 0; }
+
+.rrl-exp { color: #ff9f1a; font-size: 11px; font-weight: 700; letter-spacing: .3px; margin: 0 0 4px; }

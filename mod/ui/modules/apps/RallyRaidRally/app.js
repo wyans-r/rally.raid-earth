@@ -21,6 +21,7 @@ angular.module('beamng.apps')
         '<span class="x" title="not tested in game yet">EXPERIMENTAL</span>' +
         '<span class="tot" ng-show="st.progress">{{ hms(st.progress.totalS) }}</span></div>' +
       '<div class="rrl-panel" ng-show="open">' +
+        '<div class="rrl-exp">EXPERIMENTAL – not yet tested in game</div>' +
         // no rally: the list
         '<div ng-show="!st.loaded">' +
           '<div class="rrl-h">Rallies in /rallyraid/rallies/</div>' +
