@@ -54,7 +54,7 @@
 </ol>
 
 <h2>Keys</h2>
-<p>These are the defaults shipped in the mod (rebind them in Options &gt; Controls &gt; Bindings, search "rally.raid"):</p>
+<p>Only the keys you need while driving have defaults (rebind them in Options &gt; Controls &gt; Bindings, search "rally.raid"; the apps show the key you set):</p>
 <table>
   <tr><td><code>Ctrl+Shift+Up</code></td><td>trip + (hold to repeat)</td></tr>
   <tr><td><code>Ctrl+Shift+Down</code></td><td>trip &minus; (hold to repeat)</td></tr>
@@ -65,22 +65,19 @@
   <tr><td><code>Ctrl+Shift+PageUp</code></td><td>roadbook box up (the trip is not changed)</td></tr>
   <tr><td><code>Ctrl+Shift+PageDown</code></td><td>roadbook box down (the trip is not changed)</td></tr>
   <tr><td><code>Ctrl+Shift+End</code></td><td>sync the trip to the box on screen (&ldquo;I am at this box&rdquo;)</td></tr>
-  <tr><td><code>Ctrl+Shift+R</code></td><td>recce mode on / off</td></tr>
-  <tr><td><code>Ctrl+Shift+N</code></td><td>recce: drop a box here (press again to save it as it is)</td></tr>
-  <tr><td><code>Ctrl+Shift+C</code></td><td>recce: confirm the nearest box</td></tr>
-  <tr><td><code>Ctrl+Shift+M</code></td><td>recce: move the nearest box here</td></tr>
-  <tr><td><code>Ctrl+Shift+T</code></td><td>recce: retag the nearest box</td></tr>
-  <tr><td><code>Ctrl+Shift+Delete</code></td><td>recce: delete the nearest box</td></tr>
-  <tr><td><code>Ctrl+Shift+Z</code></td><td>recce: undo</td></tr>
-  <tr><td><code>Ctrl+Shift+F</code></td><td>repair menu</td></tr>
-  <tr><td><code>Ctrl+Shift+G</code></td><td>recover car (press again to confirm)</td></tr>
-  <tr><td><code>Ctrl+Shift+H</code></td><td>resume after a game crash (press twice: once to see the save, again to resume; then GO if the clock is held)</td></tr>
-  <tr><td><code>Ctrl+Shift+J</code></td><td>planner: open / close</td></tr>
-  <tr><td><code>Ctrl+Shift+W</code></td><td>planner: waypoint here</td></tr>
-  <tr><td><code>Ctrl+Shift+B</code></td><td>planner: roadbook box here</td></tr>
-  <tr><td><code>Ctrl+Shift+K</code></td><td>planner: record the driven line on / off</td></tr>
 </table>
 <p>Trip step size (10 / 100 / 1000 m) is the <b>10m</b> button on the GPS app, not a key. Trip reset and start a new rally have no default keys; you can bind them in Options &gt; Controls.</p>
+<h3>Buttons (no default key)</h3>
+<p>Everything else is a button in the apps, so it cannot clash with BeamNG&rsquo;s own keys. You can still give any of these a key in Options &gt; Controls; the apps then show it.</p>
+<table class="buttons">
+  <tr><td><b>MENU</b> &rarr; <b>REPAIR</b> (GPS app), or the Repair app&rsquo;s bar</td><td>repair menu</td></tr>
+  <tr><td><b>MENU</b> &rarr; <b>RECOVER</b> (GPS app), or <b>RECOVER CAR</b> (Repair app)</td><td>recover car: press once to see the penalty, then <b>CONFIRM</b></td></tr>
+  <tr><td><b>MENU</b> &rarr; <b>RESUME</b> (GPS app; the menu opens by itself when a save is found), or the Repair app</td><td>resume after a game crash: <b>RESUME</b>, then <b>CONFIRM RESUME</b>; <b>GO</b> if the clock is held</td></tr>
+  <tr><td><b>MENU</b> &rarr; <b>PLANNER</b> (GPS app), or the Planner app&rsquo;s bar</td><td>planner: open / close</td></tr>
+  <tr><td><b>ADD HERE</b>, <b>+ BOX HERE</b>, <b>REC</b> (Planner app)</td><td>planner: waypoint here, roadbook box here, record the driven line</td></tr>
+  <tr><td><b>RECCE</b> (Roadbook app)</td><td>recce mode on / off</td></tr>
+  <tr><td><b>+ BOX HERE</b>, <b>&#10003;</b>, <b>HERE</b>, <b>TAG</b>, <b>&#10005;</b>, <b>UNDO</b> (Roadbook app, recce panel)</td><td>recce: drop a box here, confirm, move here, retag or delete the nearest box, undo</td></tr>
+</table>
 
 <h2>Make your own stages</h2>
 <p>Plot a route in the <a href="/">stage builder</a> (the Examples button loads samples to learn from), export the stage <code>.json</code>, then make its roadbook in the <a href="/roadbook">roadbook editor</a>. Put stage files in <code>%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\rallyraid\stages\</code> and roadbooks in <code>...\current\rallyraid\roadbooks\</code> (create the folders).</p>

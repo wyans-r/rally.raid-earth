@@ -35,6 +35,7 @@ if not officialOk then
     _reset = function () end,
   }
 end
+local keys = require('rallyRaid/keys')              -- the player's key on each action (text for the apps)
 local traceMod = require('rallyRaid/trace')           -- the stage's GPS trace (for the result package)
 
 local M = {}
@@ -584,7 +585,11 @@ end
 function M.requestState()
   ui('RallyRaidUpdate', snapshot())
   ui('RallyRaidRoadbook', M.roadbookState())
+  M.pushKeys()
 end
+-- the player's key on each action ({ action = 'Ctrl+Shift+End' }, unbound actions left out) for the apps' hints
+function M.pushKeys(force) ui('RallyRaidKeys', { keys = keys.all(force), source = keys.source }) end
+function M.onInputBindingsChanged() keys.invalidate(); M.pushKeys(true) end   -- the player changed a binding
 function M.getState() return snapshot() end
 
 ------------------------------------------------------------------------------------------------------------------
@@ -622,9 +627,9 @@ function M.recceCmd(sub, arg)
       if S.phase == 'running' then S.flags.recce = true end
       local d = recce.get().doc
       said = 'rally.raid Earth: RECCE ON. ' .. (#d.changes > 0 and (#d.changes .. ' earlier changes kept. ') or '') ..
-        'Ctrl+Shift+N drops a box here; C confirm, M move here, T retag, Del delete the nearest box.'
+        'Roadbook app recce panel: + BOX HERE' .. keys.hint('rallyRaid_recceDrop') .. ' drops a box here; check / HERE / TAG / delete act on the nearest box.'
     end
-  elseif not recce.active() then said = 'rally.raid Earth: recce is off (Ctrl+Shift+R).'
+  elseif not recce.active() then said = 'rally.raid Earth: recce is off (RECCE in the Roadbook app' .. keys.hint('rallyRaid_recce', ', or %s') .. ').'
   elseif sub == 'Drop' then if recce.get().pending then recce.commitPending() else recce.drop() end
   elseif sub == 'Pick' then recce.pick(arg)
   elseif sub == 'Save' then recce.commitPending()
@@ -711,11 +716,12 @@ function M.cmd(name, arg)
   elseif name:sub(1, 6) == 'repair' then
     repair.cmd(name:sub(7), arg)
     if name == 'repairAppHere' then resume.push(); gameResume.push() end   -- the app just opened: everything it shows
-  elseif name:sub(1, 7) == 'recover' then resume.cmd(name:sub(8), arg)   -- RECOVER CAR (Ctrl+Shift+G)
-  elseif name:sub(1, 10) == 'gameResume' then gameResume.cmd(name:sub(11), arg)   -- after a game crash (Ctrl+Shift+H)
+  elseif name:sub(1, 7) == 'recover' then resume.cmd(name:sub(8), arg)   -- RECOVER CAR (GPS / Repair app button)
+  elseif name:sub(1, 10) == 'gameResume' then gameResume.cmd(name:sub(11), arg)   -- after a game crash (RESUME in the GPS / Repair app)
   elseif name:sub(1, 6) == 'resume' then resume.cmd(name:sub(7), arg)   -- (older name of the recover commands)
   elseif name:sub(1, 7) == 'planner' then planner.cmd(name:sub(8), arg)
   elseif name == 'rallyNew' then repair.newRally()
+  elseif name == 'keys' then M.pushKeys(true)
   elseif name == 'liveFile' then M.settings.liveFile = not M.settings.liveFile; saveSettings(); M.requestState()
   else log_('W', 'unknown command ' .. tostring(name)) end
 end
@@ -820,7 +826,7 @@ function M.onExtensionLoaded() loadSettings(); log_('I', 'rally.raid Earth ' .. 
 
 -- for tests
 function M._debug() return S, odo, nav end
-function M._reset() recce._reset(); repair._reset(); resume._reset(); gameResume._reset(); planner._reset(); official._reset(); S = nil; odo = { trip = 0, partial = 0, total = 0, countDown = false }; lastFix = nil; tickAcc = 0 end
+function M._reset() keys.invalidate(); recce._reset(); repair._reset(); resume._reset(); gameResume._reset(); planner._reset(); official._reset(); S = nil; odo = { trip = 0, partial = 0, total = 0, countDown = false }; lastFix = nil; tickAcc = 0 end
 
 repair.init({ S = function() return S end, nav = function() return nav end, addPenalty = addPenalty, notify = notify,
   ui = ui, hook = hook, log = log_, retireStage = function(reason) retireStage(reason) end,

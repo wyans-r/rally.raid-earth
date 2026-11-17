@@ -4,7 +4,7 @@
   "types": [
     "ui.apps.categories.utility"
   ],
-  "description": "Rally raid navigation GPS and rally computer for BeamNG.Earth stages: CAP, trip / partial odometer with corrections, hidden waypoints (FIM rules), speed zones, stage clock and penalties.",
+  "description": "Rally raid navigation GPS and rally computer for BeamNG.Earth stages: CAP, trip / partial odometer with corrections, hidden waypoints (FIM rules), speed zones, stage clock and penalties. Its MENU button opens REPAIR, RECOVER CAR, PLANNER and the crash RESUME.",
   "css": {
     "top": "80px",
     "right": "10px",

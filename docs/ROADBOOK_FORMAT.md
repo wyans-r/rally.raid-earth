@@ -315,8 +315,8 @@ Applying (`RoadbookGen.applyChanges(rb, changes)`):
 
 ## Recce (in game)
 
-Recce mode (`lua/ge/extensions/rallyRaid/recce.lua`) is switched on in the rally.raid Earth Roadbook app (RECCE) or with
-Ctrl+Shift+R once a stage is loaded. It can run on a timed stage too, but the result is then marked unofficial.
+Recce mode (`lua/ge/extensions/rallyRaid/recce.lua`) is switched on in the rally.raid Earth Roadbook app (RECCE) once a
+stage is loaded (no default key; bindable as "rally.raid Earth: recce mode on / off"). It can run on a timed stage too, but the result is then marked unofficial.
 
 What it records, all in lat / lon from `beamngEarth_api.pose()` (game coordinates are only used inside one frame for
 the car's motion, so the world's rebasing cannot break anything; frames during a rebase are skipped):
@@ -336,12 +336,12 @@ the car's motion, so the world's rebasing cannot break anything; frames during a
     or from the car's pitch / roll when the game does not answer the ray casts.
   - the same kind found twice within 40 m is one box (the more dangerous one kept); a detection within 60 m of a
     roadbook box with the same symbol is noted as `box.near` = that box's id, for the editor to compare.
-- **What the driver does** (`by: "recce-manual"`), on the app's buttons or keys:
-  - Ctrl+Shift+N: a new box at the car (lat / lon and the trip km); the app shows the quick-pick: 30 common symbols (QUICK tab), every legend group as a tab and a symbol search,
-    danger 0-3, notes; SAVE (or Ctrl+Shift+N again) adds it, CANCEL drops it.
-  - The app shows the nearest roadbook box within 150 m: Ctrl+Shift+C confirm, Ctrl+Shift+M move it here,
-    Ctrl+Shift+T retag (the quick-pick filled with its symbols / danger / notes), Ctrl+Shift+Delete delete.
-  - Ctrl+Shift+Z undo the last change. Every change shows on the roadbook display at once.
+- **What the driver does** (`by: "recce-manual"`), on the recce panel's buttons (no default keys; each is bindable):
+  - **+ BOX HERE**: a new box at the car (lat / lon and the trip km); the app shows the quick-pick: 30 common symbols (QUICK tab), every legend group as a tab and a symbol search,
+    danger 0-3, notes; SAVE (or + BOX HERE again) adds it, CANCEL drops it.
+  - The app shows the nearest roadbook box within 150 m: ✓ confirm, HERE move it here,
+    TAG retag (the quick-pick filled with its symbols / danger / notes), ✕ delete.
+  - UNDO takes back the last change. Every change shows on the roadbook display at once.
 
 ### The recce file
 

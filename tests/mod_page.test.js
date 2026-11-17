@@ -1,4 +1,6 @@
-// The /mod page key list must match the bindings shipped in the public zip.
+// The /mod page key lists must match the bindings shipped: the live page (stage-builder/mod.html) the 16 Nov zip it
+// links to (16 keys), the pending page (stage-builder/pending/mod.public-zip.html) this build's 9 driving keys, plus the
+// buttons that replaced the other keys (Wyans 2026-11-17).
 // node --test tests/mod_page.test.js
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
@@ -11,6 +13,14 @@ const MOD_HTML = path.join(ROOT, 'stage-builder/mod.html')
 const README = path.join(ROOT, 'README.md')
 const ACTIONS = path.join(ROOT, 'mod/lua/ge/extensions/core/input/actions/rallyRaid.json')
 const INPUTMAP = path.join(ROOT, 'mod/settings/inputmaps/keyboard_rallyRaid.json')
+const PENDING_HTML = path.join(ROOT, 'stage-builder/pending/mod.public-zip.html')
+// the keyboard file inside the 16 Nov zip (/download/rallyraid_mod.zip, sha 1c750311...), frozen here
+const LIVE_ZIP_BINDINGS = [['ctrl shift up', 'rallyRaid_tripPlus'], ['ctrl shift down', 'rallyRaid_tripMinus'], ['ctrl shift right', 'rallyRaid_wPlus'],
+  ['ctrl shift left', 'rallyRaid_wMinus'], ['ctrl shift p', 'rallyRaid_partialReset'], ['ctrl shift home', 'rallyRaid_start'], ['ctrl shift pageup', 'rallyRaid_boxPrev'],
+  ['ctrl shift pagedown', 'rallyRaid_boxNext'], ['ctrl shift end', 'rallyRaid_boxSync'], ['ctrl shift r', 'rallyRaid_recce'], ['ctrl shift n', 'rallyRaid_recceDrop'],
+  ['ctrl shift c', 'rallyRaid_recceConfirm'], ['ctrl shift m', 'rallyRaid_recceMove'], ['ctrl shift t', 'rallyRaid_recceRetag'], ['ctrl shift delete', 'rallyRaid_recceDelete'],
+  ['ctrl shift z', 'rallyRaid_recceUndo']].map(([control, action]) => ({ control, action }))
+const KEPT = ['rallyRaid_tripPlus', 'rallyRaid_tripMinus', 'rallyRaid_wPlus', 'rallyRaid_wMinus', 'rallyRaid_partialReset', 'rallyRaid_start', 'rallyRaid_boxPrev', 'rallyRaid_boxNext', 'rallyRaid_boxSync']
 
 const KEY_LABEL = {
   up: 'Up', down: 'Down', left: 'Left', right: 'Right',
@@ -46,9 +56,9 @@ const ACTION_PHRASES = {
   rallyRaid_plannerRec: ['record the driven line']
 }
 
-function loadBindings () {
+function loadBindings (list) {
   const actions = JSON.parse(fs.readFileSync(ACTIONS, 'utf8'))
-  const map = JSON.parse(fs.readFileSync(INPUTMAP, 'utf8'))
+  const map = list ? { bindings: list } : JSON.parse(fs.readFileSync(INPUTMAP, 'utf8'))
   return map.bindings.map((b) => {
     const parts = b.control.split(/\s+/)
     assert.ok(parts[0] === 'ctrl' && parts[1] === 'shift', b.control)
@@ -72,10 +82,24 @@ function parseKeyTable (html) {
   return rows
 }
 
-test('every bound key is listed on the /mod page with the right action', () => {
-  const html = fs.readFileSync(MOD_HTML, 'utf8')
+test('this build ships only the 9 driving keys', () => {
+  const map = JSON.parse(fs.readFileSync(INPUTMAP, 'utf8'))
+  assert.deepEqual(map.bindings.map((b) => b.action).sort(), KEPT.slice().sort())
+})
+
+test('the frozen 16 Nov key list matches the zip in the download folder (when it is here)', (t) => {
+  const zip = path.join(ROOT, 'stage-builder/download/rallyraid_mod.zip')
+  if (!fs.existsSync(zip)) { t.skip('stage-builder/download is not in this checkout (git-ignored)'); return }
+  let txt
+  try { txt = require('child_process').execFileSync('unzip', ['-p', zip, '*keyboard_rallyRaid.json'], { encoding: 'utf8' }) } catch (e) { t.skip('unzip not available'); return }
+  assert.deepEqual(JSON.parse(txt).bindings, LIVE_ZIP_BINDINGS)
+})
+
+for (const [name, file, list] of [['live /mod page (16 Nov zip)', MOD_HTML, LIVE_ZIP_BINDINGS], ['pending /mod page (this build)', PENDING_HTML, null]]) {
+test(name + ': every bound key is listed with the right action', () => {
+  const html = fs.readFileSync(file, 'utf8')
   const rows = parseKeyTable(html)
-  const bindings = loadBindings()
+  const bindings = loadBindings(list)
   assert.equal(rows.length, bindings.length, 'row count should equal bound keys (got ' + rows.map((r) => r.key).join(', ') + ')')
   const byKey = Object.fromEntries(rows.map((r) => [r.key, r.action]))
   for (const b of bindings) {
@@ -85,6 +109,28 @@ test('every bound key is listed on the /mod page with the right action', () => {
       assert.ok(action.toLowerCase().includes(phrase.toLowerCase()), b.keyLabel + ' should mention "' + phrase + '" (got: ' + action + ')')
     }
   }
+})
+}
+
+test('live /mod page: the recce keys are marked "this download only", no next-build keys', () => {
+  const html = fs.readFileSync(MOD_HTML, 'utf8')
+  for (const k of ['R', 'N', 'C', 'M', 'T', 'Delete', 'Z']) {
+    assert.match(html, new RegExp('Ctrl\\+Shift\\+' + k + '</code></td><td>[^<]*<i class="nb">\\(this download only\\)</i>'))
+  }
+  for (const k of ['F', 'G', 'H', 'J', 'W', 'B', 'K']) assert.doesNotMatch(html, new RegExp('Ctrl\\+Shift\\+' + k + '<'))
+  assert.match(html, /The next build keeps only the driving keys/)
+})
+
+test('pending /mod page: each unbound action names its button', () => {
+  const html = fs.readFileSync(PENDING_HTML, 'utf8')
+  const block = html.match(/<h3>Buttons \(no default key\)<\/h3>[\s\S]*?<\/table>/)
+  assert.ok(block, 'Buttons table missing')
+  const txt = block[0].replace(/<[^>]+>/g, '')
+  for (const w of ['REPAIR', 'RECOVER', 'CONFIRM', 'RESUME', 'CONFIRM RESUME', 'GO', 'PLANNER', 'ADD HERE', '+ BOX HERE', 'REC', 'RECCE', 'HERE', 'TAG', 'UNDO', 'MENU']) {
+    assert.ok(txt.includes(w), 'Buttons table should name ' + w)
+  }
+  for (const a of ['repair menu', 'recover car', 'resume after a game crash', 'planner: open / close', 'recce mode on / off', 'undo']) assert.ok(txt.toLowerCase().includes(a), a)
+  assert.doesNotMatch(html, /Ctrl\+Shift\+(R|N|C|M|T|Delete|Z|F|G|H|J|W|B|K)</)
 })
 
 test('/mod page does not call Left/Right trip step size, and names the 10m button', () => {
@@ -104,10 +150,6 @@ test('/mod page download link stays on the 16 Nov zip until the public zip is OK
   assert.match(html, /href="\/download\/rallyraid_mod\.zip"/)
   assert.match(html, /Download rallyraid_mod\.zip/)
   assert.doesNotMatch(html, /wyans_rallyraid\.zip/)
-  // keys that are not in the 16 Nov zip are flagged
-  for (const k of ['F', 'G', 'H', 'J', 'W', 'B', 'K']) {
-    assert.match(html, new RegExp('Ctrl\\+Shift\\+' + k + '</code></td><td>[^<]*<i class="nb">\\(next build\\)</i>'))
-  }
 })
 
 test('pending public-zip /mod page is ready with the wyans_rallyraid.zip link', () => {
@@ -117,15 +159,17 @@ test('pending public-zip /mod page is ready with the wyans_rallyraid.zip link', 
   assert.doesNotMatch(html, /rallyraid_mod\.zip/)
 })
 
-test('README hotkeys table lists every bound key and the same press-twice notes', () => {
+test('README lists every bound key, and a button for each unbound action', () => {
   const md = fs.readFileSync(README, 'utf8')
   const bindings = loadBindings()
   for (const b of bindings) {
     assert.ok(md.includes(b.keyLabel), 'README missing ' + b.keyLabel)
   }
-  assert.match(md, /Recover car \(press again to confirm\).*Ctrl\+Shift\+G/)
-  assert.match(md, /Resume after a game crash \(press twice.*Ctrl\+Shift\+H/)
-  assert.match(md, /drop a box here \(press again to save it as it is\).*Ctrl\+Shift\+N/)
+  assert.doesNotMatch(md, /Ctrl\+Shift\+(R|N|C|M|T|Delete|Z|F|G|H|J|W|B|K)\b/)
+  assert.match(md, /Recover car \(two steps.*MENU\*\* > \*\*RECOVER\*\*, then \*\*CONFIRM\*\*/)
+  assert.match(md, /Resume after a game crash \(two steps.*\*\*RESUME\*\*, then \*\*CONFIRM RESUME\*\*/)
+  assert.match(md, /Planner: open \/ close \| GPS app \*\*MENU\*\* > \*\*PLANNER\*\*/)
+  assert.match(md, /Repair menu \| GPS app \*\*MENU\*\* > \*\*REPAIR\*\*/)
   assert.match(md, /Trip step size \(10 \/ 100 \/ 1000 m\) is the \*\*10m\*\* button on the GPS app/)
   assert.match(md, /Trip reset \| not bound by default/)
 })
@@ -138,7 +182,7 @@ test('live download folder still has the existing zip and was not overwritten', 
   assert.ok(!names.includes('wyans_rallyraid.zip'), 'do not publish wyans_rallyraid.zip into the download folder yet')
 })
 
-test('/mod page serves and shows every bound key (headless)', async (t) => {
+test('/mod page serves and shows every key of the 16 Nov zip (headless)', async (t) => {
   let puppeteer
   try {
     puppeteer = require('puppeteer-core')
@@ -184,7 +228,7 @@ test('/mod page serves and shows every bound key (headless)', async (t) => {
       return { title: document.title, rows, href: dl && dl.getAttribute('href'), text: dl && dl.textContent, stepNote: document.body.innerText.includes('10m') }
     })
     assert.equal(errors.length, 0, errors.join('\n'))
-    const bindings = loadBindings()
+    const bindings = loadBindings(LIVE_ZIP_BINDINGS)
     assert.equal(got.rows.length, bindings.length)
     const byKey = Object.fromEntries(got.rows.map((r) => [r.key, r.action]))
     for (const b of bindings) {

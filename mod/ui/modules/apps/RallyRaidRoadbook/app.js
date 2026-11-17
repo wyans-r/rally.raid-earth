@@ -1,7 +1,9 @@
 // rally.raid Earth Roadbook: the in-game roadbook reader for rallyRaid_core (lua/ge/extensions/rallyRaid/core.lua).
 // Lua -> app: guihooks 'RallyRaidRoadbook' (about 10 a second): trip, the box the trip is in, and `view`, the boxes on
 // screen (the current one and the next three, or where the driver scrolled to with box up / down).
-// App -> Lua: rallyRaid_core.cmd('boxPrev' | 'boxNext' | 'boxSync' | 'reloadRoadbook').
+// App -> Lua: rallyRaid_core.cmd('boxPrev' | 'boxNext' | 'boxSync' | 'reloadRoadbook' | 'recce*' | 'keys').
+// Keys: only box up / down / sync have default keys; the button titles show the player's actual key from the
+// guihook 'RallyRaidKeys' (rallyRaid/keys.lua), so a key the player bound in Options > Controls shows up too.
 // Drawing (tulips, symbols) is roadbook-render.js, the same file the stage builder's editor and PDF use.
 angular.module('beamng.apps')
 .directive('rallyRaidRoadbook', [function () {
@@ -53,16 +55,16 @@ angular.module('beamng.apps')
       '<div class="rrb-next"><span>NEXT {{ r.nextBox || \'-\' }}</span><span class="rrb-bar"><i ng-style="{width: bar() + \'%\'}"></i></span><span>{{ toNext() }}</span></div>' +
       '<div class="rrc" ng-if="r.recce">' +
         '<div class="rrc-top"><span class="rrc-dot" ng-class="{air: r.recce.airborne}"></span><b>RECCE</b> {{ r.recce.km.toFixed(2) }} km &middot; {{ r.recce.changes }} <span class="rrc-dim">({{ r.recce.auto }} auto)</span>' +
-          '<span class="rrc-sp"></span><button class="rrb-btn" ng-click="cmd(\'recceUndo\')" title="Take the last change back (Ctrl+Shift+Z)">UNDO</button>' +
+          '<span class="rrc-sp"></span><button class="rrb-btn" ng-click="cmd(\'recceUndo\')" title="{{ kt(\'rallyRaid_recceUndo\', \'Take the last change back\') }}">UNDO</button>' +
           '<button class="rrb-btn" ng-click="merge()" title="Write the changes into the roadbook file (a backup is kept)">MERGE</button>' +
           '<label class="rrc-ck" title="When merging, re-measure the box km from the driven line"><input type="checkbox" ng-model="ui.rescale"> km</label></div>' +
         '<div class="rrc-last" ng-if="r.recce.last">DETECTED: {{ r.recce.last.notes }}</div>' +
         '<div class="rrc-near" ng-if="r.recce.nearest && !r.recce.pending"><span>NEAR <b>{{ r.recce.nearest.n }}</b> {{ r.recce.nearest.d }} m <span class="rrc-dim">{{ (r.recce.nearest.notes || \'\').substr(0, 22) }}</span></span>' +
-          '<span><button class="rrb-btn" ng-class="{on: r.recce.nearest.verified}" ng-click="cmd(\'recceConfirm\')" title="Confirm (Ctrl+Shift+C)">&#10003;</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceMove\')" title="Move it here (Ctrl+Shift+M)">HERE</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceRetag\')" title="Retag (Ctrl+Shift+T)">TAG</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceDelete\')" title="Delete (Ctrl+Shift+Del)">&#10005;</button></span></div>' +
-        '<div class="rrc-near" ng-if="!r.recce.pending"><button class="rrb-btn rrc-add" ng-click="cmd(\'recceDrop\')" title="A new box at the car (Ctrl+Shift+N)">+ BOX HERE</button></div>' +
+          '<span><button class="rrb-btn" ng-class="{on: r.recce.nearest.verified}" ng-click="cmd(\'recceConfirm\')" title="{{ kt(\'rallyRaid_recceConfirm\', \'Confirm the nearest box\') }}">&#10003;</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceMove\')" title="{{ kt(\'rallyRaid_recceMove\', \'Move it here\') }}">HERE</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceRetag\')" title="{{ kt(\'rallyRaid_recceRetag\', \'Retag\') }}">TAG</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceDelete\')" title="{{ kt(\'rallyRaid_recceDelete\', \'Delete the nearest box\') }}">&#10005;</button></span></div>' +
+        '<div class="rrc-near" ng-if="!r.recce.pending"><button class="rrb-btn rrc-add" ng-click="cmd(\'recceDrop\')" title="{{ kt(\'rallyRaid_recceDrop\', \'A new box at the car\') }}">+ BOX HERE</button></div>' +
         '<div class="rrc-pick" ng-if="r.recce.pending">' +
           '<div class="rrc-dim">{{ r.recce.pending.mode === \'add\' ? \'NEW BOX HERE\' : \'RETAG BOX\' }}: symbols, danger, notes</div>' +
           '<div class="rrc-row rrc-tabs"><button class="rrb-btn" ng-repeat="g in groups" ng-class="{on: ui.grp === g}" ng-click="setGrp(g)">{{ g === \'quick\' ? \'QUICK\' : g.toUpperCase() }}</button>' +
@@ -83,11 +85,11 @@ angular.module('beamng.apps')
         '<div class="rrb-foot" style="justify-content:flex-end"><button class="rrb-btn on" ng-click="loadSel()" ng-disabled="!sp.path">LOAD</button>' +
           '<button class="rrb-btn" ng-click="picker = false">&#10005;</button></div></div>' +
       '<div class="rrb-foot"><span>' +
-        '<button class="rrb-btn" ng-click="cmd(\'boxPrev\')" title="box up (Ctrl+Shift+PgUp)">&#9650;</button> ' +
-        '<button class="rrb-btn" ng-click="cmd(\'boxNext\')" title="box down (Ctrl+Shift+PgDn)">&#9660;</button> ' +
-        '<button class="rrb-btn" ng-class="{on: r.manual}" ng-click="cmd(\'boxSync\')" title="I am at this box: set the trip to its km (Ctrl+Shift+End)">SYNC</button></span>' +
+        '<button class="rrb-btn" ng-click="cmd(\'boxPrev\')" title="{{ kt(\'rallyRaid_boxPrev\', \'box up\') }}">&#9650;</button> ' +
+        '<button class="rrb-btn" ng-click="cmd(\'boxNext\')" title="{{ kt(\'rallyRaid_boxNext\', \'box down\') }}">&#9660;</button> ' +
+        '<button class="rrb-btn" ng-class="{on: r.manual}" ng-click="cmd(\'boxSync\')" title="{{ kt(\'rallyRaid_boxSync\', \'I am at this box: set the trip to its km\') }}">SYNC</button></span>' +
         '<span class="rrb-src" title="{{ r.roadbookFile }}">{{ r.roadbookFile ? r.roadbookFile.replace(\'/rallyraid/roadbooks/\', \'\') : \'stage boxes only\' }}</span>' +
-        '<button class="rrb-btn" ng-class="{on: r.recce}" ng-click="cmd(\'recce\')" title="Recce mode on / off (Ctrl+Shift+R): record the line, mark and fix boxes as you drive">RECCE</button>' +
+        '<button class="rrb-btn" ng-class="{on: r.recce}" ng-click="cmd(\'recce\')" title="{{ kt(\'rallyRaid_recce\', \'Recce mode on / off: record the line, mark and fix boxes as you drive\') }}">RECCE</button>' +
         '<button class="rrb-btn" ng-click="cmd(\'reloadRoadbook\')" title="re-read the roadbook file">&#8635;</button>' +
         '<button class="rrb-btn" ng-click="openStages()" title="choose a stage and its roadbook">BOOK</button></div>' +
       '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://stagebuilder.wyans.net and the project README.</p></details>' +
@@ -118,6 +120,11 @@ angular.module('beamng.apps')
         return Math.max(0, Math.min(100, (scope.r.trip - cur.km) / (nxt.km - cur.km) * 100))
       }
       scope.cmd = function (name, arg) { lua('if rallyRaid_core then rallyRaid_core.cmd(\'' + name + '\'' + (arg !== undefined ? ', ' + luaVal(arg) : '') + ') end') }
+      // the player's keys (only actions that have one): 'text (its key)' or just 'text'
+      scope.keys = {}
+      scope.kt = function (action, text) { var k = scope.keys[action]; return k ? text + ' (' + k + ')' : text }
+      scope.$on('RallyRaidKeys', function (event, data) { scope.$evalAsync(function () { scope.keys = (data && data.keys) || {} }) })
+      scope.cmd('keys')
       // stage / roadbook picker (the choice lives on an object: list rows have their own child scopes)
       scope.picker = false; scope.stages = []; scope.sp = { path: null }
       scope.openStages = function () {

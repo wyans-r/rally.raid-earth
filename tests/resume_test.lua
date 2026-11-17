@@ -347,7 +347,7 @@ step(0.1); step(0.1)
 local clockAtAsk = S.clock
 core.cmd('resumeKey')
 local st = ui.RallyRaidRecover
-check(st.ask and st.ask.allowed == true, 'Ctrl+Shift+G mid-stage: resume offered')
+check(st.ask and st.ask.allowed == true, 'recoverKey (RECOVER) mid-stage: resume offered')
 check(st.ask.penaltyS == 15 * 60 and st.ask.used == 0 and st.ask.max == 3 and st.ask.leftAfter == 2 and st.ask.stageUsed == 0 and st.ask.stageMax == 1, 'shows +15 min, 0 of 3 used, 2 left after it, 0 of 1 on this stage')
 check(lastNote():find('RECOVER CAR%?') and lastNote():find('%+15 min') and lastNote():find('2 of 3 recoveries left'), 'and says it on screen: ' .. lastNote())
 check(st.ask.snapshot and st.ask.snapshot.id == R.snaps[2].id and st.ask.snapshot.ageS >= ccfg.minSnapshotAgeS, 'uses the latest good resume state (' .. tostring(st.ask.snapshot and st.ask.snapshot.ageS) .. ' s old)')
@@ -712,7 +712,7 @@ check(gr.offer and gr.offer.stageTimeLostS and gr.offer.stageTimeLostS >= 5, 'th
 check(gr.offer and gr.offer.policy.penaltyS == 0 and not gr.offer.policy.refused, 'no penalty, nothing refused')
 check(lastNote():find('Resume from last save'), 'and said on screen: ' .. lastNote())
 check(S.phase == 'armed', 'nothing changed until the driver picks')
--- Ctrl+Shift+H twice: resume
+-- gameResumeKey twice (RESUME, CONFIRM RESUME): resume
 FAR = true
 core.cmd('gameResumeKey')
 check(not gameResume.busy(), 'first press shows it')

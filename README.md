@@ -51,7 +51,7 @@ To edit the files yourself: unzip to `...\current\mods\unpacked\rallyraid\` so t
 2. **Add app**, search **rally.raid**. Add **GPS**, and if you want them: **Roadbook**, **Planner**, **Repair**.
 3. Drag each app where you want it; resize from the corner.
 
-You may need to move the mouse to click buttons while driving. For racing, bind the keys instead (section 5). You can hide BeamNG.Earth's own minimap if you want to navigate by roadbook and GPS only; this mod cannot turn it off for you.
+You may need to move the mouse to click buttons while driving. The driving keys (trip, W, roadbook scroll and sync) are in section 5. You can hide BeamNG.Earth's own minimap if you want to navigate by roadbook and GPS only; this mod cannot turn it off for you.
 
 ## 3. Build a stage (website)
 
@@ -81,9 +81,9 @@ Put stage files in `<BeamNG user folder>/current/rallyraid/stages/` and roadbook
 6. **Speed zones**: once you have passed the start of a zone, going over the limit adds time (impulses). The bar warns you and flashes red when you are over.
 7. Validating the **ASS** (finish) stops the clock. The result is saved. Teleporting during a stage marks the result unofficial. **ABORT** restarts the stage.
 
-## 5. Keys
+## 5. Keys and buttons
 
-Rebind them in Options > Controls > Bindings, search "rally.raid". A wheel or handlebar button works too. These are the defaults shipped in the mod (checked against `mod/settings/inputmaps/keyboard_rallyRaid.json`):
+Only the things you do while driving have default keys. Everything else is a button in the apps, so nothing clashes with BeamNG's own keys. Rebind any of them in Options > Controls > Bindings, search "rally.raid"; a wheel or handlebar button works too, and the apps show the key you set. The defaults (checked against `mod/settings/inputmaps/keyboard_rallyRaid.json`):
 
 | Action | Default key |
 |---|---|
@@ -93,42 +93,40 @@ Rebind them in Options > Controls > Bindings, search "rally.raid". A wheel or ha
 | Start countdown | Ctrl+Shift+Home |
 | Roadbook box up / down | Ctrl+Shift+PageUp / Ctrl+Shift+PageDown |
 | Sync trip to the box on screen | Ctrl+Shift+End |
-| Recce mode on / off | Ctrl+Shift+R |
-| Recce: drop a box here (press again to save it as it is) | Ctrl+Shift+N |
-| Recce: confirm nearest box | Ctrl+Shift+C |
-| Recce: move nearest box here | Ctrl+Shift+M |
-| Recce: retag nearest box | Ctrl+Shift+T |
-| Recce: delete nearest box | Ctrl+Shift+Delete |
-| Recce: undo | Ctrl+Shift+Z |
-| Repair menu | **Ctrl+Shift+F** |
-| Recover car (press again to confirm) | **Ctrl+Shift+G** |
-| Resume after a game crash (press twice; then GO if the clock is held) | **Ctrl+Shift+H** |
-| Planner: open / close | **Ctrl+Shift+J** |
-| Planner: waypoint here | **Ctrl+Shift+W** |
-| Planner: roadbook box here | **Ctrl+Shift+B** |
-| Planner: record the driven line on / off | **Ctrl+Shift+K** |
-| Trip reset | not bound by default |
+| Trip reset | not bound by default (**0** on the GPS app) |
 | Start a new rally (recoveries / resets back to 0) | not bound by default |
+
+No default key, a button instead:
+
+| Action | Button |
+|---|---|
+| Repair menu | GPS app **MENU** > **REPAIR**, or click the Repair app's bar |
+| Recover car (two steps: see the penalty, then confirm) | GPS app **MENU** > **RECOVER**, then **CONFIRM**; or **RECOVER CAR** in the Repair app |
+| Resume after a game crash (two steps; then GO if the clock is held) | GPS app **MENU** > **RESUME**, then **CONFIRM RESUME** (the menu opens by itself when a save is found); or the Repair app |
+| Planner: open / close | GPS app **MENU** > **PLANNER**, or click the Planner app's bar |
+| Planner: waypoint here / roadbook box here / record the driven line | **ADD HERE** / **+ BOX HERE** / **REC** in the Planner app |
+| Recce mode on / off | **RECCE** in the Roadbook app |
+| Recce: drop a box here, confirm, move here, retag, delete the nearest box, undo | **+ BOX HERE**, **✓**, **HERE**, **TAG**, **✕**, **UNDO** in the Roadbook app's recce panel |
 
 Trip step size (10 / 100 / 1000 m) is the **10m** button on the GPS app, not a key.
 
 ## 6. Repair, recover, resume
 
-Add the **rally.raid Earth Repair** app, then press **Ctrl+Shift+F**.
+Add the **rally.raid Earth Repair** app, then click its bar (or **MENU** > **REPAIR** in the GPS app).
 
 - Mid-stage, standing still: change a wheel, fix one corner's suspension, or fix the radiator. The time is added to the stage.
 - After the finish, the bivouac opens: whole-car repair and engine change from a time budget.
 - During a stage, BeamNG's own reset keys are blocked. A reset the app did not make counts as a car recovery.
-- **Stuck or rolled?** **Ctrl+Shift+G** (press again to confirm), or **RECOVER CAR** in the menu, puts the car back on the route a short way behind, with a time penalty. Limits apply per stage and per rally.
-- **The game crashed?** The stage is saved to disk on a short heartbeat and at each waypoint. After you relaunch, load the stage and press **Ctrl+Shift+H** twice (or use **Resume from last save**). There is no time penalty, but the result is flagged for the organiser to review.
+- **Stuck or rolled?** GPS app **MENU** > **RECOVER**, then **CONFIRM** (or **RECOVER CAR** in the Repair app), puts the car back on the route a short way behind, with a time penalty. Limits apply per stage and per rally.
+- **The game crashed?** The stage is saved to disk on a short heartbeat and at each waypoint. After you relaunch, load the stage: the GPS app's menu opens with the save; press **RESUME**, then **CONFIRM RESUME** (or use **Resume from last save** in the Repair app). There is no time penalty, but the result is flagged for the organiser to review.
 
 Details: [docs/REPAIR.md](docs/REPAIR.md).
 
 ## 7. Recce and the in-game planner
 
-**Recce.** In the Roadbook app, press RECCE or **Ctrl+Shift+R**. The line you drive, and jumps, crests, compressions, soft sand and slopes the car finds, are recorded. You can drop, move, retag and delete boxes as you go. The file lands in `<BeamNG user folder>/current/rallyraid/recce/`. Merge it in the game, or import it in the roadbook editor.
+**Recce.** In the Roadbook app, press **RECCE**. The line you drive, and jumps, crests, compressions, soft sand and slopes the car finds, are recorded. You can drop, move, retag and delete boxes as you go with the recce panel's buttons. The file lands in `<BeamNG user folder>/current/rallyraid/recce/`. Merge it in the game, or import it in the roadbook editor.
 
-**Planner.** Add **rally.raid Earth Planner**, or press **Ctrl+Shift+J**. Start a new stage, record the line you drive (**Ctrl+Shift+K**), drop waypoints (**Ctrl+Shift+W**) and roadbook boxes (**Ctrl+Shift+B**), generate a roadbook, then save and load it into the rally computer. Files are the same ones the website uses, in `rallyraid/stages/` and `rallyraid/roadbooks/`. More detail: [docs/INGAME_PLANNER.md](docs/INGAME_PLANNER.md).
+**Planner.** Add **rally.raid Earth Planner** and click its bar (or **MENU** > **PLANNER** in the GPS app). Start a new stage, record the line you drive (**REC**), drop waypoints (**ADD HERE**) and roadbook boxes (**+ BOX HERE**), generate a roadbook, then save and load it into the rally computer. Files are the same ones the website uses, in `rallyraid/stages/` and `rallyraid/roadbooks/`. More detail: [docs/INGAME_PLANNER.md](docs/INGAME_PLANNER.md).
 
 ## 8. Build a public zip (for maintainers)
 

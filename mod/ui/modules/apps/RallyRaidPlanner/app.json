@@ -4,7 +4,7 @@
   "types": [
     "ui.apps.categories.utility"
   ],
-  "description": "Plan rally.raid Earth stages and roadbooks inside the game: drive the route and drop waypoints where the car is (Ctrl+Shift+W), record the driven line as the route (Ctrl+Shift+K), add and edit roadbook boxes at the car (Ctrl+Shift+B), generate a roadbook (full map data when the game has internet, from the route and the heights you drove when not), save and load the stage straight into the rally computer. Files are the stage builder's: open them on stagebuilder.wyans.net and back. Ctrl+Shift+J opens / closes it.",
+  "description": "Plan rally.raid Earth stages and roadbooks inside the game: drive the route and drop waypoints where the car is (ADD HERE), record the driven line as the route (REC), add and edit roadbook boxes at the car (+ BOX HERE), generate a roadbook (full map data when the game has internet, from the route and the heights you drove when not), save and load the stage straight into the rally computer. Files are the stage builder's: open them on stagebuilder.wyans.net and back. Click its bar (or PLANNER in the GPS app) to open / close it. Buttons only by default; any of these can be given a key in Options > Controls.",
   "css": {
     "top": "60px",
     "left": "10px",

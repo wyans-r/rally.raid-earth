@@ -12,6 +12,7 @@
 --   * everything is logged and copied into the stage result (M.resultFields)
 local cfg = require('rallyRaid/repairConfig')
 local geo = require('rallyRaid/geo')
+local keys = require('rallyRaid/keys')
 
 local M = {}
 M.cfg = cfg
@@ -466,7 +467,7 @@ function M.stageFinished(res)
   if s and not L.retired then
     L.bivouac = { open = true, afterStage = s.stage.id, openedAt = now(), usedMin = 0, budgetMin = cfg.bivouac.budgetMin,
       engineChanges = 0, log = {}, resets = {} }
-    notify(string.format('rally.raid Earth: bivouac open: %d h of service time (Ctrl+Shift+F). It closes when the next stage starts.', cfg.bivouac.budgetMin / 60), 7)
+    notify(string.format('rally.raid Earth: bivouac open: %d h of service time (REPAIR in the GPS app or the Repair app bar%s). It closes when the next stage starts.', cfg.bivouac.budgetMin / 60, keys.hint('rallyRaid_repairMenu', ', or %s')), 7)
   end
   local last = L.stages[#L.stages]
   if last and s and last.id == s.stage.id then last.finishedAt = now(); last.retired = res and res.retired or nil; last.totalTime = res and res.totalTime end

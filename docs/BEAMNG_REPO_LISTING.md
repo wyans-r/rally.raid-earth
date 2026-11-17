@@ -31,12 +31,14 @@ rally.raid Earth is a Dakar-style navigation pack for BeamNG.Earth. Plot a stage
 
 **Race.** Load a stage from the GPS, teleport or drive to the start, and go. The GPS always shows your heading (CAP) and speed. Distance to a hidden waypoint appears only when you are close, the way a real rally GPS works. The roadbook scrolls with your trip odometer.
 
-**Useful keys** (rebind in Options → Controls → Bindings, search "rally.raid"):
+**Keys while driving** (rebind in Options → Controls → Bindings, search "rally.raid"):
 
-- Ctrl+Shift+F — repair menu
-- Ctrl+Shift+G — recover a stuck or rolled car (press again to confirm)
-- Ctrl+Shift+H — resume the stage after a game crash (press twice)
-- Ctrl+Shift+J / W / B / K — open the planner, add a waypoint, add a roadbook box, record the driven line
+- Ctrl+Shift+Up / Down — trip + / − (hold to repeat)
+- Ctrl+Shift+Right / Left — W+ (skip a waypoint) / W− (back to a missed one)
+- Ctrl+Shift+PageUp / PageDown — scroll the roadbook; Ctrl+Shift+End — sync the trip to the box on screen
+- Ctrl+Shift+P — reset the partial; Ctrl+Shift+Home — start countdown
+
+**Everything else is a button**, so nothing clashes with BeamNG's own keys: the GPS app's **MENU** has REPAIR, RECOVER (stuck or rolled car: press, then CONFIRM), RESUME after a game crash, and PLANNER. Recce has buttons in the Roadbook app, the planner in its own app. You can still bind any of these in Options → Controls.
 
 A full key list and a longer how-to are on the website's [mod page](https://stagebuilder.wyans.net/mod) and in the project README.
 

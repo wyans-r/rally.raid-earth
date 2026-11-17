@@ -1,14 +1,15 @@
 // rally.raid Earth Repair: the repair menu for lua/ge/extensions/rallyRaid/repair.lua (through rallyRaid_core).
 // Lua -> app: guihooks 'RallyRaidRepair' with the menu state (mode, options, spares, resumes, bivouac clock).
 // App -> Lua: rallyRaid_core.cmd('repairMenu' | 'repairClose' | 'repairConfirm', 'id,id' | 'repairAppHere').
-// Ctrl+Shift+F (action rallyRaid_repairMenu) opens / closes the menu from the keyboard.
+// The bar (or REPAIR in the GPS app) opens / closes the menu. The rally.raid Earth actions here have no default key
+// (Wyans 2026-11-17); a key the player binds in Options > Controls is shown from the guihook 'RallyRaidKeys'.
 // RECOVER CAR (rallyRaid/resume.lua, the one reset allowed in a stage): Lua -> app guihooks 'RallyRaidRecover'
 // ({ ask, askRetire, busy, msg, ... }); app -> Lua rallyRaid_core.cmd('recoverAsk' | 'recoverConfirm' | 'recoverCancel' |
-// 'recoverRetire'). Ctrl+Shift+G (action rallyRaid_recoverCar) asks, and a second press confirms.
+// 'recoverRetire'). RECOVER in the GPS app (cmd 'recoverKey', also the rallyRaid_recoverCar action) asks, a second press confirms.
 // GAME-CRASH RESUME (rallyRaid/gameResume.lua, the stage saved to disk): Lua -> app guihooks 'RallyRaidGameResume'
 // ({ offer, busy, hold, askDiscard, msg, flagged, saves, lastSaveAgeS }); app -> Lua rallyRaid_core.cmd('gameResumeResume' |
-// 'gameResumeDiscard' | 'gameResumeDiscardCancel' | 'gameResumeGo' | 'gameResumeDismiss'). Ctrl+Shift+H (action
-// rallyRaid_gameResume): shows the save, a second press resumes; GO while the clock is held.
+// 'gameResumeDiscard' | 'gameResumeDiscardCancel' | 'gameResumeGo' | 'gameResumeDismiss'). RESUME in the GPS app (cmd
+// 'gameResumeKey', also the rallyRaid_gameResume action): shows the save, a second press resumes; GO while the clock is held.
 angular.module('beamng.apps')
 .directive('rallyRaidRepair', [function () {
   var W = 360, H = 300
@@ -37,7 +38,7 @@ angular.module('beamng.apps')
         '<span class="rrr-pen" ng-show="rs.busy || gr.busy">CLOCK STOPPED</span>' +
         '<span class="rrr-held" ng-show="gr.hold && !gr.busy" title="the stage clock is held at the saved time until you drive off">HELD</span>' +
         '<span class="rrr-review" ng-show="gr.flagged" title="resumed after a game crash: flagged for organizer review">REVIEW</span>' +
-        '<span class="k" ng-show="!rs.busy && !gr.busy && !gr.hold && !gr.flagged">Ctrl+Shift+F</span></div>' +
+        '<span class="k" ng-show="keys.rallyRaid_repairMenu && !rs.busy && !gr.busy && !gr.hold && !gr.flagged">{{ keys.rallyRaid_repairMenu }}</span></div>' +
       // game-crash resume: the saved stage offered, the resume running, the clock held, the outcome
       '<div class="rrr-resume rrr-game" ng-show="grShown()">' +
         '<div class="rrr-rtitle" ng-class="{bad: gr.offer && gr.offer.policy && gr.offer.policy.refused}">{{ grTitle() }}</div>' +
@@ -53,7 +54,7 @@ angular.module('beamng.apps')
         '<div ng-show="gr.busy" class="rrr-rline">Putting the car back where it was saved, with its damage. The stage clock is stopped.</div>' +
         '<div ng-show="gr.hold && !gr.busy">' +
           '<div class="rrr-rline big">Clock held at the saved time.</div>' +
-          '<div class="rrr-rline">It starts when you drive off, or press GO (Ctrl+Shift+H).</div>' +
+          '<div class="rrr-rline">It starts when you drive off, or press GO{{ keyText(\'rallyRaid_gameResume\') }}.</div>' +
         '</div>' +
         '<div class="rrr-rline" ng-show="gr.msg && !gr.offer && !gr.busy && !gr.hold">{{ gr.msg }}</div>' +
         '<div class="rrr-rline rrr-flag" ng-show="gr.flagged && (gr.hold || gr.msg) && !gr.offer">{{ flagText() }}</div>' +
@@ -74,7 +75,7 @@ angular.module('beamng.apps')
           '<div class="rrr-rline">Recoveries / resets: {{ rs.ask.used }} of {{ rs.ask.max }} used, <b>{{ rs.ask.leftAfter }} left</b> after this. This stage: {{ rs.ask.stageUsed }} of {{ rs.ask.stageMax }}.</div>' +
           '<div class="rrr-rline">Back on the route {{ round(rs.ask.target.backM) }} m behind where you got stuck, at km {{ rs.ask.target.km.toFixed(2) }}, facing along the route.</div>' +
           '<div class="rrr-rline">{{ damageText() }}</div>' +
-          '<div class="rrr-rline dim">The clock stops while the car is moved. A second one on this stage retires it. Confirm here or press Ctrl+Shift+G again.</div>' +
+          '<div class="rrr-rline dim">The clock stops while the car is moved. A second one on this stage retires it. Confirm here, or press RECOVER in the GPS app{{ keyText(\'rallyRaid_recoverCar\', \' / \') }} again.</div>' +
         '</div>' +
         '<div ng-show="rs.ask && !rs.ask.allowed && !rs.busy">' +
           '<div class="rrr-rline rrr-rwarn">{{ rs.ask.reason }}</div>' +
@@ -107,9 +108,9 @@ angular.module('beamng.apps')
             '<div class="rrr-sub" ng-show="!o.enabled && o.why && !o.spare">{{ o.why }}</div>' +
           '</div>' +
         '</div>' +
-        '<div class="rrr-rrow" ng-show="st.mode === \'stage\'"><button class="rrr-btn bad" ng-click="resumeAsk()" title="Ctrl+Shift+G" ng-disabled="rs.enabled === false">RECOVER CAR</button>' +
-          '<span class="dim">{{ rs.enabled === false ? \'switched off for this event\' : \'stuck or rolled? back on the route, +15 / 30 min (Ctrl+Shift+G)\' }}</span></div>' +
-        '<div class="rrr-save dim" ng-show="st.mode === \'stage\' && gr.saves">saved to disk {{ gr.lastSaveAgeS !== undefined ? ago(gr.lastSaveAgeS) + \' ago\' : \'\' }} (game crash: Ctrl+Shift+H after a relaunch)<span class="rrr-pen" ng-show="gr.saveFails"> - {{ gr.saveFails }} save(s) failed</span></div>' +
+        '<div class="rrr-rrow" ng-show="st.mode === \'stage\'"><button class="rrr-btn bad" ng-click="resumeAsk()" title="{{ kt(\'rallyRaid_recoverCar\', \'Ask for a car recovery (then confirm)\') }}" ng-disabled="rs.enabled === false">RECOVER CAR</button>' +
+          '<span class="dim">{{ rs.enabled === false ? \'switched off for this event\' : \'stuck or rolled? back on the route, +15 / 30 min\' }}</span></div>' +
+        '<div class="rrr-save dim" ng-show="st.mode === \'stage\' && gr.saves">saved to disk {{ gr.lastSaveAgeS !== undefined ? ago(gr.lastSaveAgeS) + \' ago\' : \'\' }} (game crash: load the stage again after a relaunch and press RESUME)<span class="rrr-pen" ng-show="gr.saveFails"> - {{ gr.saveFails }} save(s) failed</span></div>' +
         '<div class="rrr-warn" ng-show="warnText()">{{ warnText() }}</div>' +
         '<div class="rrr-foot"><span class="rrr-total">{{ totalText() }}</span><span>' +
           '<button class="rrr-btn go" ng-click="confirm()" ng-disabled="!canConfirm()">REPAIR</button> ' +
@@ -167,6 +168,12 @@ angular.module('beamng.apps')
       }
       scope.cmd = function (name, arg) { lua('if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + (arg !== undefined ? ', ' + q(arg) : '') + ') end') }
       scope.toggle = function () { scope.cmd('repairMenu') }
+      // the player's keys (only actions that have one): kt -> 'text (key)'; keyText -> ' (key)' or ''
+      scope.keys = {}
+      scope.kt = function (action, text) { var k = scope.keys[action]; return k ? text + ' (' + k + ')' : text }
+      scope.keyText = function (action, sep) { var k = scope.keys[action]; return k ? (sep || ' (') + k + (sep ? '' : ')') : '' }
+      scope.$on('RallyRaidKeys', function (event, data) { scope.$evalAsync(function () { scope.keys = (data && data.keys) || {} }) })
+      scope.cmd('keys')
       scope.close = function () { scope.cmd('repairClose') }
       scope.confirm = function () {
         if (!scope.canConfirm()) return

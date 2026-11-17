@@ -179,15 +179,16 @@ more than 200 m, a warning says it should be re-synced in the editor. Not found:
    the "I'm at box 37" correction), `boxNext` / `boxPrev` (scroll the roadbook display one box), `boxSync` (trip :=
    the km of the box at the top of the display), `reloadRoadbook`, `wPlus`, `wMinus`, `start`, `abort`, `load` (path),
    `teleport`, `unload`. Keys: Ctrl+Shift+Up / Down trip +/-, Ctrl+Shift+PgUp / PgDn box up / down, Ctrl+Shift+End
-   box sync, Ctrl+Shift+P partial reset, Ctrl+Shift+Left / Right W- / W+, Ctrl+Shift+Home start.
+   box sync, Ctrl+Shift+P partial reset, Ctrl+Shift+Left / Right W- / W+, Ctrl+Shift+Home start (the only default keys;
+   `keys` pushes guihook `RallyRaidKeys` = { keys = { action = 'Ctrl+Shift+End', ... } }, the player's actual bindings).
    Recce mode (docs/ROADBOOK_FORMAT.md *Recce*): `recce` (on / off), `recceNew`, `recceDrop`, `reccePick` ({symbol |
    danger | notes}), `recceSave`, `recceCancel`, `recceConfirm` / `recceMove` / `recceRetag` / `recceDelete` (nearest
-   box, or arg = box id), `recceUndo`, `recceMerge` (arg `'rescale'`). Keys: Ctrl+Shift+R recce on / off, N box here,
-   C confirm, M move here, T retag, Delete delete, Z undo. `roadbookState().recce` carries the recce panel's data.
+   box, or arg = box id), `recceUndo`, `recceMerge` (arg `'rescale'`). No default keys (the Roadbook app's recce panel has
+   the buttons); a player can bind the rallyRaid_recce* actions. `roadbookState().recce` carries the recce panel's data.
    In-game planner (`docs/INGAME_PLANNER.md`): `plannerMenu`, `plannerOpen`, `plannerClose`, `plannerWaypoint`,
    `plannerBox`, `plannerRec`, `plannerAppHere`; the app's own calls go through
-   `rallyRaid_core.plannerCall(name, argsJson, text)`. Keys: Ctrl+Shift+J open / close, W point here, B box here,
-   K record the driven line. Stages saved by the planner are this format; `generator` ends in
+   `rallyRaid_core.plannerCall(name, argsJson, text)`. No default keys (the Planner app's buttons, and PLANNER in
+   the GPS app's MENU); a player can bind the rallyRaid_planner* actions. Stages saved by the planner are this format; `generator` ends in
    `rallyraid-ingame-planner <version>`.
    `rallyRaid_core.roadbookState()` and `rallyRaid_core.getState()` return the current tables.
 4. **Outside the game** (a tablet / second screen): turn on `liveFile` (`rallyRaid_core.cmd('liveFile')`, kept in

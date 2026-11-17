@@ -77,8 +77,8 @@ check(not planner._P().rec.on, 'rec off')
 m = call('mark')
 check(m.ok and not m.recording and #m.piece == 0, 'mark without recording: no piece (a straight leg)')
 -- the key toggles recording without the app
-core.cmd('plannerRec'); check(planner._P().rec.on and lastNote():match('recording the driven line'), 'Ctrl+Shift+K: recording on, said')
-core.cmd('plannerRec'); check(not planner._P().rec.on, 'Ctrl+Shift+K again: off')
+core.cmd('plannerRec'); check(planner._P().rec.on and lastNote():match('recording the driven line'), 'plannerRec (REC): recording on, said')
+core.cmd('plannerRec'); check(not planner._P().rec.on, 'plannerRec again: off')
 
 -- keys and the app ----------------------------------------------------------------------------------------------------
 ui = {}
@@ -168,16 +168,17 @@ if stText and rbText then
 end
 check(call('nonsense').ok == false, 'unknown call')
 
--- the keys: each planner action exists, calls a command the planner knows, and has its Ctrl+Shift key
+-- the keys: each planner action exists and calls a command the planner knows; none has a default key any more (the
+-- Planner app's buttons do it all; a player may still bind them in Options > Controls)
 do
   local acts = DECODE_JSON(READ_TEXT('mod/lua/ge/extensions/core/input/actions/rallyRaid.json'))
   local keys = DECODE_JSON(READ_TEXT('mod/settings/inputmaps/keyboard_rallyRaid.json'))
-  local want = { rallyRaid_plannerMenu = 'ctrl shift j', rallyRaid_plannerWaypoint = 'ctrl shift w', rallyRaid_plannerBox = 'ctrl shift b', rallyRaid_plannerRec = 'ctrl shift k' }
+  local want = { rallyRaid_plannerMenu = true, rallyRaid_plannerWaypoint = true, rallyRaid_plannerBox = true, rallyRaid_plannerRec = true }
   local seen, controls, dup = {}, {}, false
   for _, b in ipairs(keys.bindings) do seen[b.action] = b.control; if controls[b.control] then dup = true end; controls[b.control] = true end
-  for a, k in pairs(want) do
+  for a in pairs(want) do
     local c = acts[a] and acts[a].onDown:match("cmd%('(planner%a+)'%)")
-    check(c ~= nil and seen[a] == k, a .. ': ' .. tostring(c) .. ' on ' .. tostring(seen[a]))
+    check(c ~= nil and seen[a] == nil, a .. ': ' .. tostring(c) .. ', default key ' .. tostring(seen[a]))
   end
   check(not dup, 'no key used twice')
   planner._reset()

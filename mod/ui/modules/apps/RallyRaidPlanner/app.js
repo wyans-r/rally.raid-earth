@@ -5,7 +5,9 @@
 //   app -> Lua: rallyRaid_core.plannerCall(name, argsJson, text) (pose, mark, rec, list, readOpen / readChunk,
 //               writeBegin / writeChunk / writeCommit, load, reloadRoadbook, open) and rallyRaid_core.cmd('planner...')
 //   Lua -> app: guihooks 'RallyRaidPlanner' (state: open, pose, recording, the game's stage) and 'RallyRaidPlannerKey'
-//               (Ctrl+Shift+W waypoint here, Ctrl+Shift+B box here). Ctrl+Shift+J opens / closes, Ctrl+Shift+K records.
+//               (the rallyRaid_plannerWaypoint / plannerBox actions, if the player bound a key: waypoint / box here).
+//               No planner key by default (Wyans 2026-11-17): the bar (or PLANNER in the GPS app) opens / closes, REC
+//               records, ADD HERE / + BOX HERE add at the car; 'RallyRaidKeys' has any key the player bound to show.
 angular.module('beamng.apps')
 .directive('rallyRaidPlanner', [function () {
   var W = 440, H = 640
@@ -70,14 +72,14 @@ angular.module('beamng.apps')
     '<div class="bngApp rpl-host">',
     '<link type="text/css" rel="stylesheet" href="/ui/modules/apps/RallyRaidPlanner/app.css">',
     '<div class="rpl" ng-style="{transform: \'scale(\' + k + \')\'}">',
-    // the bar (always there): click or Ctrl+Shift+J opens / closes
-    '<div class="rpl-bar" ng-click="toggle()" title="Open / close the planner (Ctrl+Shift+J)">',
+    // the bar (always there): click (or PLANNER in the GPS app) opens / closes
+    '<div class="rpl-bar" ng-click="toggle()" title="{{ kt(\'rallyRaid_plannerMenu\', \'Open / close the planner\') }}">',
       '<span class="t">PLANNER</span><span class="nm">{{ v.name || \'no stage open\' }}{{ v.dirty ? \' *\' : \'\' }}</span>',
-      '<span title="Recording the driven line (Ctrl+Shift+K)"><span class="rpl-dot" ng-class="{on: g.rec.on}"></span> {{ g.rec.on ? (g.rec.km.toFixed(2) + \' km\') : \'\' }}</span>',
-      '<span class="k">Ctrl+Shift+J</span></div>',
+      '<span title="Recording the driven line"><span class="rpl-dot" ng-class="{on: g.rec.on}"></span> {{ g.rec.on ? (g.rec.km.toFixed(2) + \' km\') : \'\' }}</span>',
+      '<span class="k" ng-show="keys.rallyRaid_plannerMenu">{{ keys.rallyRaid_plannerMenu }}</span></div>',
     '<div class="rpl-panel" ng-show="g.open">',
       '<div class="rpl-row sp"><span class="rpl-gps" ng-class="{bad: !g.pose.ok}">{{ gpsText() }}</span>',
-        '<button class="rpl-btn rec" ng-class="{on: g.rec.on}" ng-click="rec()" title="Record the driven line: the leg to the next point you add follows where you drove (Ctrl+Shift+K)">&#9679; REC</button></div>',
+        '<button class="rpl-btn rec" ng-class="{on: g.rec.on}" ng-click="rec()" title="Record the driven line: the leg to the next point you add follows where you drove{{ keyText(\'rallyRaid_plannerRec\') }}">&#9679; REC</button></div>',
       '<div class="rpl-tabs"><button class="rpl-btn" ng-class="{on: ui.tab === \'route\'}" ng-click="tab(\'route\')">ROUTE</button>',
         '<button class="rpl-btn" ng-class="{on: ui.tab === \'roadbook\'}" ng-click="tab(\'roadbook\')">ROADBOOK</button>',
         '<button class="rpl-btn" ng-class="{on: ui.tab === \'files\'}" ng-click="tab(\'files\')">FILES</button>',
@@ -90,7 +92,7 @@ angular.module('beamng.apps')
       // ---------------------------------------------------------------- ROUTE
       '<div class="rpl-row" ng-show="ui.tab === \'route\'">',
         '<select ng-model="ui.addType" ng-options="t for t in types" title="Type of the next point"></select>',
-        '<button class="rpl-btn go" ng-click="addHere()" ng-disabled="busy" title="A new point at the car, at the end of the stage (Ctrl+Shift+W)">ADD HERE</button>',
+        '<button class="rpl-btn go" ng-click="addHere()" ng-disabled="busy" title="A new point at the car, at the end of the stage{{ keyText(\'rallyRaid_plannerWaypoint\') }}">ADD HERE</button>',
         '<button class="rpl-btn" ng-click="insertHere()" ng-disabled="busy || !v.pts.length" title="A new point on the route where the car is (splits that leg)">INSERT HERE</button>',
         '<button class="rpl-btn" ng-click="startHere()" ng-disabled="!v.hasStage" title="Where TP TO DSS puts the car">START HERE</button></div>',
       '<div class="rpl-list" ng-show="ui.tab === \'route\'">',
@@ -117,7 +119,7 @@ angular.module('beamng.apps')
       '<div class="rpl-row" ng-show="ui.tab === \'roadbook\' && v.hasRb">',
         '<button class="rpl-btn" ng-click="boxStep(-1)">&#9650;</button><button class="rpl-btn" ng-click="boxStep(1)">&#9660;</button>',
         '<button class="rpl-btn" ng-click="nearestBox()" title="The box nearest the car">NEAREST</button>',
-        '<button class="rpl-btn go" ng-click="boxHere()" ng-disabled="busy" title="A new box at the car (Ctrl+Shift+B)">+ BOX HERE</button>',
+        '<button class="rpl-btn go" ng-click="boxHere()" ng-disabled="busy" title="A new box at the car{{ keyText(\'rallyRaid_plannerBox\') }}">+ BOX HERE</button>',
         '<button class="rpl-btn" ng-click="boxMove()" ng-disabled="!v.box" title="Move the box to the car">MOVE HERE</button>',
         '<button class="rpl-btn warn" ng-click="boxDel()" ng-disabled="!v.box || v.box.waypoint">DELETE</button></div>',
       '<div class="rpl-boxview" ng-show="ui.tab === \'roadbook\' && v.box"></div>',
@@ -159,7 +161,7 @@ angular.module('beamng.apps')
       scope.k = 1
       scope.busy = false
       scope.g = { open: false, pose: { ok: false, why: 'starting' }, rec: { on: false, km: 0 }, game: {} }
-      scope.ui = { tab: 'route', sel: null, box: { notes: '' }, pt: {}, addType: 'DSS', msg: 'Ctrl+Shift+W adds a waypoint at the car, Ctrl+Shift+B a roadbook box.', kind: '',
+      scope.ui = { tab: 'route', sel: null, box: { notes: '' }, pt: {}, addType: 'DSS', msg: 'ADD HERE puts a waypoint at the car, + BOX HERE a roadbook box.', kind: '',
         ask: null, grp: 'quick', find: '', newName: '', teleport: true, density: 4, follow: true, zoom: 0, prog: null, file: null, boxId: null }
       scope.v = { pts: [], probs: [], hasStage: false, hasRb: false, name: '', dirty: false, canUndo: false, box: null, pt: null, rbInfo: '' }
       scope.files = { stages: [], drafts: [], userPath: '' }
@@ -523,6 +525,12 @@ angular.module('beamng.apps')
           if (data.open && !was) refresh(); else drawMap()
         })
       })
+      // the player's keys (only actions that have one; none of the planner's by default)
+      scope.keys = {}
+      scope.kt = function (action, text) { var k = scope.keys[action]; return k ? text + ' (' + k + ')' : text }
+      scope.keyText = function (action) { var k = scope.keys[action]; return k ? ' (' + k + ')' : '' }
+      scope.$on('RallyRaidKeys', function (event, data) { scope.$evalAsync(function () { scope.keys = (data && data.keys) || {} }) })
+      cmd('keys')
       scope.$on('RallyRaidPlannerKey', function (event, data) {
         if (!data || !PC) return
         if (data.key === 'waypoint') { scope.$evalAsync(function () { scope.ui.tab = 'route' }); scope.addHere() }

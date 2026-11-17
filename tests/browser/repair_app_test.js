@@ -24,7 +24,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
   // a: closed bar
   check(await page.$eval('#a .rrr-panel', e => getComputedStyle(e).display === 'none'), 'closed: no panel')
   const barA = await page.$eval('#a .rrr-bar', e => e.textContent)
-  check(/REPAIR/.test(barA) && /SPARES 2\/2/.test(barA) && /RESETS 1\/3/.test(barA) && /Ctrl\+Shift\+F/.test(barA), 'bar: mode, spares, resets, key: ' + barA)
+  check(/REPAIR/.test(barA) && /SPARES 2\/2/.test(barA) && /RESETS 1\/3/.test(barA) && !/Ctrl\+Shift/.test(barA), 'bar: mode, spares, resets, no default key: ' + barA)
   await page.evaluate(() => { calls.length = 0 })
   await page.click('#a .rrr-bar')
   check((await page.evaluate(() => calls)).some(c => c.includes("cmd('repairMenu')")), 'clicking the bar toggles the menu')

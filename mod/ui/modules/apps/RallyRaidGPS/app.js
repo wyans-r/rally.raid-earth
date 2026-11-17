@@ -1,6 +1,11 @@
 // rally.raid Earth GPS: the HUD app for lua/ge/extensions/rallyRaid/core.lua (rallyRaid_core).
 // Lua -> app: guihooks 'RallyRaidUpdate' (about 10 a second) with the computer and stage state.
 // App -> Lua: bngApi.engineLua('rallyRaid_core.cmd(...)'): messages are the only link between the two.
+// MENU (Wyans 2026-11-17: "rely on hud buttons"): the actions that lost their default key are buttons here, calling the
+// same Lua as the old keys did: REPAIR -> 'repairMenu', RECOVER CAR -> 'recoverKey' (first press asks, the second
+// within 15 s confirms; CANCEL -> 'recoverCancel'), crash RESUME / GO -> 'gameResumeKey' (first press shows the save,
+// the second resumes; GO while the clock is held), PLANNER -> 'plannerMenu'. It listens to 'RallyRaidRecover' and
+// 'RallyRaidGameResume' for those states and to 'RallyRaidKeys' for any key the player bound (shown on the buttons).
 angular.module('beamng.apps')
 .directive('rallyRaidGps', [function () {
   var W = 380, H = 340
@@ -62,7 +67,8 @@ angular.module('beamng.apps')
         '<button class="rrg-btn" ng-click="cmd(\'wPlus\')" ng-disabled="s.phase !== \'running\'">W+</button></span>' +
         '<span><button class="rrg-btn go" ng-show="s.phase === \'armed\'" ng-click="cmd(\'start\')">START</button>' +
         '<button class="rrg-btn warn" ng-show="s.phase === \'running\' || s.phase === \'countdown\'" ng-click="abort()">ABORT</button>' +
-        '<button class="rrg-btn" ng-click="openStages()">STAGES</button></span></div>' +
+        '<button class="rrg-btn" ng-click="openStages()">STAGES</button>' +
+        '<button class="rrg-btn rrg-menubtn" ng-class="{go: gr.offer || gr.hold, warn: rsArmed()}" ng-click="openMenu()" title="repair, recover car, crash resume, planner">{{ menuText() }}</button></span></div>' +
       // countdown overlay
       '<div class="rrg-overlay" ng-show="s.phase === \'countdown\'"><div class="rrg-big">{{ cd() }}</div><div class="rrg-msg">stay in the DSS circle</div></div>' +
       // results overlay
@@ -73,6 +79,27 @@ angular.module('beamng.apps')
         '<div class="rrg-msg">{{ s.result.file ? (\'saved: \' + s.result.file) : \'\' }}</div>' +
         '<div class="rrg-row" style="justify-content:flex-end;margin-top:auto"><button class="rrg-btn" ng-click="cmd(\'abort\')">AGAIN</button>' +
         '<button class="rrg-btn" ng-click="hideResult = true">CLOSE</button><button class="rrg-btn" ng-click="openStages()">STAGES</button></div></div>' +
+      // MENU: the buttons for the actions without a default key
+      '<div class="rrg-overlay rrg-menu" ng-show="menu">' +
+        '<div class="rrg-row" style="justify-content:space-between"><span class="rrg-label">RALLY MENU</span>' +
+          '<button class="rrg-btn small" ng-click="menu = false">&#10005;</button></div>' +
+        // crash resume (only when a save is offered, or the clock is held after a resume)
+        '<div class="rrg-mrow hot" ng-show="gr.offer && !gr.busy"><div class="rrg-mtext"><b>SAVED STAGE</b> {{ gr.offer.text }}' +
+            '<span ng-show="gr.offer.policy.refused" class="rrg-pen"><br>{{ gr.offer.policy.reason }}</span></div>' +
+          '<button class="rrg-btn go" ng-class="{warn: gr.offer.policy.refused}" ng-click="cmd(\'gameResumeKey\')" title="{{ kt(\'rallyRaid_gameResume\', \'press twice: show the save, then resume it\') }}">{{ resumeText() }}</button></div>' +
+        '<div class="rrg-mrow hot" ng-show="gr.hold && !gr.busy"><div class="rrg-mtext"><b>CLOCK HELD</b> at the saved time until you drive off.</div>' +
+          '<button class="rrg-btn go" ng-click="cmd(\'gameResumeKey\')" title="{{ kt(\'rallyRaid_gameResume\', \'start the clock now\') }}">GO</button></div>' +
+        '<div class="rrg-mrow" ng-show="gr.busy"><div class="rrg-mtext">Putting the car back where it was saved...</div></div>' +
+        // recover car
+        '<div class="rrg-mrow"><div class="rrg-mtext">{{ rsText() }}</div>' +
+          '<button class="rrg-btn small" ng-show="rsArmed()" ng-click="cmd(\'recoverCancel\')">CANCEL</button>' +
+          '<button class="rrg-btn warn" ng-click="cmd(\'recoverKey\')" ng-disabled="s.phase !== \'running\' || rs.enabled === false || rs.busy" title="{{ kt(\'rallyRaid_recoverCar\', \'press twice: see the penalty, then confirm\') }}">{{ rsArmed() ? \'CONFIRM\' : \'RECOVER\' }}</button></div>' +
+        '<div class="rrg-mrow"><div class="rrg-mtext">Repair menu (Repair app)</div>' +
+          '<button class="rrg-btn" ng-click="cmd(\'repairMenu\'); menu = false" title="{{ kt(\'rallyRaid_repairMenu\', \'open / close the repair menu\') }}">REPAIR</button></div>' +
+        '<div class="rrg-mrow"><div class="rrg-mtext">Stage &amp; roadbook planner (Planner app)</div>' +
+          '<button class="rrg-btn" ng-click="cmd(\'plannerMenu\'); menu = false" title="{{ kt(\'rallyRaid_plannerMenu\', \'open / close the planner\') }}">PLANNER</button></div>' +
+        '<div class="rrg-msg" style="margin-top:auto" ng-show="keys.rallyRaid_tripPlus || keys.rallyRaid_boxSync">Driving keys: trip {{ keys.rallyRaid_tripPlus || \'-\' }} / {{ keys.rallyRaid_tripMinus || \'-\' }}, W {{ keys.rallyRaid_wPlus || \'-\' }} / {{ keys.rallyRaid_wMinus || \'-\' }}, box {{ keys.rallyRaid_boxPrev || \'-\' }} / {{ keys.rallyRaid_boxNext || \'-\' }}, sync {{ keys.rallyRaid_boxSync || \'-\' }}</div>' +
+      '</div>' +
       // stage picker
       '<div class="rrg-overlay" ng-show="picker">' +
         '<div class="rrg-row" style="justify-content:space-between"><span class="rrg-label">STAGES (rallyraid/stages)</span>' +
@@ -129,6 +156,41 @@ angular.module('beamng.apps')
       scope.cmd = function (name, arg) {
         lua('if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + (arg !== undefined ? ', ' + q(arg) : '') + ') end')
       }
+      // MENU state: recover car (RallyRaidRecover), crash resume (RallyRaidGameResume), the player's keys (RallyRaidKeys)
+      var CONFIRM_MS = 15000            // repairConfig confirmS: a second press within this confirms
+      scope.menu = false; scope.rs = {}; scope.gr = {}; scope.keys = {}
+      var rsAskAt = 0, grArmAt = 0
+      scope.openMenu = function () { scope.menu = !scope.menu; if (scope.menu) { scope.picker = false; scope.cmd('recoverState'); scope.cmd('gameResumeState') } }
+      scope.kt = function (action, text) { var k = scope.keys[action]; return k ? text + ' (' + k + ')' : text }
+      scope.rsArmed = function () { var a = scope.rs.ask; return !!(a && a.allowed && !scope.rs.busy && Date.now() - rsAskAt < CONFIRM_MS) }
+      scope.rsText = function () {
+        var r = scope.rs, a = r.ask
+        if (r.enabled === false) return 'Recover car: switched off for this event'
+        if (r.busy) return 'Recover car: moving the car...'
+        if (a && !a.allowed && Date.now() - rsAskAt < CONFIRM_MS) return 'No recovery: ' + (a.reason || '')
+        if (scope.rsArmed()) return 'RECOVER CAR? +' + Math.round((a.penaltyS || 0) / 60) + ' min, ' + a.leftAfter + ' of ' + a.max + ' left after it, back ' + Math.round((a.target && a.target.backM) || 0) + ' m on the route'
+        return s_running() ? 'Stuck or rolled? Recover car (+15 / 30 min)' : 'Recover car (in a running stage)'
+      }
+      function s_running() { return scope.s.phase === 'running' }
+      scope.resumeText = function () {
+        var o = scope.gr.offer
+        if (o && o.policy && o.policy.refused) return o.policy.retire ? (scope.gr.keyArmed && Date.now() - grArmAt < CONFIRM_MS ? 'CONFIRM RETIRE' : 'RETIRE') : 'NO RESUME'
+        return scope.gr.keyArmed && Date.now() - grArmAt < CONFIRM_MS ? 'CONFIRM RESUME' : 'RESUME'
+      }
+      scope.menuText = function () { return scope.gr.offer ? 'RESUME?' : (scope.gr.hold ? 'GO?' : 'MENU') }
+      scope.$on('RallyRaidRecover', function (event, data) { scope.$evalAsync(function () {
+        var d = data || {}
+        if (d.ask && !scope.rs.ask) rsAskAt = Date.now()
+        scope.rs = d
+      }) })
+      scope.$on('RallyRaidGameResume', function (event, data) { scope.$evalAsync(function () {
+        var d = data || {}
+        if (d.keyArmed && !scope.gr.keyArmed) grArmAt = Date.now()
+        scope.gr = d
+        if ((d.offer || d.hold) && !scope.gr_seen) { scope.gr_seen = true; scope.menu = true }   // a save to resume: show it
+        if (!d.offer && !d.hold) scope.gr_seen = false
+      }) })
+      scope.$on('RallyRaidKeys', function (event, data) { scope.$evalAsync(function () { scope.keys = (data && data.keys) || {} }) })
       scope.hold = function (dir) { lua('if rallyRaid_core then rallyRaid_core.tripHold(' + dir + ') end') }
       var steps = [10, 100, 1000]
       scope.step = function () {
@@ -173,6 +235,7 @@ angular.module('beamng.apps')
       var fitTimer = setInterval(fit, 500)
       fit()
       lua('if rallyRaid_core then rallyRaid_core.requestState() end')
+      scope.cmd('recoverState'); scope.cmd('gameResumeState')
       scope.$on('$destroy', function () { clearInterval(fitTimer); lua('if rallyRaid_core then rallyRaid_core.tripHold(0) end') })
     }
   }

@@ -14,15 +14,16 @@
 --     speed-zone state, flags, repairs and spares used, car recoveries and resets (counts and log), game-crash resumes
 --     so far, the bivouac that closed at the start, and the odometers
 --   * after a relaunch, loading that stage offers "Resume from last save (h:mm:ss elapsed, saved X ago)" or "Discard"
---     (Repair app, or Ctrl+Shift+H twice). Resume: the saved car model is spawned if another one is out, the car is set
+--     (RESUME in the GPS or Repair app, or a bound key twice). Resume: the saved car model is spawned if another one is out, the car is set
 --     down where it was (BeamNG.Earth's teleport first if that part of the world is not loaded), its damage is put back,
---     the stage state is restored and the clock is held at the saved time until the car moves (or GO / Ctrl+Shift+H)
+--     the stage state is restored and the clock is held at the saved time until the car moves (or GO)
 --   * policy (Wyans 2026-11-16): no time penalty, no limits, but every resume is flagged for organizer review in the
 --     stage result and the rally ledger: real time of the resume, the gap (wall clock since the save, stage time lost
 --     estimated from the heartbeat), and the saved vs resumed state. The original rules are one switch away
 --     (useOfficialRules)
 --   * the save is cleared when the stage finishes (or is retired), is aborted / unloaded / replaced, or is discarded
 local cfgAll = require('rallyRaid/repairConfig')
+local keys = require('rallyRaid/keys')
 local geo = require('rallyRaid/geo')
 
 local M = {}
@@ -419,7 +420,7 @@ function M.stageLoaded()
   o.policy = M.policy(d)
   o.text = string.format('Resume from last save (%s elapsed, saved %s ago)', hms(o.elapsedS), ago(agoS))
   R.offer = { doc = d, found = found, beat = beat, o = o }
-  notify('rally.raid Earth: ' .. o.text .. '? Ctrl+Shift+H twice or the Repair app; DISCARD there to start the stage again.', 10)
+  notify('rally.raid Earth: ' .. o.text .. '? RESUME in the GPS or Repair app' .. keys.hint('rallyRaid_gameResume', ' (or %s twice)') .. '; DISCARD in the Repair app starts the stage again.', 10)
   M.push()
   return o
 end
@@ -789,7 +790,7 @@ end
 -- UI state ('RallyRaidGameResume') and commands
 function M.state()
   local s = S()
-  local st = { key = 'Ctrl+Shift+H', enabled = C().enabled and true or false, msg = R.msg,
+  local st = { key = keys.get('rallyRaid_gameResume'), keyArmed = (R.offer and R.keyT and R.t - R.keyT <= C().confirmS) and true or nil, enabled = C().enabled and true or false, msg = R.msg,
     busy = R.busy and { phase = R.busy.phase } or nil, hold = R.hold and true or nil, askDiscard = R.askDiscard or nil,
     offer = R.offer and R.offer.o or nil }
   if s and s.phase == 'running' then
@@ -808,13 +809,13 @@ function M.state()
 end
 function M.push() if H.ui then H.ui('RallyRaidGameResume', M.state()) end end
 
--- Ctrl+Shift+H: GO while the clock is held; with a save offered: show it, a second press resumes; else the status
+-- the RESUME button in the GPS app (and the rallyRaid_gameResume action, no key by default): GO while the clock is held; with a save offered: show it, a second press resumes; else the status
 function M.key()
   if R.hold then return M.release('confirmed') end
   if R.offer then
     if R.keyT and R.t - R.keyT <= C().confirmS then R.keyT = nil; return M.resume() end
     R.keyT = R.t
-    notify('rally.raid Earth: ' .. R.offer.o.text .. '. Ctrl+Shift+H again to resume.', 8)
+    notify('rally.raid Earth: ' .. R.offer.o.text .. '. Press CONFIRM RESUME' .. keys.hint('rallyRaid_gameResume', ' (or %s)') .. ' again to resume.', 8)
     M.push()
     return false
   end

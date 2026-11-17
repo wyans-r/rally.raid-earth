@@ -4,7 +4,7 @@
   "types": [
     "ui.apps.categories.utility"
   ],
-  "description": "Rally repair menu for rally.raid Earth stages (Ctrl+Shift+F): mid-stage wheel change, light suspension and radiator repairs (time added to the stage), whole-car repair and engine change at the bivouac (3 h budget), spare wheels and resets left, RECOVER CAR (Ctrl+Shift+G, the one reset allowed in a stage) and resuming a stage saved before a game crash (Ctrl+Shift+H).",
+  "description": "Rally repair menu for rally.raid Earth stages (click its bar, or REPAIR in the GPS app): mid-stage wheel change, light suspension and radiator repairs (time added to the stage), whole-car repair and engine change at the bivouac (3 h budget), spare wheels and resets left, RECOVER CAR (the one reset allowed in a stage, two steps: ask, then confirm) and resuming a stage saved before a game crash (RESUME). Buttons only by default; any of these can be given a key in Options > Controls.",
   "css": {
     "top": "430px",
     "left": "10px",

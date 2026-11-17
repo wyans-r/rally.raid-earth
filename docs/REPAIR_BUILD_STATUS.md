@@ -1,5 +1,7 @@
 # Repair build status
 
+> 17 Nov 2026: the repair / recover / crash-resume keys below (Ctrl+Shift+F / G / H) were taken out of the defaults; they are buttons now (GPS app MENU, Repair app). Only the 9 driving keys keep a default. The notes below are the build history.
+
 v1 built 2026-11-16 (America/Chicago), after the roadbook quality work. Nothing is deployed: the mod zip was rebuilt
 at `/workspace/rallyraid/rallyraid_mod.zip` only, not copied to `stage-builder/download/`.
 

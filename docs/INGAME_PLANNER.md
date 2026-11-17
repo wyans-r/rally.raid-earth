@@ -70,15 +70,16 @@ shipped stages, and in the browser test).
 
 ## Keys and commands
 
-| key | action | command |
+| button (no default key) | action | command |
 |---|---|---|
-| Ctrl+Shift+J | open / close the planner (or click its bar) | `rallyRaid_core.cmd('plannerMenu')` |
-| Ctrl+Shift+W | add the next point where the car is (the type in the ROUTE tab's list; after the DSS a WPV; after an ASS the old ASS becomes a WPV) | `cmd('plannerWaypoint')` |
-| Ctrl+Shift+B | a roadbook box where the car is on the route (within 300 m) | `cmd('plannerBox')` |
-| Ctrl+Shift+K | record the driven line on / off | `cmd('plannerRec')` |
+| the bar, or **MENU** > **PLANNER** in the GPS app | open / close the planner | `rallyRaid_core.cmd('plannerMenu')` |
+| **ADD HERE** | add the next point where the car is (the type in the ROUTE tab's list; after the DSS a WPV; after an ASS the old ASS becomes a WPV) | `cmd('plannerWaypoint')` |
+| **+ BOX HERE** | a roadbook box where the car is on the route (within 300 m) | `cmd('plannerBox')` |
+| **REC** | record the driven line on / off | `cmd('plannerRec')` |
 
-The keys need the app on the HUD (without it the game says so); W and B open the panel if it is closed, K works
-with it closed. Rebind them in Options > Controls (category
+Since 17 Nov these actions have no default key (only the driving keys do). A player can still bind them; the actions
+need the app on the HUD (without it the game says so); waypoint and box open the panel if it is closed, record works
+with it closed. Bind them in Options > Controls (category
 gameplay, "rally.raid Earth: planner ..."). Other commands: `plannerOpen`, `plannerClose`, `plannerAppHere` (the app says
 it is on screen). The app talks to Lua with `rallyRaid_core.plannerCall(name, argsJson, text)` (`pose`, `mark`,
 `rec`, `list`, `exists`, `readOpen` / `readChunk`, `writeBegin` / `writeChunk` / `writeCommit`, `load`,

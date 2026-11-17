@@ -55,7 +55,7 @@ M.resume = {
 
 ------------------------------------------------------------------------------------------------------------------
 -- RECOVER CAR (rallyRaid/resume.lua): the one reset allowed in a stage (Wyans 2026-11-16). The car is stuck, rolled or
--- lost off the route while the game runs: the driver asks for it (Ctrl+Shift+G or RECOVER CAR in the Repair app), it
+-- lost off the route while the game runs: the driver asks for it (RECOVER in the GPS app or RECOVER CAR in the Repair app), it
 -- costs the M.resume penalty above (15 min first, then 30 min) and counts in the same resume / reset log and limits
 -- (3 per rally, 1 per stage, none within 1 km of the ASS). These are the mechanics. BeamNG's own reset keys stay
 -- blocked in stages. docs/REPAIR.md "Recover car" explains it to players.
@@ -77,7 +77,7 @@ M.carRecovery = {
   answerTimeoutS = 8,          -- the car must answer within this (else nothing is charged and the clock runs again)
   resetFallbackS = 1.0,        -- the set-down did not reset the car within this: reset it in place
   settleS = 2,                 -- the clock stays paused this long after the car is back (it settles on its wheels)
-  confirmS = 15,               -- a second Ctrl+Shift+G within this confirms the recovery shown
+  confirmS = 15,               -- a second RECOVER press (button or key) within this confirms the recovery shown
   headingWarnDeg = 45,         -- the car faces more than this off the route afterwards: logged as a warning
 }
 
@@ -96,7 +96,7 @@ M.gameCrashResume = {
   heartbeatEveryS = 5,         -- a tiny "still alive" file (stage clock + time): estimates the stage time lost in a crash
   carAnswerS = 3,              -- the car's damage must come back within this, else the save keeps the last damage it had
   releaseKmh = 3,              -- after a resume the clock is held at the saved time until the car goes faster than this
-  confirmS = 15,               -- a second Ctrl+Shift+H within this resumes the save shown
+  confirmS = 15,               -- a second RESUME press (button or key) within this resumes the save shown
   spawnTimeoutS = 30,          -- the saved car model has to be spawned first: wait this long for it
   maxSaveAgeH = nil,           -- older saves are not offered (nil: no age limit)
   flagForReview = true,        -- every resume is flagged in the result for organizer review (with the gap and saved vs resumed state)

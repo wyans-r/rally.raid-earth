@@ -8,7 +8,7 @@
 --   * every 30 s of stage clock: a recovery state. The game keeps where the car is (lat / lon, never game x / y: the
 --     world rebases), its heading, speed, its place along the stage route and the stage progress; the car keeps its
 --     damage, tyres, fuel and engine state (vehRepair.resumeSnapshot)
---   * Ctrl+Shift+G (or the Repair app's RECOVER CAR): the penalty and recoveries left are shown, a second press (or
+--   * RECOVER in the GPS app (or the Repair app's RECOVER CAR; the rallyRaid_recoverCar action has no key by default): the penalty and recoveries left are shown, a second press (or
 --     CONFIRM) starts it; refused with the reason when the rules don't allow it (then RETIRE STAGE is offered)
 --   * the recovery: the stage clock stops; the car is set down on the route, backOffM behind where it got stuck, facing
 --     along the route, and the damage of the latest good recovery state (at least 5 s old) is put back (not a free
@@ -16,6 +16,7 @@
 --     (repair.countResume('carRecovery'): the shared resume / reset budget and log)
 --   * everything goes into the stage result (resumes.log from repair v1, plus carRecovery: attempts, snapshots, rules)
 local cfgAll = require('rallyRaid/repairConfig')
+local keys = require('rallyRaid/keys')
 local geo = require('rallyRaid/geo')
 
 local M = {}
@@ -352,7 +353,7 @@ end
 function M.state()
   local st = { msg = R.msg, busy = R.busy and { phase = R.busy.phase, startedT = R.busy.startedT } or nil,
     ask = R.ask and R.ask.p or nil, askRetire = R.askRetire or nil, paused = M.clockPaused(),
-    snapshots = #R.snaps, key = 'Ctrl+Shift+G', enabled = C().enabled ~= false }
+    snapshots = #R.snaps, key = keys.get('rallyRaid_recoverCar'), enabled = C().enabled ~= false }
   local s = S()
   st.inStage = (s and s.phase == 'running') and true or false
   if st.inStage then
@@ -376,7 +377,7 @@ function M.ask()
   local p = M.preview()
   R.ask, R.askRetire, R.msg = { p = p, t = R.t }, nil, nil
   if p.allowed then
-    notify(string.format('rally.raid Earth: RECOVER CAR? +%s penalty, %d of %d recoveries left after it. Back on the route %d m behind you (km %.2f). Ctrl+Shift+G again to confirm.',
+    notify(string.format('rally.raid Earth: RECOVER CAR? +%s penalty, %d of %d recoveries left after it. Back on the route %d m behind you (km %.2f). CONFIRM to go' .. keys.hint('rallyRaid_recoverCar', ' (or %s again)') .. '.',
       fmtMin(p.penaltyS), p.leftAfter, p.max, math.floor(p.target.fromCarM + 0.5), p.target.km), 8)
   else
     notify('rally.raid Earth: no car recovery: ' .. p.reason .. '.', 6)
