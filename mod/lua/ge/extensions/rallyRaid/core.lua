@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: the rally computer and the stage logic (the game names this extension
+-- rally.raid Earth: the rally computer and the stage logic (the game names this extension
 -- "rallyRaid_core" from its path). Loaded by scripts/rallyRaid/modScript.lua.
 --
 -- What it does, ten times a second:
@@ -105,7 +105,7 @@ function M.listStages() return stagesMod.list() end
 function M.loadStage(path)
   local stage, errs = stagesMod.load(path)
   if not stage then
-    local msg = 'Rally Raid: cannot load ' .. tostring(path) .. ': ' .. table.concat(errs or {}, '; ')
+    local msg = 'rally.raid Earth: cannot load ' .. tostring(path) .. ': ' .. table.concat(errs or {}, '; ')
     log_('E', msg); notify(msg, 8)
     ui('RallyRaidError', { message = msg })
     return false, errs
@@ -135,7 +135,7 @@ function M.loadStageTable(stage)
     if R.ctx.stage.id == stage.id then
       R.ctx.stage, R.ctx.boxes, R.ctx.rbInfo = stage, stage.roadbook.boxes, stage.roadbook.source
       for _, c in ipairs(R.doc.changes) do recce.applyToDisplay(stage.roadbook.boxes, c) end
-    else recce.stop(); notify('Rally Raid: recce saved and stopped (another stage loaded).', 5) end
+    else recce.stop(); notify('rally.raid Earth: recce saved and stopped (another stage loaded).', 5) end
   end
   if S and S.phase == 'running' then gameResume.abandon('another stage loaded') end
   local rules = rulesMod.build(stage.rules)
@@ -146,7 +146,7 @@ function M.loadStageTable(stage)
   for i, w in ipairs(wps) do S.state[i] = 'pending'; S.wr[i] = rulesMod.forWaypoint(rules, w) end
   S.official = official.attach(stage)            -- an official event run (pack loaded by official.load), else nil
   log_('I', 'loaded stage ' .. stage.id .. ' (' .. #wps .. ' waypoints)')
-  notify('Rally Raid: ' .. stage.name .. ' loaded.' .. (rbMsg or '') .. ' Drive to the DSS.', rbMsg and 7 or 5)
+  notify('rally.raid Earth: ' .. stage.name .. ' loaded.' .. (rbMsg or '') .. ' Drive to the DSS.', rbMsg and 7 or 5)
   hook('onRallyRaidStageLoaded', { id = stage.id, name = stage.name, path = stage.path })
   repair.stageChanged()
   resume.stageChanged()
@@ -167,13 +167,13 @@ end
 function M.teleportToStart()
   local a = api()
   if not (S and a and a.teleport) then return false end
-  if S.phase == 'running' then notify('Rally Raid: not during a running stage (abort first).', 4); return false end
+  if S.phase == 'running' then notify('rally.raid Earth: not during a running stage (abort first).', 4); return false end
   local w = S.stage.waypoints[1]
   local st = S.stage.start
   local lat, lon = (st and tonumber(st.lat)) or w.lat, (st and tonumber(st.lon)) or w.lon
   repair.expectReset('teleport')                 -- a teleport may reset the car: not a repair
   local ok, why = a.teleport(lat, lon, 'DSS ' .. S.stage.name)
-  if not ok then notify('Rally Raid: teleport refused (' .. tostring(why) .. ')', 5) end
+  if not ok then notify('rally.raid Earth: teleport refused (' .. tostring(why) .. ')', 5) end
   return ok
 end
 
@@ -199,7 +199,7 @@ local function startClock(reason)
   odo.partial = 0
   S.trace = traceMod.new(os.time())
   tracePoint(true)
-  notify('Rally Raid: GO! ' .. S.stage.name, 3)
+  notify('rally.raid Earth: GO! ' .. S.stage.name, 3)
   repair.stageStarted()                          -- closes an open bivouac (its penalties land here), blocks free resets
   resume.stageStarted()                          -- car recovery: recovery states from now on
   gameResume.stageStarted()                      -- game-crash saves to disk from now on
@@ -227,9 +227,9 @@ local function finish()
     S.resultPath = ok and path or nil
   end
   if res.retired then
-    notify('Rally Raid: stage RETIRED (' .. tostring(res.retired) .. ').', 10)
+    notify('rally.raid Earth: stage RETIRED (' .. tostring(res.retired) .. ').', 10)
   else
-    notify(string.format('Rally Raid: finish! %s + %s penalties = %s', M.fmtTime(res.stageTime),
+    notify(string.format('rally.raid Earth: finish! %s + %s penalties = %s', M.fmtTime(res.stageTime),
       M.fmtTime(res.penaltyTime), M.fmtTime(res.totalTime)), 10)
   end
   if S.official then S.officialFile = official.finish(res, traceMod.export(S.trace)) end
@@ -613,37 +613,37 @@ function M.recceCmd(sub, arg)
   if sub == '' or sub == 'New' then
     if recce.active() and sub == '' then
       local d = recce.stop()
-      said = string.format('Rally Raid: recce off. %d changes, %.1f km driven, saved to %s', #(d.changes or {}), d.driven.km or 0, recce.path(d.stage.id))
-    elseif not S then said = 'Rally Raid: load a stage first, then start the recce.'
+      said = string.format('rally.raid Earth: recce off. %d changes, %.1f km driven, saved to %s', #(d.changes or {}), d.driven.km or 0, recce.path(d.stage.id))
+    elseif not S then said = 'rally.raid Earth: load a stage first, then start the recce.'
     else
       if recce.active() then recce.stop() end
       if sub == 'New' then S.stage.roadbook.boxes = reloadBoxes() or S.stage.roadbook.boxes end
       recce.start({ stage = S.stage, boxes = S.stage.roadbook.boxes, rbInfo = S.stage.roadbook.source }, sub == 'New')
       if S.phase == 'running' then S.flags.recce = true end
       local d = recce.get().doc
-      said = 'Rally Raid: RECCE ON. ' .. (#d.changes > 0 and (#d.changes .. ' earlier changes kept. ') or '') ..
+      said = 'rally.raid Earth: RECCE ON. ' .. (#d.changes > 0 and (#d.changes .. ' earlier changes kept. ') or '') ..
         'Ctrl+Shift+N drops a box here; C confirm, M move here, T retag, Del delete the nearest box.'
     end
-  elseif not recce.active() then said = 'Rally Raid: recce is off (Ctrl+Shift+R).'
+  elseif not recce.active() then said = 'rally.raid Earth: recce is off (Ctrl+Shift+R).'
   elseif sub == 'Drop' then if recce.get().pending then recce.commitPending() else recce.drop() end
   elseif sub == 'Pick' then recce.pick(arg)
   elseif sub == 'Save' then recce.commitPending()
   elseif sub == 'Cancel' then recce.cancelPending()
-  elseif sub == 'Retag' then if not recce.retag(arg) then said = 'Rally Raid: no roadbook box within ' .. recce.NEAR_M .. ' m.' end
+  elseif sub == 'Retag' then if not recce.retag(arg) then said = 'rally.raid Earth: no roadbook box within ' .. recce.NEAR_M .. ' m.' end
   elseif sub == 'Confirm' or sub == 'Move' or sub == 'Delete' then
     local c = recce.boxOp(sub:lower(), arg)
-    if not c then said = 'Rally Raid: no roadbook box within ' .. recce.NEAR_M .. ' m.' end
+    if not c then said = 'rally.raid Earth: no roadbook box within ' .. recce.NEAR_M .. ' m.' end
   elseif sub == 'Undo' then
     local c = recce.undo(reloadBoxes)
-    said = c and ('Rally Raid: undone (' .. c.op .. ').') or 'Rally Raid: nothing to undo.'
+    said = c and ('rally.raid Earth: undone (' .. c.op .. ').') or 'rally.raid Earth: nothing to undo.'
   elseif sub == 'Merge' then
     local res, why = recce.merge(S and S.stage.roadbook.source and S.stage.roadbook.source.path, { rescale = arg == 'rescale' or arg == true })
     if res then
       local boxes, info = stagesMod.loadRoadbook(S.stage)
       if boxes then S.stage.roadbook.boxes, S.stage.roadbook.source = boxes, info; stagesMod.applyRoadbookKm(S.stage, boxes); recce.get().ctx.boxes = boxes; recce.get().ctx.rbInfo = info end
-      said = string.format('Rally Raid: recce merged into the roadbook (rev %s): %d applied, %d conflicts%s.', tostring(res.revision), res.applied, #res.conflicts,
+      said = string.format('rally.raid Earth: recce merged into the roadbook (rev %s): %d applied, %d conflicts%s.', tostring(res.revision), res.applied, #res.conflicts,
         res.rescaled > 0 and (', km re-measured on ' .. res.rescaled .. ' boxes') or '')
-    else said = 'Rally Raid: recce not merged: ' .. tostring(why) end
+    else said = 'rally.raid Earth: recce not merged: ' .. tostring(why) end
   end
   if said then notify(said, 6) end
   M.requestState()
@@ -683,8 +683,8 @@ function M.cmd(name, arg)
     -- re-read the roadbook file (edited while playing) without touching the running stage
     if S then
       local rbBoxes, rbInfo = stagesMod.loadRoadbook(S.stage)
-      if rbBoxes then S.stage.roadbook.boxes, S.stage.roadbook.source = rbBoxes, rbInfo; stagesMod.applyRoadbookKm(S.stage, rbBoxes); notify('Rally Raid: roadbook reloaded, ' .. #rbBoxes .. ' boxes.', 4)
-      else notify('Rally Raid: no roadbook file found for this stage.', 5) end
+      if rbBoxes then S.stage.roadbook.boxes, S.stage.roadbook.source = rbBoxes, rbInfo; stagesMod.applyRoadbookKm(S.stage, rbBoxes); notify('rally.raid Earth: roadbook reloaded, ' .. #rbBoxes .. ' boxes.', 4)
+      else notify('rally.raid Earth: no roadbook file found for this stage.', 5) end
       S.rbView = nil
     end
     M.requestState()
@@ -699,7 +699,7 @@ function M.cmd(name, arg)
   elseif name == 'start' then
     if S and S.phase == 'armed' then
       if S.atStart then S.phase = 'countdown'; S.countdown = tonumber(S.rules.countdown) or 5
-      else notify('Rally Raid: drive into the DSS circle first.', 3) end
+      else notify('rally.raid Earth: drive into the DSS circle first.', 3) end
     end
     M.requestState()
   elseif name == 'abort' then
@@ -785,7 +785,7 @@ function M.onBeamNGEarthTeleported(info)
   planner.teleported()
   if resume.busy() then resume.teleported() return end   -- the car recovery's own teleport (far from the car)
   if gameResume.busy() then gameResume.teleported() return end   -- the game-crash resume's own teleport
-  if S and S.phase == 'running' then S.flags.teleported = true; notify('Rally Raid: teleported during the stage: result marked unofficial.', 6) end
+  if S and S.phase == 'running' then S.flags.teleported = true; notify('rally.raid Earth: teleported during the stage: result marked unofficial.', 6) end
 end
 function M.onBeamNGEarthRebased() lastFix = lastFix end  -- nothing to fix: everything is kept in lat / lon
 -- any reset: ours (a repair), or one the app did not make (counted as a crash resume in a running stage)
@@ -816,7 +816,7 @@ function M.plannerCall(name, argsJson, text)
 end
 function M.officialState() return official.state() end
 function M.loadOfficial(path) return official.load(path) end
-function M.onExtensionLoaded() loadSettings(); log_('I', 'Rally Raid ' .. M.VERSION .. ' loaded') end
+function M.onExtensionLoaded() loadSettings(); log_('I', 'rally.raid Earth ' .. M.VERSION .. ' loaded') end
 
 -- for tests
 function M._debug() return S, odo, nav end

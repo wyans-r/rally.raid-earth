@@ -1,20 +1,20 @@
 {
   "domElement": "<rally-raid-event></rally-raid-event>",
-  "name": "Rally Raid Event (coming soon)",
+  "name": "rally.raid Earth Event (coming soon)",
   "types": [
     "ui.apps.categories.utility"
   ],
-  "description": "Coming soon: official runs of an async Rally Raid event. Not available in the public mod. This app does nothing until the online side is set up.",
+  "description": "Coming soon: official runs of an async rally.raid Earth event. Not available in the public mod. This app does nothing until the online side is set up.",
   "css": {
     "top": "120px",
     "left": "380px",
     "height": "260px",
     "width": "380px"
   },
-  "author": "Rally Raid for BeamNG.Earth",
+  "author": "wyans (rally.raid Earth)",
   "version": "0.2.0",
   "directive": "rallyRaidEvent",
   "appName": "rallyRaidEvent",
-  "category": "Rally Raid",
+  "category": "rally.raid Earth",
   "isAuxiliary": false
 }

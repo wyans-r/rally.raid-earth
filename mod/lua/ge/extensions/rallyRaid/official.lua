@@ -1,4 +1,4 @@
--- Rally Raid: OFFICIAL RUNS of an async event (docs/EVENTS.md). The website (stagebuilder.wyans.net/events) gives each
+-- rally.raid Earth: OFFICIAL RUNS of an async event (docs/EVENTS.md). The website (stagebuilder.wyans.net/events) gives each
 -- entrant an event pack per stage: <user folder>/rallyraid/events/<event>-ss<n>.rrevent.json. It holds the locked stage
 -- and roadbook files as text, their SHA-256 hashes (the ones published on the event page), the event's window and
 -- rules, the minimum mod version, and the entrant's upload key.
@@ -163,7 +163,7 @@ function M.load(path)
   local c = M.check(pack, H.modVersion, M.io.time())
   if not c.ok then
     O.msg = 'Official run refused: ' .. table.concat(c.errors, '; ')
-    notify('Rally Raid: ' .. O.msg, 10); M.push()
+    notify('rally.raid Earth: ' .. O.msg, 10); M.push()
     return false, c.errors
   end
   local stage, nerrs = stagesMod.normalize(M.io.decode(pack.files.stage.text))
@@ -184,7 +184,7 @@ function M.load(path)
   forceRules(ev)
   local ok, errs = H.loadStageTable(stage)
   if ok == false then M.deactivate('load failed'); return false, errs end
-  notify('Rally Raid: OFFICIAL RUN: ' .. tostring(ev.name) .. ', ' .. tostring(st.name or stage.name) .. '. Files verified. No route on the map; roadbook only.', 8)
+  notify('rally.raid Earth: OFFICIAL RUN: ' .. tostring(ev.name) .. ', ' .. tostring(st.name or stage.name) .. '. Files verified. No route on the map; roadbook only.', 8)
   M.push()
   return true
 end
@@ -208,7 +208,7 @@ function M.active() return O.active ~= nil end
 -- refused in an official run: anything that shows the route or changes the locked files
 function M.refuse(what)
   if not O.active then return false end
-  notify('Rally Raid: not in an official run (' .. what .. ').', 4)
+  notify('rally.raid Earth: not in an official run (' .. what .. ').', 4)
   return true
 end
 
@@ -220,7 +220,7 @@ function M.preStart()
   a.check = c
   if not c.ok then
     O.msg = 'Start blocked: ' .. table.concat(c.errors, '; ')
-    notify('Rally Raid: ' .. O.msg, 10); M.push()
+    notify('rally.raid Earth: ' .. O.msg, 10); M.push()
     return false
   end
   a.startChecked = c.checkedAt
@@ -275,11 +275,11 @@ function M.doUpload(u)
     local d = M.io.decode(text or '') or {}
     L.status, L.server = 'uploaded', d
     O.msg = 'Result uploaded: ' .. tostring(d.status or 'received') .. (d.url and (' ' .. d.url) or '')
-    notify('Rally Raid: ' .. O.msg, 8)
+    notify('rally.raid Earth: ' .. O.msg, 8)
   else
     L.status, L.error = 'saved', code and ('server said ' .. tostring(code) .. ': ' .. tostring(text):sub(1, 200)) or tostring(text)
     O.msg = 'Upload failed (' .. tostring(L.error) .. '). Upload the file on the event page: ' .. tostring(L.file)
-    notify('Rally Raid: ' .. O.msg, 12)
+    notify('rally.raid Earth: ' .. O.msg, 12)
   end
   M.push()
   return L.status == 'uploaded'

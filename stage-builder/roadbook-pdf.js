@@ -60,7 +60,7 @@
     const cover = opts.cover !== false;
     const firstH = cover ? (format === 'a5' ? 210 : 210) : pageH(pages[0] ? pages[0][1] - pages[0][0] : 1);
     const doc = new JsPDF({ unit: 'mm', format: [PAGE_W, firstH], orientation: 'portrait', compress: true });
-    doc.setProperties({ title: 'Roadbook: ' + title, subject: 'Rally raid roadbook', creator: 'Rally Raid stage builder (roadbook editor)' });
+    doc.setProperties({ title: 'Roadbook: ' + title, subject: 'Rally raid roadbook', creator: 'rally.raid Earth stage builder (roadbook editor)' });
     const total = pages.length + (cover ? 1 : 0);
     let pageNo = 0;
     const head = (from, to) => {

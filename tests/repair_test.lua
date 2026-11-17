@@ -238,7 +238,7 @@ step(0.1); stop()
 check(repair.mode() == 'none', 'armed, no bivouac yet: no repairs')
 core.cmd('repairMenu')
 check(ui.RallyRaidRepair and ui.RallyRaidRepair.open == true and ui.RallyRaidRepair.mode == 'none', 'menu opens, says no repairs here')
-check(#notes > 0 and notes[#notes]:find('Rally Raid Repair'), 'no app seen yet: tells the player to add the app')
+check(#notes > 0 and notes[#notes]:find('rally.raid Earth Repair'), 'no app seen yet: tells the player to add the app')
 core.cmd('repairClose'); core.cmd('repairAppHere')
 check(not blockedNow(), 'keys free before the start (no bivouac open)')
 -- drive out of the DSS: the stage starts

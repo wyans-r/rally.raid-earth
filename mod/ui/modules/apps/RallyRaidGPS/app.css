@@ -1,4 +1,4 @@
-/* Rally Raid GPS: a black, high-contrast rally navigation screen (FIM / ERTF / Rally Comp style). */
+/* rally.raid Earth GPS: a black, high-contrast rally navigation screen (FIM / ERTF / Rally Comp style). */
 .rrg-host { width: 100%; height: 100%; overflow: hidden; position: relative; }
 .rrg { position: absolute; left: 0; top: 0; width: 380px; height: 340px; transform-origin: 0 0; box-sizing: border-box;
   background: #050607; color: #f2f2f2; border: 2px solid #2a2d31; border-radius: 6px; padding: 6px 8px;

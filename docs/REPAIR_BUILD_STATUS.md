@@ -54,7 +54,7 @@ at `/workspace/rallyraid/rallyraid_mod.zip` only, not copied to `stage-builder/d
 - `repair.lua`: exports `vehCfg`, refuses a repair while a resume runs. `core.lua`: clock pause, no waypoint checks or
   position-jump flag while the car is moved, resume teleport not flagged, reset routing, `resume*` commands,
   `crashResume` in results, `paused` in the HUD state.
-- Key Ctrl+Shift+G (action `rallyRaid_crashResume`). UI in the Rally Raid Repair app.
+- Key Ctrl+Shift+G (action `rallyRaid_crashResume`). UI in the rally.raid Earth Repair app.
 - Tests: `tests/resume_test.lua` (run by default), `tests/browser/resume_app_test.js` + `tests/resume_app_preview.html`,
   screenshot `resume_app.png`.
 

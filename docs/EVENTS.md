@@ -6,7 +6,7 @@ Events are listed at https://stagebuilder.wyans.net/events/ (the site part is no
 1. Log in on the events page with an email code or Discord, and enter the event: pick a class and type your vehicle.
 2. From the roadbook release time, download one **event pack** per stage, `<event>-ss<n>.rrevent.json`. Put it in
    `Documents/BeamNG.drive/current/rallyraid/events/`, the BeamNG user folder.
-3. In the game, open the **Rally Raid Event** app and press **LOAD**. The game checks three things:
+3. In the game, open the **rally.raid Earth Event** app and press **LOAD**. The game checks three things:
    - the stage and roadbook files' SHA-256 hashes against the ones published on the event page;
    - that the mod version is new enough;
    - that the event is open.

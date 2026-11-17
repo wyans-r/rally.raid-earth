@@ -1,4 +1,4 @@
-// Rally Raid Repair: the repair menu for lua/ge/extensions/rallyRaid/repair.lua (through rallyRaid_core).
+// rally.raid Earth Repair: the repair menu for lua/ge/extensions/rallyRaid/repair.lua (through rallyRaid_core).
 // Lua -> app: guihooks 'RallyRaidRepair' with the menu state (mode, options, spares, resumes, bivouac clock).
 // App -> Lua: rallyRaid_core.cmd('repairMenu' | 'repairClose' | 'repairConfirm', 'id,id' | 'repairAppHere').
 // Ctrl+Shift+F (action rallyRaid_repairMenu) opens / closes the menu from the keyboard.

@@ -13,7 +13,7 @@ The official repository generates `mod_info.json` for you. Do not put one in the
 
 ## Draft title
 
-Rally Raid for BeamNG.Earth
+rally.raid Earth
 
 ## Draft tagline
 
@@ -21,17 +21,17 @@ Dakar-style rally GPS, roadbook, repairs and stage tools for BeamNG.Earth.
 
 ## Draft description (for the repository overview)
 
-Rally Raid is a Dakar-style navigation pack for BeamNG.Earth. Plot a stage on a real-world map, generate a roadbook, and race it in BeamNG.drive with a rally GPS that hides waypoints until you are close, a scrolling roadbook, timed penalties, mid-stage repairs, and a way to recover a stuck car or resume after the game crashes.
+rally.raid Earth is a Dakar-style navigation pack for BeamNG.Earth. Plot a stage on a real-world map, generate a roadbook, and race it in BeamNG.drive with a rally GPS that hides waypoints until you are close, a scrolling roadbook, timed penalties, mid-stage repairs, and a way to recover a stuck car or resume after the game crashes.
 
 **You need BeamNG.Earth installed.** This is a fan project, not an official BeamNG, FIM or FIA product.
 
-**Install.** Download the zip and drop it into your BeamNG mods folder (`%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\mods` on Windows). Turn the mod on in the Mod Manager, load BeamNG.Earth, spawn a car. Press Esc → UI Apps → Add app, and add **Rally Raid GPS**. Also add **Rally Raid Roadbook**, **Rally Raid Planner** and **Rally Raid Repair** if you want them.
+**Install.** Download the zip and drop it into your BeamNG mods folder (`%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\mods` on Windows). Turn the mod on in the Mod Manager, load BeamNG.Earth, spawn a car. Press Esc → UI Apps → Add app, and add **rally.raid Earth GPS**. Also add **rally.raid Earth Roadbook**, **rally.raid Earth Planner** and **rally.raid Earth Repair** if you want them.
 
 **Build or pick a stage.** Use the free website [stagebuilder.wyans.net](https://stagebuilder.wyans.net) (no login). The Examples list on the Guide tab loads sample stages. Export the stage `.json` and, if you want a roadbook, save the `.roadbook.json` from the roadbook editor. Put stages in `<BeamNG user folder>/current/rallyraid/stages/` and roadbooks in `.../roadbooks/`. The mod also ships several sample stages.
 
 **Race.** Load a stage from the GPS, teleport or drive to the start, and go. The GPS always shows your heading (CAP) and speed. Distance to a hidden waypoint appears only when you are close, the way a real rally GPS works. The roadbook scrolls with your trip odometer.
 
-**Useful keys** (rebind in Options → Controls → Bindings, search "Rally Raid"):
+**Useful keys** (rebind in Options → Controls → Bindings, search "rally.raid"):
 
 - Ctrl+Shift+F — repair menu
 - Ctrl+Shift+G — recover a stuck or rolled car (press again to confirm)
@@ -76,8 +76,8 @@ BeamNG's packing page lists official top-level folders such as `lua`, `ui`, `scr
 At least two images, plus a 96×96 icon. Suggested set (crop tightly, no console junk, no personal paths):
 
 1. **96×96 icon** — a simple GPS / roadbook tulip mark on a dark background, readable at small size.
-2. The Rally Raid GPS during a stage, with a revealed waypoint, trip and CAP visible.
-3. The Rally Raid Roadbook app scrolling through boxes.
+2. The rally.raid Earth GPS during a stage, with a revealed waypoint, trip and CAP visible.
+3. The rally.raid Earth Roadbook app scrolling through boxes.
 4. The stage builder with a finished route (one of the sample stages is fine).
 5. The roadbook editor, showing the map, the list of boxes and a tulip.
 6. The Repair app open (mid-stage or bivouac).
@@ -87,7 +87,7 @@ Existing local screenshots in the working tree (for example `gps_app.png`, `road
 
 ## What is not in the public zip
 
-- The Rally Raid Event app, `official.lua` and `sha256.lua` (Async Events is unreleased)
+- The rally.raid Earth Event app, `official.lua` and `sha256.lua` (Async Events is unreleased)
 - README, LICENSE, tests, docs, and website files
 - Any API tokens or `.env` files
 

@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: RECOVER CAR (GE half), the one reset allowed in a stage. Required by core.lua. (It began
+-- rally.raid Earth: RECOVER CAR (GE half), the one reset allowed in a stage. Required by core.lua. (It began
 -- as B11 "crash resume" for a crashed CAR; the GAME crashing is rallyRaid/gameResume.lua.) The car half is the repair
 -- system's vehicle extension (lua/vehicle/extensions/rallyRaid/vehRepair.lua: resumeSnapshot / resumeArm). Every
 -- tunable is in rallyRaid/repairConfig.lua: the rules and penalty in M.resume (shared with resets the app did not
@@ -376,10 +376,10 @@ function M.ask()
   local p = M.preview()
   R.ask, R.askRetire, R.msg = { p = p, t = R.t }, nil, nil
   if p.allowed then
-    notify(string.format('Rally Raid: RECOVER CAR? +%s penalty, %d of %d recoveries left after it. Back on the route %d m behind you (km %.2f). Ctrl+Shift+G again to confirm.',
+    notify(string.format('rally.raid Earth: RECOVER CAR? +%s penalty, %d of %d recoveries left after it. Back on the route %d m behind you (km %.2f). Ctrl+Shift+G again to confirm.',
       fmtMin(p.penaltyS), p.leftAfter, p.max, math.floor(p.target.fromCarM + 0.5), p.target.km), 8)
   else
-    notify('Rally Raid: no car recovery: ' .. p.reason .. '.', 6)
+    notify('rally.raid Earth: no car recovery: ' .. p.reason .. '.', 6)
     logAttempt({ kind = 'refused', reason = p.reason, distToFinishM = p.distToFinishM })
   end
   M.push()
@@ -398,7 +398,7 @@ function M.retire()
   local p = R.ask and R.ask.p or M.preview()
   logAttempt({ kind = 'retiredByDriver', reason = p.reason })
   R.ask, R.askRetire = nil, nil
-  notify('Rally Raid: stage RETIRED by the driver (' .. tostring(p.reason or 'crash') .. ').', 8)
+  notify('rally.raid Earth: stage RETIRED by the driver (' .. tostring(p.reason or 'crash') .. ').', 8)
   if H.retireStage then H.retireStage('stuck car: ' .. tostring(p.reason or 'retired by the driver')) end
   M.push()
   return true
@@ -412,7 +412,7 @@ local function fail(why)
     logAttempt({ kind = 'failed', reason = why, phase = b.phase, pausedS = round(b.pausedS or 0, 1) })
     M.game.send('if ' .. repairMod().VEH_EXT .. ' then ' .. repairMod().VEH_EXT .. '.cancel() end')
   end
-  notify('Rally Raid: ' .. R.msg, 6)
+  notify('rally.raid Earth: ' .. R.msg, 6)
   log_('W', 'car recovery failed: ' .. why)
   M.push()
 end
@@ -422,7 +422,7 @@ function M.confirm()
   R.ask, R.askRetire = nil, nil
   if not p.allowed then
     R.msg = 'No car recovery: ' .. p.reason .. '.'
-    notify('Rally Raid: ' .. R.msg, 6)
+    notify('rally.raid Earth: ' .. R.msg, 6)
     logAttempt({ kind = 'refused', reason = p.reason, distToFinishM = p.distToFinishM })
     R.ask = { p = p, t = R.t }
     M.push()
@@ -435,7 +435,7 @@ function M.confirm()
   R.busy = { reqId = R.req, phase = 'start', startedT = R.t, phaseT = R.t, preview = p, target = p.target, snap = sn,
     pausedS = 0, resetSeen = false }
   R.msg = nil
-  notify('Rally Raid: car recovery: the clock is stopped, putting the car back on the route ...', 4)
+  notify('rally.raid Earth: car recovery: the clock is stopped, putting the car back on the route ...', 4)
   R.busy.far = p.target.fromCarM > C().localMoveMaxM or not M.game.canPlaceLocally(p.target)
   if sn then M.go()
   else
@@ -554,7 +554,7 @@ local function finishResume()
     if p.lat then e.resume.landedOffM = round(geo.dist(p.lat, p.lon, b.target.lat, b.target.lon), 1) end
     logAttempt({ kind = 'resumed', rallyCount = e.rallyCount, penaltyS = e.penaltyS, km = b.target.km, backM = b.target.backM,
       pausedS = e.resume.pausedS, damageFrom = e.resume.damageFrom, snapshotId = b.snap and b.snap.id or nil })
-    notify(string.format('Rally Raid: car recovery %d of %d done: +%s. Back on the route at km %.2f. Go!', e.rallyCount,
+    notify(string.format('rally.raid Earth: car recovery %d of %d done: +%s. Back on the route at km %.2f. Go!', e.rallyCount,
       RC().maxPerRally, fmtMin(e.penaltyS), b.target.km), 6)
     R.msgAt = R.t
     R.msg = string.format('Car recovery %d of %d: +%s, back on the route at km %.2f.', e.rallyCount, RC().maxPerRally, fmtMin(e.penaltyS), b.target.km)

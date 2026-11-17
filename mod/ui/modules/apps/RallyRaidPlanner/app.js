@@ -1,4 +1,4 @@
-// Rally Raid Planner: plan a stage and its roadbook inside the game (docs/INGAME_PLANNER.md).
+// rally.raid Earth Planner: plan a stage and its roadbook inside the game (docs/INGAME_PLANNER.md).
 // The documents live here, in the same code the website uses (planner-core.js = the builder's import / export,
 // roadbook-gen.js = the website's generator byte for byte, roadbook-render.js = the website's drawing), so a file
 // goes stagebuilder.wyans.net -> game -> website unchanged. The game side is rallyRaid/planner.lua:
@@ -33,7 +33,7 @@ angular.module('beamng.apps')
     ;(function next () {
       if (!list.length) { var l = window.__rplWait; window.__rplWait = null; l.forEach(function (f) { f() }); return }
       var s = document.createElement('script'); s.src = list.shift(); s.onload = next
-      s.onerror = function () { console.error('Rally Raid Planner: could not load ' + s.src); next() }
+      s.onerror = function () { console.error('rally.raid Earth Planner: could not load ' + s.src); next() }
       document.head.appendChild(s)
     })()
   }

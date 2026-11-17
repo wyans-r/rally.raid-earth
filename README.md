@@ -1,4 +1,4 @@
-# Rally Raid for BeamNG.Earth
+# rally.raid Earth
 
 Dakar-style rally raid for [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth): plot a stage on a real map, make a roadbook, and race it in BeamNG.drive with a rally GPS, a scrolling roadbook, repairs, and a way to recover a stuck car or resume after the game crashes.
 
@@ -28,10 +28,10 @@ The MIT text covers only this project's own code and artwork. It does not cover 
 | Stage builder | [stagebuilder.wyans.net](https://stagebuilder.wyans.net) | Plot waypoints on a map, name the stage, set rules, share a link or export a `.json` file |
 | Roadbook editor | [stagebuilder.wyans.net/roadbook](https://stagebuilder.wyans.net/roadbook) | Auto-generate a roadbook from terrain and OpenStreetMap, edit boxes, print a PDF |
 | Game mod | `mod/` (built as a zip — see below) | Runs the stage in BeamNG.drive: clock, hidden waypoints, penalties, speed zones, results |
-| Rally Raid GPS | in-game UI app | CAP, trip odometer, waypoint reveal, speed-zone alarm, stage picker |
-| Rally Raid Roadbook | in-game UI app | Scrolls the roadbook with the trip; recce mode while you drive |
-| Rally Raid Planner | in-game UI app | Build a stage and roadbook by driving it |
-| Rally Raid Repair | in-game UI app | Mid-stage repairs, bivouac, Recover car, resume after a game crash |
+| rally.raid Earth GPS | in-game UI app | CAP, trip odometer, waypoint reveal, speed-zone alarm, stage picker |
+| rally.raid Earth Roadbook | in-game UI app | Scrolls the roadbook with the trip; recce mode while you drive |
+| rally.raid Earth Planner | in-game UI app | Build a stage and roadbook by driving it |
+| rally.raid Earth Repair | in-game UI app | Mid-stage repairs, bivouac, Recover car, resume after a game crash |
 | Sample stages | shipped in the mod, and as Examples in the builder | Moab plus stages in Namibia, Saudi Arabia, Morocco, Baja, the Gobi, Liwa, Fiambalá and Finke |
 
 The public zip is the **repair + planner + resume** version only after wyans has said the in-game test is OK. Until then, treat any zip you are given as a test build. Do not publish it on the download page or on BeamNG.com without that OK.
@@ -48,7 +48,7 @@ To edit the files yourself: unzip to `...\current\mods\unpacked\rallyraid\` so t
 ## 2. Put the apps on the HUD
 
 1. Press Esc, then **UI Apps**.
-2. **Add app**, search **Rally Raid**. Add **GPS**, and if you want them: **Roadbook**, **Planner**, **Repair**.
+2. **Add app**, search **rally.raid**. Add **GPS**, and if you want them: **Roadbook**, **Planner**, **Repair**.
 3. Drag each app where you want it; resize from the corner.
 
 You may need to move the mouse to click buttons while driving. For racing, bind the keys instead (section 5). You can hide BeamNG.Earth's own minimap if you want to navigate by roadbook and GPS only; this mod cannot turn it off for you.
@@ -83,7 +83,7 @@ Put stage files in `<BeamNG user folder>/current/rallyraid/stages/` and roadbook
 
 ## 5. Keys
 
-Rebind them in Options > Controls > Bindings, search "Rally Raid". A wheel or handlebar button works too. These are the defaults shipped in the mod (checked against `mod/settings/inputmaps/keyboard_rallyRaid.json`):
+Rebind them in Options > Controls > Bindings, search "rally.raid". A wheel or handlebar button works too. These are the defaults shipped in the mod (checked against `mod/settings/inputmaps/keyboard_rallyRaid.json`):
 
 | Action | Default key |
 |---|---|
@@ -114,7 +114,7 @@ Trip step size (10 / 100 / 1000 m) is the **10m** button on the GPS app, not a k
 
 ## 6. Repair, recover, resume
 
-Add the **Rally Raid Repair** app, then press **Ctrl+Shift+F**.
+Add the **rally.raid Earth Repair** app, then press **Ctrl+Shift+F**.
 
 - Mid-stage, standing still: change a wheel, fix one corner's suspension, or fix the radiator. The time is added to the stage.
 - After the finish, the bivouac opens: whole-car repair and engine change from a time budget.
@@ -128,7 +128,7 @@ Details: [docs/REPAIR.md](docs/REPAIR.md).
 
 **Recce.** In the Roadbook app, press RECCE or **Ctrl+Shift+R**. The line you drive, and jumps, crests, compressions, soft sand and slopes the car finds, are recorded. You can drop, move, retag and delete boxes as you go. The file lands in `<BeamNG user folder>/current/rallyraid/recce/`. Merge it in the game, or import it in the roadbook editor.
 
-**Planner.** Add **Rally Raid Planner**, or press **Ctrl+Shift+J**. Start a new stage, record the line you drive (**Ctrl+Shift+K**), drop waypoints (**Ctrl+Shift+W**) and roadbook boxes (**Ctrl+Shift+B**), generate a roadbook, then save and load it into the rally computer. Files are the same ones the website uses, in `rallyraid/stages/` and `rallyraid/roadbooks/`. More detail: [docs/INGAME_PLANNER.md](docs/INGAME_PLANNER.md).
+**Planner.** Add **rally.raid Earth Planner**, or press **Ctrl+Shift+J**. Start a new stage, record the line you drive (**Ctrl+Shift+K**), drop waypoints (**Ctrl+Shift+W**) and roadbook boxes (**Ctrl+Shift+B**), generate a roadbook, then save and load it into the rally computer. Files are the same ones the website uses, in `rallyraid/stages/` and `rallyraid/roadbooks/`. More detail: [docs/INGAME_PLANNER.md](docs/INGAME_PLANNER.md).
 
 ## 8. Build a public zip (for maintainers)
 
@@ -138,7 +138,7 @@ From this repository:
 python3 scripts/build_public_zip.py
 ```
 
-That writes `dist/wyans_rallyraid.zip` with the correct BeamNG folder layout (`lua`, `ui`, `scripts`, `settings`, `rallyraid` at the zip root). The **Rally Raid Event** app and the official-event Lua are left out. The script does not put the zip on the website or on BeamNG.com.
+That writes `dist/wyans_rallyraid.zip` with the correct BeamNG folder layout (`lua`, `ui`, `scripts`, `settings`, `rallyraid` at the zip root). The **rally.raid Earth Event** app and the official-event Lua are left out. The script does not put the zip on the website or on BeamNG.com.
 
 For a private build that includes the unreleased Events app:
 

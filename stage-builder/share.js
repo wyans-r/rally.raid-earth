@@ -210,7 +210,7 @@
 
   function shareOrCopy(info, opts) {
     opts = opts || {};
-    var title = opts.title || 'Rally Raid';
+    var title = opts.title || 'rally.raid Earth';
     var text = opts.text || title;
     var url = info.url;
     function afterCopy(extra) {

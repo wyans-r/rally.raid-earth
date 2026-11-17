@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Rally Raid Stage Builder (BeamNG.Earth)</title>
+<title>rally.raid Earth Stage Builder (BeamNG.Earth)</title>
 <link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> <!-- mobile: viewport-fit lets the page use the full phone screen -->
 <meta name="theme-color" content="#14171b">
@@ -103,7 +103,7 @@
 <body>
 <div id="app">
   <div id="side">
-    <header><div class="head"><div><h1>Rally Raid Stage Builder</h1><small>for BeamNG.Earth &middot; OpenStreetMap data &middot; stage format v1</small></div>
+    <header><div class="head"><div><h1>rally.raid Earth Stage Builder</h1><small>for BeamNG.Earth &middot; OpenStreetMap data &middot; stage format v1</small></div>
       <span class="hbtns"><button class="b" id="ex-open" title="Load a sample stage and edit it">Examples</button>
       <a class="b" href="/mod" title="Download the BeamNG.drive mod (GPS, roadbook, stages) and install steps" style="text-decoration:none;display:inline-flex;align-items:center">Get the mod</a>
       <button class="b" id="rb-open" title="Make the roadbook for this stage: auto-generated from terrain and OpenStreetMap, then edit it, print it (PDF) and use it in game">Roadbook</button>
@@ -170,7 +170,7 @@
       <hr>
       <label>Roadbook</label>
       <div class="row"><button class="b" id="f-roadbook">Open the roadbook editor</button></div>
-      <div class="hint">Generates the roadbook for this stage (terrain notes, junctions, hazards, a planned off-piste line), lets you edit every box, prints it as a PDF, and saves the <b>.roadbook.json</b> the in-game Rally Raid Roadbook app reads (put it in <b>&lt;BeamNG user folder&gt;/current/rallyraid/roadbooks/</b>).</div>
+      <div class="hint">Generates the roadbook for this stage (terrain notes, junctions, hazards, a planned off-piste line), lets you edit every box, prints it as a PDF, and saves the <b>.roadbook.json</b> the in-game rally.raid Earth Roadbook app reads (put it in <b>&lt;BeamNG user folder&gt;/current/rallyraid/roadbooks/</b>).</div>
       <label>Import stage .json or .gpx (or drop a file on the map)</label><input type="file" id="f-import" accept=".json,.gpx,application/json,application/gpx+xml">
       <div class="hint">GPX: waypoints become stage waypoints (a name starting with a type, e.g. "WPM 3", keeps that type); a track becomes a dashed reference line you can follow with leg mode "my loaded GPX track".</div>
       <hr>
@@ -198,7 +198,7 @@
       </ul></div>
       <div class="g-card" id="credits">
         <h3>Credits and data sources</h3>
-        <p>This site and the BeamNG.drive Rally Raid mod are made for <b>BeamNG.Earth</b>. They are not official BeamNG, FIM or FIA products.</p>
+        <p>This site and the rally.raid Earth mod for BeamNG.drive are made for <b>BeamNG.Earth</b>. They are not official BeamNG, FIM or FIA products.</p>
         <ul>
           <li><b>OpenStreetMap</b> &mdash; roads, tracks, places, landmarks and any stage or roadbook built from them. &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>.</li>
           <li><b>Nominatim</b> (place search and auto names) &mdash; the public OpenStreetMap search service. We space automatic lookups at least 1.1 seconds apart, as their <a href="https://operations.osmfoundation.org/policies/nominatim/">usage policy</a> asks (no more than one request a second).</li>
@@ -214,7 +214,7 @@
       </div>
     </div>
     <div id="status">Ready.</div>
-    <footer class="site-foot">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). Land cover &copy; ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Built for BeamNG.Earth. <a href="#credits" id="credits-link">Full credits</a></footer>
+    <footer class="site-foot">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). Land cover &copy; ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). rally.raid Earth &middot; built for BeamNG.Earth. <a href="#credits" id="credits-link">Full credits</a></footer>
   </div>
   <div id="mapwrap">
     <div id="map"></div>

@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: the vehicle half of the repair system (runs in the car's own Lua VM; the game names it
+-- rally.raid Earth: the vehicle half of the repair system (runs in the car's own Lua VM; the game names it
 -- "rallyRaid_vehRepair"). Loaded on demand by the GE half (lua/ge/extensions/rallyRaid/repair.lua), which sends the
 -- part-group table from repairConfig.lua with every call, so all tunables stay in one GE file.
 --

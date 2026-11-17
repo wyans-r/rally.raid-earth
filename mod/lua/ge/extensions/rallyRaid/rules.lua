@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: waypoint and speed-zone rules.
+-- rally.raid Earth: waypoint and speed-zone rules.
 -- Defaults follow the 2026 FIM World Rally-Raid Championship sporting regulations (Art. 11.2 waypoint table and
 -- Art. 16 speed control zones). A stage file can override any value in its "rules" block (docs/STAGE_FORMAT.md),
 -- because organisers (and the FIA / ASO for the Dakar) change radii from year to year.

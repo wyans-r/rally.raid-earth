@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: the rally repair system (GE half). Required by core.lua; the vehicle half is
+-- rally.raid Earth: the rally repair system (GE half). Required by core.lua; the vehicle half is
 -- lua/vehicle/extensions/rallyRaid/vehRepair.lua. Every tunable number is in rallyRaid/repairConfig.lua.
 -- Players' guide: docs/REPAIR.md. Written from scratch for this mod (no code from other mods).
 --
@@ -58,7 +58,7 @@ end
 function M.ledger() if not L then M.loadLedger() end return L end
 function M.newRally()
   L = newLedger(); M.saveLedger()
-  notify('Rally Raid: new rally started: 0 of ' .. cfg.resume.maxPerRally .. ' resumes used, no bivouac open.', 5)
+  notify('rally.raid Earth: new rally started: 0 of ' .. cfg.resume.maxPerRally .. ' resumes used, no bivouac open.', 5)
   M.updateBlocking(); M.push()
 end
 
@@ -249,7 +249,7 @@ function M.openMenu()
   if M.mode() == 'none' then
     R.msg = (L and L.retired) and 'Retired from the rally.' or 'No repairs here: run a stage (mid-stage repairs) or finish one (bivouac).'
   else M.requestSurvey() end
-  if not R.appSeen then notify('Rally Raid: add the "Rally Raid Repair" app (UI Apps) to see the repair menu.', 6) end
+  if not R.appSeen then notify('rally.raid Earth: add the "rally.raid Earth Repair" app (UI Apps) to see the repair menu.', 6) end
   M.push()
 end
 function M.closeMenu() R.open = false; M.push() end
@@ -285,7 +285,7 @@ function M.confirm(ids)
   if type(ids) == 'string' then local t = {}; for id in ids:gmatch('[^,%s]+') do t[#t + 1] = id end; ids = t end
   ids = ids or {}
   local mode = M.mode()
-  local function refuse(why) R.msg = why; notify('Rally Raid: ' .. why, 4); M.push(); return false, why end
+  local function refuse(why) R.msg = why; notify('rally.raid Earth: ' .. why, 4); M.push(); return false, why end
   if R.busy then return refuse('a repair is already running') end
   if H.resumeBusy and H.resumeBusy() then return refuse('a car recovery or resume is running') end
   if mode == 'none' then return refuse('no repairs here (not in a stage or a bivouac)') end
@@ -339,7 +339,7 @@ function M.commit(b, d)
     s.repair.timeS = s.repair.timeS + entry.penaltyS
     s.repair.log[#s.repair.log + 1] = entry
     if H.addPenalty then H.addPenalty('repair', entry.penaltyS, b.what .. ' (' .. b.minutes .. ' min)') end
-    notify(string.format('Rally Raid: %s done, +%d min.%s', b.what, b.minutes,
+    notify(string.format('rally.raid Earth: %s done, +%d min.%s', b.what, b.minutes,
       b.wheels > 0 and (' Spares left: ' .. sparesLeft() .. '.') or ''), 4)
   elseif b.mode == 'bivouac' and L.bivouac then
     local bv = L.bivouac
@@ -349,7 +349,7 @@ function M.commit(b, d)
     bv.log[#bv.log + 1] = entry
     M.saveLedger()
     local over = bv.usedMin - bv.budgetMin
-    notify(string.format('Rally Raid: %s done (%d min). Bivouac time used %d of %d min%s.', b.what, b.minutes, bv.usedMin, bv.budgetMin,
+    notify(string.format('rally.raid Earth: %s done (%d min). Bivouac time used %d of %d min%s.', b.what, b.minutes, bv.usedMin, bv.budgetMin,
       over > 0 and string.format(': %d min over (+%d min penalty%s)', over, over, over > cfg.bivouac.retireAfterMinOver and ', RETIRED when you leave' or '') or ''), 6)
   end
   if H.hook then H.hook('onRallyRaidRepair', entry) end
@@ -400,11 +400,11 @@ function M.onVehicleResetted(vehId)
     s.repair.resets[#s.repair.resets + 1] = r.entry
     s.flags.unauthorizedReset = (s.flags.unauthorizedReset or 0) + 1
     if r.retire then
-      notify('Rally Raid: reset not made by the repair menu (' .. r.reason .. '): STAGE RETIRED.', 8)
+      notify('rally.raid Earth: reset not made by the repair menu (' .. r.reason .. '): STAGE RETIRED.', 8)
       if H.retireStage then H.retireStage('unauthorized reset: ' .. r.reason) end
     else
       if H.addPenalty then H.addPenalty('resume', r.penaltyS, 'reset not made by the repair menu (counts as recovery / reset ' .. r.entry.rallyCount .. '/' .. cfg.resume.maxPerRally .. ')') end
-      notify(string.format('Rally Raid: reset not made by the repair menu: counts as recovery / reset %d of %d, +%d min.', r.entry.rallyCount, cfg.resume.maxPerRally, r.penaltyS / 60), 8)
+      notify(string.format('rally.raid Earth: reset not made by the repair menu: counts as recovery / reset %d of %d, +%d min.', r.entry.rallyCount, cfg.resume.maxPerRally, r.penaltyS / 60), 8)
     end
     M.push()
     return r.retire and 'retired' or 'counted'
@@ -413,7 +413,7 @@ function M.onVehicleResetted(vehId)
     local e = { at = now(), lat = n.lat, lon = n.lon, stageLoaded = s and s.stage.id or nil }
     L.bivouac.resets[#L.bivouac.resets + 1] = e
     M.saveLedger()
-    notify('Rally Raid: reset during the bivouac: logged in the next stage result.', 5)
+    notify('rally.raid Earth: reset during the bivouac: logged in the next stage result.', 5)
     return 'bivouac'
   end
   return 'free'
@@ -428,7 +428,7 @@ function M.stageStarted()
   s.repair = { spares = 0, timeS = 0, log = {}, resets = {}, resumes = 0, resumesLog = {} }
   if M.game.iprLoaded() then
     s.flags.ipr = true
-    notify('Rally Raid: the Individual Part Repair mod is loaded: this run is marked unofficial.', 8)
+    notify('rally.raid Earth: the Individual Part Repair mod is loaded: this run is marked unofficial.', 8)
   end
   -- leaving the bivouac: overrun and engine-change penalties go onto this stage
   local b = L.bivouac
@@ -446,7 +446,7 @@ function M.stageStarted()
     end
     if b.retired and not L.retired then
       L.retired = { reason = string.format('bivouac %d min over budget (limit %d)', b.overMin, cfg.bivouac.retireAfterMinOver), at = now(), stage = s.stage.id }
-      notify('Rally Raid: RETIRED from the rally: ' .. L.retired.reason .. '. This stage runs unofficial.', 10)
+      notify('rally.raid Earth: RETIRED from the rally: ' .. L.retired.reason .. '. This stage runs unofficial.', 10)
     end
     if #b.resets > 0 then s.flags.bivouacResets = #b.resets end
     L.bivouacs[#L.bivouacs + 1] = b
@@ -466,7 +466,7 @@ function M.stageFinished(res)
   if s and not L.retired then
     L.bivouac = { open = true, afterStage = s.stage.id, openedAt = now(), usedMin = 0, budgetMin = cfg.bivouac.budgetMin,
       engineChanges = 0, log = {}, resets = {} }
-    notify(string.format('Rally Raid: bivouac open: %d h of service time (Ctrl+Shift+F). It closes when the next stage starts.', cfg.bivouac.budgetMin / 60), 7)
+    notify(string.format('rally.raid Earth: bivouac open: %d h of service time (Ctrl+Shift+F). It closes when the next stage starts.', cfg.bivouac.budgetMin / 60), 7)
   end
   local last = L.stages[#L.stages]
   if last and s and last.id == s.stage.id then last.finishedAt = now(); last.retired = res and res.retired or nil; last.totalTime = res and res.totalTime end

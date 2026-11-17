@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: pure geodesy helpers (no game calls, unit-testable outside the game).
+-- rally.raid Earth: pure geodesy helpers (no game calls, unit-testable outside the game).
 -- Everything works in WGS84 latitude / longitude degrees, never in game coordinates (BeamNG.Earth moves the
 -- world's origin as you drive, so game x / y go stale; lat / lon never do).
 local M = {}

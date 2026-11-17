@@ -1,4 +1,4 @@
-// Rally Raid GPS: the HUD app for lua/ge/extensions/rallyRaid/core.lua (rallyRaid_core).
+// rally.raid Earth GPS: the HUD app for lua/ge/extensions/rallyRaid/core.lua (rallyRaid_core).
 // Lua -> app: guihooks 'RallyRaidUpdate' (about 10 a second) with the computer and stage state.
 // App -> Lua: bngApi.engineLua('rallyRaid_core.cmd(...)'): messages are the only link between the two.
 angular.module('beamng.apps')

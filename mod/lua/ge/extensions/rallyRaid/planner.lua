@@ -1,5 +1,5 @@
--- Rally Raid for BeamNG.Earth: the in-game planner's game side (docs/INGAME_PLANNER.md). The planner itself (the stage
--- and roadbook documents, every edit) lives in the Rally Raid Planner UI app (ui/modules/apps/RallyRaidPlanner), the
+-- rally.raid Earth: the in-game planner's game side (docs/INGAME_PLANNER.md). The planner itself (the stage
+-- and roadbook documents, every edit) lives in the rally.raid Earth Planner UI app (ui/modules/apps/RallyRaidPlanner), the
 -- same code as the website's builder / editor, so files stay exactly compatible. This module gives it what only the
 -- game has:
 --   * where the car (or the free camera) is, as lat / lon / alt from beamngEarth_api.pose() (never game coordinates:
@@ -254,7 +254,7 @@ function M.update(dt)
   if P.pushAcc >= (P.open and 0.25 or 1.0) then P.pushAcc = 0; if P.appSeen then M.push() end end
 end
 local function needApp()
-  if not P.appSeen then notify('Rally Raid: add the "Rally Raid Planner" app (UI Apps) to plan stages in game.', 6) return true end
+  if not P.appSeen then notify('rally.raid Earth: add the "rally.raid Earth Planner" app (UI Apps) to plan stages in game.', 6) return true end
 end
 -- keys and buttons: rallyRaid_core.cmd('planner<Sub>')
 function M.cmd(sub, arg)
@@ -263,8 +263,8 @@ function M.cmd(sub, arg)
   elseif sub == 'Close' then P.open = false; M.push()
   elseif sub == 'Rec' then
     local on = M.recSet(not P.rec.on)
-    notify(on and 'Rally Raid planner: recording the driven line (the leg to the next point you add).' or
-      'Rally Raid planner: recording off.', 4)
+    notify(on and 'rally.raid Earth planner: recording the driven line (the leg to the next point you add).' or
+      'rally.raid Earth planner: recording off.', 4)
   elseif sub == 'Waypoint' or sub == 'Box' then
     if needApp() then return end
     if not P.open then P.open = true end

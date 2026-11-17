@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: finding, reading and checking stage files (docs/STAGE_FORMAT.md).
+-- rally.raid Earth: finding, reading and checking stage files (docs/STAGE_FORMAT.md).
 -- Stage files live in the game's virtual folder /rallyraid/stages/, which merges:
 --   <BeamNG user folder>/current/rallyraid/stages/*.json   (your own and downloaded stages)
 --   rallyraid/stages/*.json inside any mod zip               (this mod's samples, or a "stage pack" mod)

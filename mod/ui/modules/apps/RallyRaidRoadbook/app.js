@@ -1,4 +1,4 @@
-// Rally Raid Roadbook: the in-game roadbook reader for rallyRaid_core (lua/ge/extensions/rallyRaid/core.lua).
+// rally.raid Earth Roadbook: the in-game roadbook reader for rallyRaid_core (lua/ge/extensions/rallyRaid/core.lua).
 // Lua -> app: guihooks 'RallyRaidRoadbook' (about 10 a second): trip, the box the trip is in, and `view`, the boxes on
 // screen (the current one and the next three, or where the driver scrolled to with box up / down).
 // App -> Lua: rallyRaid_core.cmd('boxPrev' | 'boxNext' | 'boxSync' | 'reloadRoadbook').
@@ -105,7 +105,7 @@ angular.module('beamng.apps')
         var sig = (v.length ? '' : (scope.r.phase || '') + '|' + (scope.r.stageId || '') + '|') + JSON.stringify(v)
         if (sig === lastSig) return
         lastSig = sig
-        if (!v.length) { list.innerHTML = '<div class="rrb-empty">' + (scope.r.phase === 'idle' || !scope.r.stageId ? 'No stage loaded.<br>Press <b>BOOK</b> below to choose a roadbook,<br>or load a stage in the Rally Raid GPS app.' : 'This stage has no roadbook boxes.<br>Make a roadbook in the stage builder and save it as<br><b>rallyraid/roadbooks/' + esc(scope.r.stageId) + '.roadbook.json</b>') + '</div>'; return }
+        if (!v.length) { list.innerHTML = '<div class="rrb-empty">' + (scope.r.phase === 'idle' || !scope.r.stageId ? 'No stage loaded.<br>Press <b>BOOK</b> below to choose a roadbook,<br>or load a stage in the rally.raid Earth GPS app.' : 'This stage has no roadbook boxes.<br>Make a roadbook in the stage builder and save it as<br><b>rallyraid/roadbooks/' + esc(scope.r.stageId) + '.roadbook.json</b>') + '</div>'; return }
         list.innerHTML = v.map(function (b) { return boxHTML(R, b) }).join('')
       }
       renderer(function (r) { R = r; lastSig = ''; scope.$evalAsync(function () { scope.groups = ['quick'].concat(R.GROUPS ? Object.keys(R.GROUPS) : []) }); draw() })

@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: every tunable number of the repair system, in one place.
+-- rally.raid Earth: every tunable number of the repair system, in one place.
 -- Approved by Wyans 2026-11-16 (docs/REPAIR.md explains them to players, docs/REPAIR_SPIKE.md has the background).
 -- Times are minutes unless the name says otherwise. Change a value here and rebuild the mod zip; nothing else needs
 -- editing. The values are copied into every result file ("repairRules") so a penalty can always be checked later.

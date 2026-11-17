@@ -1,4 +1,4 @@
--- Rally Raid: the GPS trace of a running stage (for official-event result packages; docs/EVENTS.md "Trace").
+-- rally.raid Earth: the GPS trace of a running stage (for official-event result packages; docs/EVENTS.md "Trace").
 -- Adaptive: a point every `everyS` (5 s) of stage clock, plus an extra one (at most one per `minGapS`) when the car turns
 -- more than `turnDeg` or its speed changes more than `speedKmh` since the last point, plus one at every waypoint.
 -- Point = { t, w, lat, lon, odo, kmh }: t = stage clock (s, 0.1), w = wall clock (s after trace.epoch0: shows gaps

@@ -1,4 +1,4 @@
-// Rally Raid Event: official runs of an async event (lua/ge/extensions/rallyRaid/official.lua through rallyRaid_core).
+// rally.raid Earth Event: official runs of an async event (lua/ge/extensions/rallyRaid/official.lua through rallyRaid_core).
 // Lua -> app: guihooks 'RallyRaidOfficial' ({ active, event, stage, entrant, checks, last, msg, packs }).
 // App -> Lua: rallyRaid_core.cmd('officialList' | 'officialLoad', path | 'officialRetry' | 'officialOff').
 // The game's UI cannot reach the internet: the upload is made by the game's Lua (plain HTTP), never by this app.

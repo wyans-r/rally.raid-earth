@@ -1191,7 +1191,7 @@
     const commitment = 'sha256:' + await sha256(canon(core), io);
     const receipt = { format: 'rallyraid-stagegen-receipt', version: VERSION, generator: GENERATOR, created: stage.created, inputs: res.inputs, region: res.inputs.region,
       stageId: stage.id, stageName: stage.name, lengthKm: stage.lengthKm, stageHash, dataHash: res.dataHash, commitment,
-      howToVerify: 'After the event the organizer publishes the seed file. In the Rally Raid Stage Builder open Auto stage > Verify a blind stage and give it this receipt and the seed file: it regenerates the stage and checks the stage hash and the commitment.' };
+      howToVerify: 'After the event the organizer publishes the seed file. In the rally.raid Earth stage builder open Auto stage > Verify a blind stage and give it this receipt and the seed file: it regenerates the stage and checks the stage hash and the commitment.' };
     const seedFile = { format: 'rallyraid-stagegen-seed', version: VERSION, generator: GENERATOR, created: stage.created, inputs: res.inputs, seed: res.seed, dataHash: res.dataHash, commitment, osm: res.grid.osm,
       note: 'KEEP PRIVATE until the event has closed: with this file anyone can regenerate the route. Publish it afterwards so everyone can verify.' };
     return { receipt, seedFile, stageHash, commitment };

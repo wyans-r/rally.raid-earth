@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: recce mode (docs/ROADBOOK_FORMAT.md "Recce").
+-- rally.raid Earth: recce mode (docs/ROADBOOK_FORMAT.md "Recce").
 -- Drive the stage before racing it and correct the roadbook from the real world:
 --   * the driven line is recorded in lat / lon (from BeamNG.Earth's pose, so the world's rebasing cannot break it)
 --   * the car's own motion adds boxes: jumps (airtime, length, height), hard compressions, crests (pitch-over),

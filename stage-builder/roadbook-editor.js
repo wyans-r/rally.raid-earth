@@ -674,7 +674,7 @@
   $('#lg-print').addEventListener('click', () => { const w = window.open('', '_blank'); if (!w) return; w.document.write('<!doctype html><title>Roadbook symbol legend</title><style>body{margin:0}@page{size:A4 landscape;margin:8mm}' + R.LEGEND_CSS + '.rbl{width:auto}</style>' + R.legendHTML()); w.document.close(); setTimeout(() => w.print(), 300); });
   $('#b-share').addEventListener('click', () => shareCurrentRoadbook());
   $('#b-save').addEventListener('click', () => { if (!E.rb) return; download(E.stage.id + '.roadbook.json', JSON.stringify(roadbookFile(), null, 1), 'application/json');
-    banner('saved', 'info', 'Saved <b>' + esc(E.stage.id) + '.roadbook.json</b>. For the game, put it in <b>BeamNG user folder / current / rallyraid / roadbooks /</b>: the Rally Raid Roadbook app shows it when you load the stage.' +
+    banner('saved', 'info', 'Saved <b>' + esc(E.stage.id) + '.roadbook.json</b>. For the game, put it in <b>BeamNG user folder / current / rallyraid / roadbooks /</b>: the rally.raid Earth Roadbook app shows it when you load the stage.' +
       (E.rb.route && E.rb.route.legs.some(l => l.planned) ? ' The roadbook follows the planned off-piste line; you can also save the stage with that line:' : ''),
       E.rb.route && E.rb.route.legs.some(l => l.planned) ? [['Save stage with this line', () => { const st = RB.applyPlannedLine(E.stage, E.rb); download(E.stage.id + '.json', JSON.stringify(st, null, 1), 'application/json'); }]] : []); });
   $('#b-pdf').addEventListener('click', async () => { if (!E.rb) return; try { const f = $('#pdf-format').value; const doc = await makePDF(f); doc.save(E.stage.id + '_roadbook_' + f + '.pdf'); } catch (e) { banner('err', 'err', 'PDF failed: ' + esc(e.message)); } });

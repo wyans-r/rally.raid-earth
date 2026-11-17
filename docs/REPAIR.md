@@ -1,6 +1,6 @@
-# Repairs, the bivouac, recover car, game-crash resume and resets (Rally Raid v1)
+# Repairs, the bivouac, recover car, game-crash resume and resets (rally.raid Earth v1)
 
-How car repairs work in a Rally Raid stage, what they cost, how to get the car back on the route when it's stuck or
+How car repairs work in a rally.raid Earth stage, what they cost, how to get the car back on the route when it's stuck or
 rolled (**Recover car**), how to carry on after the **game** crashes (**Game-crash resume**), and what happens if the
 car is reset some other way.
 Every number here is set in one file, `mod/lua/ge/extensions/rallyRaid/repairConfig.lua`, and is copied into each
@@ -8,13 +8,13 @@ result file so penalties can be checked later.
 
 ## Setup
 
-1. Esc > **UI Apps** > **Add app** > **Rally Raid Repair** (category "Rally Raid"). Put it anywhere. It shows a thin
+1. Esc > **UI Apps** > **Add app** > **rally.raid Earth Repair** (category "rally.raid Earth"). Put it anywhere. It shows a thin
    bar (**REPAIR / BIVOUAC**, spare wheels left, recoveries / resets used, **HELD** and **REVIEW** after a game-crash
    resume) and opens into the menu.
 2. Press **Ctrl+Shift+F** to open or close the menu, or click the bar. You can rebind the key in Options > Controls >
-   Bindings: search for "Rally Raid: repair menu".
-3. **Ctrl+Shift+G** is **Recover car** (below). Rebind it under "Rally Raid: recover car".
-4. **Ctrl+Shift+H** resumes a stage saved before the game crashed (below). Rebind it under "Rally Raid: resume saved
+   Bindings: search for "rally.raid Earth: repair menu".
+3. **Ctrl+Shift+G** is **Recover car** (below). Rebind it under "rally.raid Earth: recover car".
+4. **Ctrl+Shift+H** resumes a stage saved before the game crashed (below). Rebind it under "rally.raid Earth: resume saved
    stage (after a game crash)".
 
 ## In a stage: roadside repairs
@@ -174,7 +174,7 @@ Any other reset still gets noticed, for example from the radial menu, the consol
   3 this rally, or if you are within 1 km of the ASS.
 - **In the bivouac**, a reset isn't charged, but it is written into the next stage's result.
 
-**Start a new rally** (the "Rally Raid: start a new rally" binding, unbound by default) sets the recovery / reset
+**Start a new rally** (the "rally.raid Earth: start a new rally" binding, unbound by default) sets the recovery / reset
 count back to 0 and drops any open bivouac. Game-crash saves belong to their rally: a new rally doesn't offer them.
 
 **Individual Part Repair mod:** if it is loaded when a stage starts, the run is marked unofficial. Its free save, load

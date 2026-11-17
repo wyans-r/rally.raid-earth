@@ -1,4 +1,4 @@
-# Rally Raid stage format (schema version 1)
+# rally.raid Earth stage format (schema version 1)
 
 One stage is one UTF-8 JSON file (`<id>.json`). The stage builder writes it, the game mod reads it, and the future
 roadbook tool reads it too. It is meant to be shared: send the file, the other player drops it in their stages folder.

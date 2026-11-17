@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build the Rally Raid BeamNG.drive zip.
+"""Build the rally.raid Earth BeamNG.drive zip.
 
 Default (public) build:
   - Top-level folders inside the zip are lua, ui, scripts, settings, rallyraid
     (no wrapper folder named after the mod).
-  - Leaves out the unreleased Rally Raid Event app, official.lua and sha256.lua.
+  - Leaves out the unreleased rally.raid Earth Event app, official.lua and sha256.lua.
   - Leaves out README / LICENSE / docs (BeamNG.com asks you not to pack a readme;
     put the description on the listing instead). Credits are shown in the apps.
 

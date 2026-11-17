@@ -1,4 +1,4 @@
-# Rally Raid roadbook format (schema version 1)
+# rally.raid Earth roadbook format (schema version 1)
 
 A roadbook is its own UTF-8 JSON file, `<stage id>.roadbook.json`, that belongs to one stage file
 (`docs/STAGE_FORMAT.md`). It is kept separate so it can be refined (editor, in-game recce) and shared on its own,
@@ -292,7 +292,7 @@ Applying (`RoadbookGen.applyChanges(rb, changes)`):
   `<stage file name>.roadbook.json` next to the stage (such files are not listed as stages). It refuses another
   stage's roadbook, a different `format` or a newer `schemaVersion`; it warns when `stage.lengthKm` differs from the
   stage by more than 200 m.
-- Live boxes (not `deleted`) sorted by km and renumbered are sent to the **Rally Raid Roadbook** HUD app
+- Live boxes (not `deleted`) sorted by km and renumbered are sent to the **rally.raid Earth Roadbook** HUD app
   (`ui/modules/apps/RallyRaidRoadbook/`, drawn with the same `roadbook-render.js`), which shows the current box and
   the next three with tulips, symbols, notes, CAP and danger, scrolling with the trip. Box up / down (Ctrl+Shift+PgUp
   / PgDn) scrolls without touching the trip; SYNC (Ctrl+Shift+End) sets the trip to the shown box; any trip adjust
@@ -315,7 +315,7 @@ Applying (`RoadbookGen.applyChanges(rb, changes)`):
 
 ## Recce (in game)
 
-Recce mode (`lua/ge/extensions/rallyRaid/recce.lua`) is switched on in the Rally Raid Roadbook app (RECCE) or with
+Recce mode (`lua/ge/extensions/rallyRaid/recce.lua`) is switched on in the rally.raid Earth Roadbook app (RECCE) or with
 Ctrl+Shift+R once a stage is loaded. It can run on a timed stage too, but the result is then marked unofficial.
 
 What it records, all in lat / lon from `beamngEarth_api.pose()` (game coordinates are only used inside one frame for

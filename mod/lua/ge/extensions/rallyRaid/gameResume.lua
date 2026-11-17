@@ -1,4 +1,4 @@
--- Rally Raid for BeamNG.Earth: GAME-CRASH RESUME (B11 rework). Required by core.lua. For the GAME crashing or being
+-- rally.raid Earth: GAME-CRASH RESUME (B11 rework). Required by core.lua. For the GAME crashing or being
 -- force-quit mid-stage (a CTD, a BeamNG error), not the car crashing (that is RECOVER CAR, rallyRaid/resume.lua).
 -- Every tunable is in rallyRaid/repairConfig.lua M.gameCrashResume. Players' guide: docs/REPAIR.md "Game crash".
 --
@@ -395,7 +395,7 @@ function M.stageLoaded()
   if not found then
     if skipped and #skipped > 0 then
       R.msg, R.msgAt = 'A saved stage was found but could not be used (' .. skipped[1].why .. ').', R.t
-      notify('Rally Raid: ' .. R.msg, 6)
+      notify('rally.raid Earth: ' .. R.msg, 6)
     end
     M.push()
     return nil
@@ -419,7 +419,7 @@ function M.stageLoaded()
   o.policy = M.policy(d)
   o.text = string.format('Resume from last save (%s elapsed, saved %s ago)', hms(o.elapsedS), ago(agoS))
   R.offer = { doc = d, found = found, beat = beat, o = o }
-  notify('Rally Raid: ' .. o.text .. '? Ctrl+Shift+H twice or the Repair app; DISCARD there to start the stage again.', 10)
+  notify('rally.raid Earth: ' .. o.text .. '? Ctrl+Shift+H twice or the Repair app; DISCARD there to start the stage again.', 10)
   M.push()
   return o
 end
@@ -497,7 +497,7 @@ function M.discard(why, quiet)
   R.offer, R.askDiscard, R.keyT = nil, false, nil
   if not quiet then
     R.msg, R.msgAt = 'Saved stage discarded. Drive to the DSS to start it again (the restart is logged).', R.t
-    notify('Rally Raid: ' .. R.msg, 6)
+    notify('rally.raid Earth: ' .. R.msg, 6)
   end
   M.push()
   return true
@@ -508,7 +508,7 @@ end
 local function fail(why)
   R.busy = nil
   R.msg, R.msgAt = 'Resume failed: ' .. why .. ' The save is kept: try again, or DISCARD.', R.t
-  notify('Rally Raid: ' .. R.msg, 8)
+  notify('rally.raid Earth: ' .. R.msg, 8)
   log_('W', 'game-crash resume failed: ' .. why)
   if H.repair then M.game.send('if ' .. H.repair.VEH_EXT .. ' then ' .. H.repair.VEH_EXT .. '.cancel() end') end
   M.push()
@@ -578,7 +578,7 @@ local function commit(after)
   if H.hook then H.hook('onRallyRaidGameResume', e) end
   R.msg, R.msgAt = string.format('Resumed at %s stage time. Flagged for organizer review (%s since the save). The clock starts when you drive off.',
     hms(s.clock), ago(e.wallGapS)), R.t
-  notify('Rally Raid: ' .. R.msg, 8)
+  notify('rally.raid Earth: ' .. R.msg, 8)
   -- saved straight away, so a second crash resumes from here
   R.sig = nil
   M.requestSave('resumed')
@@ -598,14 +598,14 @@ local function retireFromSave(o, d)
   R.offer = nil
   if H.retireStage then H.retireStage('game crash: ' .. o.reason) end
   R.msg, R.msgAt = 'Stage retired after the game crash: ' .. o.reason .. '.', R.t
-  notify('Rally Raid: ' .. R.msg, 8)
+  notify('rally.raid Earth: ' .. R.msg, 8)
   M.push()
   return true
 end
 
 function M.resume()
   local s, n = S(), nav()
-  local function no(why) R.msg, R.msgAt = 'No resume: ' .. why .. '.', R.t; notify('Rally Raid: ' .. R.msg, 6); M.push(); return false, why end
+  local function no(why) R.msg, R.msgAt = 'No resume: ' .. why .. '.', R.t; notify('rally.raid Earth: ' .. R.msg, 6); M.push(); return false, why end
   if not R.offer then return no('no saved stage for this stage') end
   if R.busy then return no('a resume is already running') end
   if not s then return no('load the stage first') end
@@ -621,7 +621,7 @@ function M.resume()
   R.busy = { reqId = R.req, phase = 'start', startedT = R.t, phaseT = R.t, doc = d, found = R.offer.found, beat = R.offer.beat,
     policy = pol, target = { lat = d.pos.lat, lon = d.pos.lon, alt = d.pos.alt, heading = d.pos.heading or 0 } }
   R.msg, R.askDiscard = nil, false
-  notify('Rally Raid: resuming the saved stage: putting the car back where it was ...', 5)
+  notify('rally.raid Earth: resuming the saved stage: putting the car back where it was ...', 5)
   local cur = M.game.vehicleInfo() or {}
   if d.vehicle and d.vehicle.model and cur.model and d.vehicle.model ~= cur.model then
     R.busy.phase, R.busy.respawned = 'spawn', { from = cur.model, to = d.vehicle.model }
@@ -719,7 +719,7 @@ function M.release(how)
   local e = R.lastFlag
   if e then e.clockReleasedBy = how; e.heldRealS = round(R.t - R.hold.since, 1) end
   R.hold = nil
-  notify('Rally Raid: stage clock running again.', 3)
+  notify('rally.raid Earth: stage clock running again.', 3)
   M.push()
   return true
 end
@@ -814,15 +814,15 @@ function M.key()
   if R.offer then
     if R.keyT and R.t - R.keyT <= C().confirmS then R.keyT = nil; return M.resume() end
     R.keyT = R.t
-    notify('Rally Raid: ' .. R.offer.o.text .. '. Ctrl+Shift+H again to resume.', 8)
+    notify('rally.raid Earth: ' .. R.offer.o.text .. '. Ctrl+Shift+H again to resume.', 8)
     M.push()
     return false
   end
   local s = S()
   if s and s.phase == 'running' then
-    notify(string.format('Rally Raid: game-crash save: %d written%s.', R.savesWritten,
+    notify(string.format('rally.raid Earth: game-crash save: %d written%s.', R.savesWritten,
       R.lastSaveClock and (', the last ' .. ago(s.clock - R.lastSaveClock) .. ' of stage time ago') or ''), 4)
-  else notify('Rally Raid: no saved stage to resume here.', 4) end
+  else notify('rally.raid Earth: no saved stage to resume here.', 4) end
   return false
 end
 

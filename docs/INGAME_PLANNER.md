@@ -1,4 +1,4 @@
-# The in-game planner (Rally Raid Planner app)
+# The in-game planner (rally.raid Earth Planner app)
 
 Build and edit a stage and its roadbook **inside BeamNG**, using the car as the pen: drive to a place, press a key,
 and a waypoint or a roadbook box is put there. Save, and load the stage straight into the rally computer. The files
@@ -8,7 +8,7 @@ are the website's own (stage builder and roadbook editor on stagebuilder.wyans.n
 
 | part | where | job |
 |---|---|---|
-| UI app "Rally Raid Planner" | `mod/ui/modules/apps/RallyRaidPlanner/` (`app.js`, `app.css`, `app.json`) | everything you see and every edit |
+| UI app "rally.raid Earth Planner" | `mod/ui/modules/apps/RallyRaidPlanner/` (`app.js`, `app.css`, `app.json`) | everything you see and every edit |
 | `planner-core.js` | same folder | the stage document: the website builder's import / export / km / problems logic, plus the edits (add, insert, move, delete, leg modes, boxes at the car, offline roadbook) |
 | `roadbook-gen.js` | same folder | **a byte-for-byte copy** of `stage-builder/roadbook-gen.js` (the website's roadbook generator, merge and change records); a test fails if the two differ |
 | `roadbook-render.js` | loaded from the Roadbook app folder (already the website's copy) | draws the boxes, tulips and symbols |
@@ -79,7 +79,7 @@ shipped stages, and in the browser test).
 
 The keys need the app on the HUD (without it the game says so); W and B open the panel if it is closed, K works
 with it closed. Rebind them in Options > Controls (category
-gameplay, "Rally Raid: planner ..."). Other commands: `plannerOpen`, `plannerClose`, `plannerAppHere` (the app says
+gameplay, "rally.raid Earth: planner ..."). Other commands: `plannerOpen`, `plannerClose`, `plannerAppHere` (the app says
 it is on screen). The app talks to Lua with `rallyRaid_core.plannerCall(name, argsJson, text)` (`pose`, `mark`,
 `rec`, `list`, `exists`, `readOpen` / `readChunk`, `writeBegin` / `writeChunk` / `writeCommit`, `load`,
 `reloadRoadbook`, `state`); Lua sends the UI events `RallyRaidPlanner` (state: pose, recording, the loaded stage,

@@ -1,20 +1,20 @@
 {
   "domElement": "<rally-raid-repair></rally-raid-repair>",
-  "name": "Rally Raid Repair",
+  "name": "rally.raid Earth Repair",
   "types": [
     "ui.apps.categories.utility"
   ],
-  "description": "Rally repair menu for Rally Raid stages (Ctrl+Shift+F): mid-stage wheel change, light suspension and radiator repairs (time added to the stage), whole-car repair and engine change at the bivouac (3 h budget), spare wheels and resets left, RECOVER CAR (Ctrl+Shift+G, the one reset allowed in a stage) and resuming a stage saved before a game crash (Ctrl+Shift+H).",
+  "description": "Rally repair menu for rally.raid Earth stages (Ctrl+Shift+F): mid-stage wheel change, light suspension and radiator repairs (time added to the stage), whole-car repair and engine change at the bivouac (3 h budget), spare wheels and resets left, RECOVER CAR (Ctrl+Shift+G, the one reset allowed in a stage) and resuming a stage saved before a game crash (Ctrl+Shift+H).",
   "css": {
     "top": "430px",
     "left": "10px",
     "height": "300px",
     "width": "360px"
   },
-  "author": "Rally Raid for BeamNG.Earth",
+  "author": "wyans (rally.raid Earth)",
   "version": "0.1.0",
   "directive": "rallyRaidRepair",
   "appName": "rallyRaidRepair",
-  "category": "Rally Raid",
+  "category": "rally.raid Earth",
   "isAuxiliary": false
 }

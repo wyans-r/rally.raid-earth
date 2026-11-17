@@ -1,4 +1,4 @@
--- Rally Raid: SHA-256 in plain LuaJIT (the `bit` library), for the official-event file hashes. The website hashes the
+-- rally.raid Earth: SHA-256 in plain LuaJIT (the `bit` library), for the official-event file hashes. The website hashes the
 -- same bytes (the stage / roadbook file text exactly as published), so the hex strings must match byte for byte.
 local bit = require('bit')
 local band, bor, bxor, bnot, rshift, lshift, ror, tobit =
