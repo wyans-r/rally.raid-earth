@@ -1,0 +1,6 @@
+# Cloudflare static assets redirects (stagebuilder.wyans.net). The mod is hosted on GitHub Releases since 17 Nov 2026.
+/mod https://github.com/wyans-r/rally.raid-earth/releases/latest 302
+/mod/ https://github.com/wyans-r/rally.raid-earth/releases/latest 302
+/mod.html https://github.com/wyans-r/rally.raid-earth/releases/latest 302
+/download/rallyraid_earth.zip https://github.com/wyans-r/rally.raid-earth/releases/latest/download/rallyraid_earth.zip 302
+/download/rallyraid_mod.zip https://github.com/wyans-r/rally.raid-earth/releases/latest/download/rallyraid_earth.zip 302

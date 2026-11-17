@@ -117,12 +117,12 @@ test('/mod page marks every feature not yet tested in game as EXPERIMENTAL / UNT
   const block = html.match(/<ul id="experimental-list">([\s\S]*?)<\/ul>/)
   assert.ok(block, 'experimental list missing')
   const items = block[1].split('<li>').slice(1).map((x) => x.replace(/<[^>]+>/g, '').trim())
-  for (const f of ['Repair', 'Recover car', 'Crash resume', 'Planner', 'GPS MENU', 'Recce mode', 'Your own keys in the apps', 'Ctrl+Shift keys']) {
+  for (const f of ['Repair', 'Recover car', 'Crash resume', 'Planner', 'GPS MENU', 'Recce mode', 'Your own keys in the apps', 'Rally mode', 'Ctrl+Shift keys']) {
     const it = items.find((x) => x.includes(f))
     assert.ok(it, 'experimental list should name ' + f)
     assert.match(it, /^EXPERIMENTAL \/ UNTESTED/)
   }
-  assert.equal(items.length, 8)
+  assert.equal(items.length, 9)
   const btn = html.match(/<h3>Buttons \(no default key\)<\/h3>[\s\S]*?<\/table>/)[0]
   const rows = btn.split('<tr>').slice(1)
   assert.equal(rows.length, 7)
@@ -154,9 +154,9 @@ test('/mod page does not call Left/Right trip step size, and names the 10m butto
   assert.match(html, /10 \/ 100 \/ 1000 m/)
 })
 
-test('/mod page links rallyraid_earth.zip and no longer links the 16 Nov zip', () => {
+test('/mod page (release-notes source) links the GitHub release zip and no longer links the 16 Nov zip', () => {
   const html = fs.readFileSync(MOD_HTML, 'utf8')
-  assert.match(html, /href="\/download\/rallyraid_earth\.zip"/)
+  assert.match(html, /href="https:\/\/github\.com\/wyans-r\/rally\.raid-earth\/releases\/latest\/download\/rallyraid_earth\.zip"/)
   assert.match(html, /Download rallyraid_earth\.zip/)
   assert.doesNotMatch(html, /rallyraid_mod\.zip/)
   assert.doesNotMatch(html, /wyans_rallyraid/)
@@ -180,6 +180,7 @@ test('README lists every bound key, and a button for each unbound action', () =>
 
 test('download folder has rallyraid_earth.zip and still has the old 16 Nov zip', (t) => {
   const download = path.join(ROOT, 'stage-builder/download')
+  t.skip('zips are hosted on GitHub Releases since 17 Nov 2026; /download/*.zip redirect there (stage-builder/_redirects)'); return
   if (!fs.existsSync(download)) { t.skip('stage-builder/download is not in this checkout (git-ignored)'); return }
   const names = fs.readdirSync(download)
   assert.ok(names.includes('rallyraid_mod.zip'), 'the old 16 Nov zip stays so old links do not 404: ' + names.join(','))

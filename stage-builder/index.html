@@ -79,7 +79,14 @@
   #ex-hint.on { display:flex; }
   #ex-hint span { flex:1; }
   #ex-hint .b { flex:0 0 auto; }
-  .ex-gh { color:var(--acc); font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin:10px 0 4px; }
+  .ex-gh { color:var(--acc); font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin:10px 0 4px; cursor:pointer; list-style:none; padding:4px 2px; border-bottom:1px solid var(--line); user-select:none; }
+  .ex-gh::-webkit-details-marker { display:none; }
+  .ex-gh::before { content:'\25B8'; display:inline-block; width:1em; transition:transform .15s; }
+  details[open] > .ex-gh::before { transform:rotate(90deg); }
+  .ex-gh .ex-n { color:var(--dim); font-size:10px; margin-left:4px; }
+  .ex-grp { margin-bottom:2px; } .ex-grp > .ex-card { margin-top:6px; }
+  a.ex-card { text-decoration:none; box-sizing:border-box; }
+  .ex-exp { display:inline-block; background:#ff9f1a; color:#111; font-size:9.5px; font-weight:700; border-radius:3px; padding:0 4px; vertical-align:middle; }
   .ex-card { display:flex; gap:8px; border:1px solid var(--line); border-radius:6px; padding:6px; cursor:pointer; background:#181c21; text-align:left; width:100%; color:inherit; font:inherit; }
   .ex-card:hover { border-color:var(--acc); background:#252a20; }
   .ex-card img { width:112px; height:74px; object-fit:cover; border-radius:4px; flex:0 0 auto; background:#0f1215; }
@@ -105,7 +112,7 @@
   <div id="side">
     <header><div class="head"><div><h1>rally.raid Earth Stage Builder</h1><small>for BeamNG.Earth &middot; OpenStreetMap data &middot; stage format v1</small></div>
       <span class="hbtns"><button class="b" id="ex-open" title="Load a sample stage and edit it">Examples</button>
-      <a class="b" href="/mod" title="Download the BeamNG.drive mod (GPS, roadbook, stages) and install steps" style="text-decoration:none;display:inline-flex;align-items:center">Get the mod</a>
+      <a class="b" href="https://github.com/wyans-r/rally.raid-earth/releases/latest" target="_blank" rel="noopener" title="Download the BeamNG.drive mod (GPS, roadbook, stages) and install steps from GitHub Releases" style="text-decoration:none;display:inline-flex;align-items:center">Get the mod</a>
       <button class="b" id="rb-open" title="Make the roadbook for this stage: auto-generated from terrain and OpenStreetMap, then edit it, print it (PDF) and use it in game">Roadbook</button>
       <button class="b" id="b-share" title="Copy a link that opens this stage in someone else&rsquo;s browser. The link carries the stage itself; nothing is uploaded.">Share link</button></span></div></header>
     <div id="ex-hint"><span>New here? Open a sample stage to get a feel for how to build your own.</span>
@@ -1076,28 +1083,61 @@ function loadExample(id, skipConfirm) {
     return false
   })
 }
-function renderExamples(list) {
+// Feature switches for the Examples list. rallyEvents: the multi-day rally events ("rallies" in examples/index.json,
+// first Atlantic to Atlas 2027). OFF until wyans has checked the event in game; turning it on also needs calendar.html,
+// calendar.json and rallies/ deployed (deploy.sh).
+var EXAMPLE_FLAGS = { rallyEvents: false }
+var EX_OPEN_KEY = 'rallyraid-examples-open'
+function exOpenState() { try { return JSON.parse(localStorage.getItem(EX_OPEN_KEY) || '{}') || {} } catch (e) { return {} } }
+function renderExamples(list, rallies) {
   examplesList = list || []
+  var events = (rallies || []).filter(function (r) { return !r.flag || EXAMPLE_FLAGS[r.flag] === true })
   var box = document.getElementById('ex-list')
   if (!box) return
-  if (!examplesList.length) { box.textContent = 'No examples found.'; return }
-  var html = '', group = null
-  examplesList.forEach(function (s) {
-    if (s.group && s.group !== group) { group = s.group; html += '<div class="ex-gh">' + esc(group) + '</div>' }
-    var km = (s.lengthKm != null ? s.lengthKm : '') + ' km'
-    var wp = (s.waypoints != null ? s.waypoints : '') + ' waypoints'
-    var thumb = s.thumbnail ? '<img src="examples/' + esc(s.thumbnail) + '" alt="">' : ''
-    html += '<button type="button" class="ex-card" data-ex="' + esc(s.id) + '">' + thumb +
-      '<div class="ex-body"><h3>' + esc(s.name) + '</h3>' +
-      '<div class="meta">' + esc(s.region || '') + (s.inspiration ? ' · ' + esc(s.inspiration) : '') + ' · ' + esc(km) + ' · ' + esc(wp) + '</div>' +
-      (s.description ? '<p>' + esc(s.description) + '</p>' : '') +
-      '</div></button>'
+  if (!examplesList.length && !events.length) { box.textContent = 'No examples found.'; return }
+  // group by locale (country), in the order they first appear; a group header opens / closes its list
+  var order = [], byLoc = {}
+  function add(loc, item) { loc = loc || 'Elsewhere'; if (!byLoc[loc]) { byLoc[loc] = []; order.push(loc) } byLoc[loc].push(item) }
+  examplesList.forEach(function (s) { add(s.locale || s.group, { stage: s }) })
+  events.forEach(function (r) { add(r.locale, { rally: r }) })
+  var saved = exOpenState(), small = window.matchMedia && window.matchMedia('(max-width: 700px)').matches
+  var html = ''
+  order.forEach(function (loc, gi) {
+    // default: every group open on a wide screen; on a phone only the first (the starter stage)
+    var open = saved[loc] != null ? !!saved[loc] : (!small || gi === 0)
+    html += '<details class="ex-grp" data-loc="' + esc(loc) + '"' + (open ? ' open' : '') + '><summary class="ex-gh">' + esc(loc) +
+      ' <span class="ex-n">' + byLoc[loc].length + '</span></summary>'
+    byLoc[loc].forEach(function (it) {
+      if (it.rally) {
+        var r = it.rally
+        html += '<a class="ex-card ex-rally" href="' + esc(r.page) + '" target="_blank" rel="noopener" data-rally="' + esc(r.id) + '">' +
+          '<div class="ex-body"><h3>' + esc(r.name) + ' <span class="ex-exp">EXPERIMENTAL – not yet tested in game</span></h3>' +
+          '<div class="meta">' + esc(r.region || '') + ' · ' + esc(Math.round(r.lengthKm || 0) + ' km of special stages') + '</div>' +
+          '<div class="meta">' + esc(r.inspiration || '') + '</div>' +
+          (r.description ? '<p>' + esc(r.description) + '</p>' : '') + '</div></a>'
+        return
+      }
+      var s = it.stage
+      var km = (s.lengthKm != null ? s.lengthKm : '') + ' km'
+      var wp = (s.waypoints != null ? s.waypoints : '') + ' waypoints'
+      var thumb = s.thumbnail ? '<img src="examples/' + esc(s.thumbnail) + '" alt="" loading="lazy">' : ''
+      html += '<button type="button" class="ex-card" data-ex="' + esc(s.id) + '">' + thumb +
+        '<div class="ex-body"><h3>' + esc(s.name) + '</h3>' +
+        '<div class="meta">' + esc(s.region || '') + (s.inspiration ? ' · ' + esc(s.inspiration) : '') + ' · ' + esc(km) + ' · ' + esc(wp) + '</div>' +
+        (s.description ? '<p>' + esc(s.description) + '</p>' : '') +
+        '</div></button>'
+    })
+    html += '</details>'
   })
   box.innerHTML = html
   box.onclick = function (e) {
     var card = e.target.closest('[data-ex]')
     if (card) loadExample(card.getAttribute('data-ex'))
   }
+  // remember a group the player opened or closed (only real clicks: the initial "open" also fires a toggle event)
+  Array.prototype.forEach.call(box.querySelectorAll('details.ex-grp > summary'), function (sm) {
+    sm.addEventListener('click', function () { var d = sm.parentNode, st0 = exOpenState(); st0[d.getAttribute('data-loc')] = !d.open; try { localStorage.setItem(EX_OPEN_KEY, JSON.stringify(st0)) } catch (e) {} })
+  })
 }
 function exampleQueryId() {
   var m = /(?:\?|&)example=([^&]+)/.exec(location.search || '')
@@ -1109,9 +1149,9 @@ function initExamples() {
     if (!r.ok) throw new Error('HTTP ' + r.status)
     return r.json()
   }).then(function (data) {
-    renderExamples((data && data.stages) || [])
+    renderExamples((data && data.stages) || [], (data && data.rallies) || [])
     var qid = openedShare ? '' : exampleQueryId()
-    if (qid) return loadExample(qid)
+    if (qid) { var c = document.querySelector('#ex-list [data-ex="' + qid.replace(/"/g, '') + '"]'); if (c && c.closest('details')) c.closest('details').open = true; return loadExample(qid) }
   }).catch(function (e) {
     var box = document.getElementById('ex-list')
     if (box) box.textContent = 'Examples are not available in this copy of the builder.'

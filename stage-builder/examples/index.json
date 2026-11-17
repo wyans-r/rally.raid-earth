@@ -12,7 +12,8 @@
       "waypoints": 9,
       "description": "A short starter stage on Sand Flats Road and the Porcupine Rim 4x4 trail east of Moab, with a speed zone at the town edge. A good first file to open and edit.",
       "thumbnail": "moab-sand-flats-ss1.jpg",
-      "file": "moab-sand-flats-ss1.json"
+      "file": "moab-sand-flats-ss1.json",
+      "locale": "USA"
     },
     {
       "id": "nam-ss1-springbokwasser-terrace-bay",
@@ -24,7 +25,8 @@
       "waypoints": 10,
       "description": "Fast gravel down the C39 from the park gate to the Atlantic, with a camp-site speed zone at Torra Bay. Patterned after classic Dakar road-to-the-coast stages.",
       "thumbnail": "nam-ss1-springbokwasser-terrace-bay.jpg",
-      "file": "nam-ss1-springbokwasser-terrace-bay.json"
+      "file": "nam-ss1-springbokwasser-terrace-bay.json",
+      "locale": "Namibia"
     },
     {
       "id": "nam-ss2-terrace-bay-mowe-bay-dunes",
@@ -36,7 +38,8 @@
       "waypoints": 8,
       "description": "A short road transfer out of Terrace Bay, then 60+ km of off-piste through the coastal dune belt to Möwe Bay. A Dakar-style dune marathon day.",
       "thumbnail": "nam-ss2-terrace-bay-mowe-bay-dunes.jpg",
-      "file": "nam-ss2-terrace-bay-mowe-bay-dunes.json"
+      "file": "nam-ss2-terrace-bay-mowe-bay-dunes.json",
+      "locale": "Namibia"
     },
     {
       "id": "nam-ss3-sesfontein-hoanib-amspoort",
@@ -48,7 +51,8 @@
       "waypoints": 11,
       "description": "Out of Sesfontein, then down the dry Hoanib river bed to Amspoort. Patterned after African river-bed stages and Kaokoland rallies.",
       "thumbnail": "nam-ss3-sesfontein-hoanib-amspoort.jpg",
-      "file": "nam-ss3-sesfontein-hoanib-amspoort.json"
+      "file": "nam-ss3-sesfontein-hoanib-amspoort.json",
+      "locale": "Namibia"
     },
     {
       "id": "nam-ss4-orupembe-hartmann-valley",
@@ -60,7 +64,8 @@
       "waypoints": 10,
       "description": "Rocky Kaokoveld tracks through Orupembe, then off-piste up Hartmann's Valley. A mountain-and-sand day in the style of Rallye du Maroc and Dakar.",
       "thumbnail": "nam-ss4-orupembe-hartmann-valley.jpg",
-      "file": "nam-ss4-orupembe-hartmann-valley.json"
+      "file": "nam-ss4-orupembe-hartmann-valley.json",
+      "locale": "Namibia"
     },
     {
       "id": "mar-merzouga-erg-chebbi",
@@ -72,7 +77,8 @@
       "waypoints": 10,
       "description": "Stony piste from Rissani, a village zone in Merzouga, then an off-piste loop around Erg Chebbi to Taouz. Patterned after the Rallye du Maroc.",
       "thumbnail": "mar-merzouga-erg-chebbi.jpg",
-      "file": "mar-merzouga-erg-chebbi.json"
+      "file": "mar-merzouga-erg-chebbi.json",
+      "locale": "Morocco"
     },
     {
       "id": "mar-mhamid-chigaga-iriki",
@@ -84,7 +90,8 @@
       "waypoints": 10,
       "description": "Village zone at M'Hamid, the dunes of Erg Chigaga, then the dry lake of Lac Iriki into Foum Zguid. Patterned after the Africa Eco Race.",
       "thumbnail": "mar-mhamid-chigaga-iriki.jpg",
-      "file": "mar-mhamid-chigaga-iriki.json"
+      "file": "mar-mhamid-chigaga-iriki.json",
+      "locale": "Morocco"
     },
     {
       "id": "ksa-alula-hegra-canyons",
@@ -96,7 +103,8 @@
       "waypoints": 10,
       "description": "Fast tracks between sandstone mesas, sandy canyons and short dune crossings near Hegra. Patterned after the Dakar's AlUla stages.",
       "thumbnail": "ksa-alula-hegra-canyons.jpg",
-      "file": "ksa-alula-hegra-canyons.json"
+      "file": "ksa-alula-hegra-canyons.json",
+      "locale": "Saudi Arabia"
     },
     {
       "id": "ksa-empty-quarter-shubaytah",
@@ -108,7 +116,8 @@
       "waypoints": 9,
       "description": "Almost entirely off-piste in the giant dunes of the Empty Quarter, with long CAP legs and few waypoints. Patterned after Dakar's Shubaytah days.",
       "thumbnail": "ksa-empty-quarter-shubaytah.jpg",
-      "file": "ksa-empty-quarter-shubaytah.json"
+      "file": "ksa-empty-quarter-shubaytah.json",
+      "locale": "Saudi Arabia"
     },
     {
       "id": "ksa-hail-jubbah-nafud",
@@ -120,7 +129,8 @@
       "waypoints": 10,
       "description": "Fast road and gravel to Jubbah, then the red dunes of An Nafud. Patterned after the Dakar's Ha'il stages.",
       "thumbnail": "ksa-hail-jubbah-nafud.jpg",
-      "file": "ksa-hail-jubbah-nafud.json"
+      "file": "ksa-hail-jubbah-nafud.json",
+      "locale": "Saudi Arabia"
     },
     {
       "id": "uae-liwa-qasr-al-sarab-moreeb",
@@ -132,7 +142,8 @@
       "waypoints": 8,
       "description": "Dunes from Qasr Al Sarab to Moreeb Dune and Liwa, with sabkha crossings. Patterned after the Abu Dhabi Desert Challenge.",
       "thumbnail": "uae-liwa-qasr-al-sarab-moreeb.jpg",
-      "file": "uae-liwa-qasr-al-sarab-moreeb.json"
+      "file": "uae-liwa-qasr-al-sarab-moreeb.json",
+      "locale": "United Arab Emirates"
     },
     {
       "id": "arg-fiambala-dunes",
@@ -144,7 +155,8 @@
       "waypoints": 10,
       "description": "Out of Fiambalá through a speed zone, then the high-altitude Saujil dunes. Patterned after the Dakar's Argentina years.",
       "thumbnail": "arg-fiambala-dunes.jpg",
-      "file": "arg-fiambala-dunes.json"
+      "file": "arg-fiambala-dunes.json",
+      "locale": "Argentina"
     },
     {
       "id": "aus-finke-old-south-road",
@@ -156,7 +168,8 @@
       "waypoints": 10,
       "description": "A long, flat-out sand and gravel run south on the Old South Road from Alice Springs toward Maryvale. Patterned after the Finke Desert Race.",
       "thumbnail": "aus-finke-old-south-road.jpg",
-      "file": "aus-finke-old-south-road.json"
+      "file": "aus-finke-old-south-road.json",
+      "locale": "Australia"
     },
     {
       "id": "mex-baja-ojos-negros-mikes",
@@ -168,7 +181,8 @@
       "waypoints": 8,
       "description": "Graded dirt out of Ojos Negros, Valle de la Trinidad, then the mountain road to Mike's Sky Rancho. Patterned after the SCORE Baja 1000.",
       "thumbnail": "mex-baja-ojos-negros-mikes.jpg",
-      "file": "mex-baja-ojos-negros-mikes.json"
+      "file": "mex-baja-ojos-negros-mikes.json",
+      "locale": "Mexico"
     },
     {
       "id": "mng-gobi-dalanzadgad-bayanzag",
@@ -180,7 +194,25 @@
       "waypoints": 11,
       "description": "Steppe tracks to the Flaming Cliffs of Bayanzag, then a dune field. Patterned after the Silk Way Rally's Gobi stages.",
       "thumbnail": "mng-gobi-dalanzadgad-bayanzag.jpg",
-      "file": "mng-gobi-dalanzadgad-bayanzag.json"
+      "file": "mng-gobi-dalanzadgad-bayanzag.json",
+      "locale": "Mongolia"
+    }
+  ],
+  "note": "locale = the collapsible group in the Examples tab. \"rallies\" are multi-day events; one with \"flag\" is shown only when that flag is on in index.html (EXAMPLE_FLAGS).",
+  "rallies": [
+    {
+      "id": "atlantic-to-atlas-2027",
+      "kind": "rally",
+      "flag": "rallyEvents",
+      "name": "Atlantic to Atlas 2027 (rally, 15 days, 13 stages)",
+      "region": "Portugal and Morocco",
+      "locale": "Morocco",
+      "inspiration": "Inspired by the 2027 Dakar route. Unofficial, not affiliated.",
+      "group": "Rally events",
+      "lengthKm": 4326.6,
+      "description": "A full rally raid from the Algarve to Marrakech: prologue, 12 stages of 21 to 491 km, a sea-crossing transfer, a rest day and a two-day marathon. EXPERIMENTAL – not yet tested in game.",
+      "rally": "rallies/atlantic-to-atlas-2027.rally.json",
+      "page": "calendar.html?rally=atlantic-to-atlas-2027"
     }
   ]
 }
