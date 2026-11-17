@@ -574,16 +574,6 @@
     overpassStickyFastMs: 6000, // stay on a mirror for later queries only if it answered faster than this
     overpassStatusUrl: 'https://overpass-api.de/api/status', // official server: skip it at once when this says it is full
     overpassMaxPauseMs: 15000,
-    // Shared cache (B20): bundled extracts, then the stage-builder /api/overpass proxy, then public mirrors.
-    // Tests that pass fetchOverpass skip this unless they set overpassCache: true. In the game the relative
-    // /api path does not exist, so the code falls back to the absolute URL and then to public mirrors.
-    overpassCache: true,
-    overpassProxyPath: '/api/overpass',
-    overpassProxyUrl: 'https://stagebuilder.wyans.net/api/overpass',
-    overpassExtractsPath: '/overpass-extracts/index.json',
-    overpassExtractsUrl: 'https://stagebuilder.wyans.net/overpass-extracts/index.json',
-    overpassProxyTimeoutMs: 18000,
-    overpassBundledTimeoutMs: 4000,
     junctionsInSpeedZones: 'turns', // 'all' | 'turns' (inside DZ..FZ only junctions where you turn / fork)
     // off-piste line planner (planOffPiste)
     planOffPiste: true, planCell: 30, planWidthFrac: 0.18, planMinHalfWidth: 500, planMaxHalfWidth: 2500, planMinLegM: 400,
@@ -968,225 +958,6 @@
     while (recent.size > RECENT_MAX) recent.delete(recent.keys().next().value);
   }
 
-  function useOverpassCache(o) {
-    o = o || {};
-    if (o.overpassCache === false) return false;
-    // callers with their own fetchOverpass (tests, a private cache) opt in with overpassCache: true
-    if (o.fetchOverpass && o.overpassCache !== true) return false;
-    return true;
-  }
-  function normalizeOverpassQuery(q) {
-    return String(q || '').replace(/^\uFEFF/, '').trim()
-      .replace(/\[timeout:\d+\]/g, '[timeout:20]')
-      .replace(/\s+/g, ' ').replace(/;\s*/g, ';').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')')
-      .replace(/,\s+/g, ',').replace(/\s*\[/g, '[').replace(/\]\s*/g, ']');
-  }
-function boxInside(inner, outer) {
-    return inner[0] >= outer[0] && inner[1] >= outer[1] && inner[2] <= outer[2] && inner[3] <= outer[3];
-  }
-  async function fetchTimed(url, timeoutMs, asGzip) {
-    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const t = ctl ? setTimeout(() => ctl.abort(), timeoutMs) : null;
-    try {
-      if (typeof fetch === 'undefined') throw new Error('no fetch');
-      const r = await fetch(url, { signal: ctl ? ctl.signal : undefined, headers: { 'Accept': 'application/json, application/gzip' } });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      if (asGzip || /\.gz(\?|$)/.test(url)) {
-        if (typeof DecompressionStream === 'undefined') throw new Error('no gzip support');
-        return await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();
-      }
-      return await r.json();
-    } finally { if (t) clearTimeout(t); }
-  }
-  const bundledMemo = { index: null, files: new Map() };
-  function resetBundledMemo() {
-    bundledMemo.index = null;
-    bundledMemo.files = new Map();
-    bundledMemo.base = null;
-  }
-  function bundledIndexUrls(o) {
-    const rel = o.overpassExtractsPath != null ? o.overpassExtractsPath : DEFAULTS.overpassExtractsPath;
-    const abs = o.overpassExtractsUrl != null ? o.overpassExtractsUrl : DEFAULTS.overpassExtractsUrl;
-    const urls = [];
-    if (rel) urls.push(rel);
-    if (abs && abs !== rel) urls.push(abs);
-    return urls;
-  }
-  async function loadBundledIndex(o, log) {
-    if (bundledMemo.index) return bundledMemo.index;
-    if (bundledMemo.index === false) return null;
-    const timeoutMs = o.overpassBundledTimeoutMs != null ? o.overpassBundledTimeoutMs : DEFAULTS.overpassBundledTimeoutMs;
-    let last = null;
-    for (const url of bundledIndexUrls(o)) {
-      try {
-        const data = await fetchTimed(url, timeoutMs, false);
-        if (data && Array.isArray(data.regions)) { bundledMemo.index = data; bundledMemo.base = url.replace(/[^/]+$/, ''); return data; }
-      } catch (e) { last = e; }
-    }
-    if (log && last) log('overpass extracts: ' + last.message);
-    bundledMemo.index = false;
-    return null;
-  }
-  function pickBundledRegion(index, boxes) {
-    if (!index || !boxes.length) return null;
-    for (const r of index.regions) {
-      const tiles = (r.tiles && r.tiles.length) ? r.tiles : (r.bbox ? [r.bbox] : []);
-      // every query box must sit inside at least one coverage tile (avoids holes in a corridor union)
-      if (tiles.length && boxes.every(x => tiles.some(b => boxInside(x, b)))) return r;
-    }
-    return null;
-  }
-  function bundledFilters(stmt) {
-    const type = stmt.startsWith('node') ? 'node' : stmt.startsWith('way') ? 'way' : null;
-    const filters = [];
-    const re = /\[(\![A-Za-z0-9:_]+|[A-Za-z0-9:_]+(?:=[A-Za-z0-9:_-]+|~"[^"]+")?)\]/g;
-    let m; while ((m = re.exec(stmt))) {
-      const raw = m[1];
-      if (raw[0] === '!') filters.push({ kind: 'missing', key: raw.slice(1) });
-      else if (raw.indexOf('~"') >= 0) { const i = raw.indexOf('~"'); filters.push({ kind: 're', key: raw.slice(0, i), re: raw.slice(i + 2, -1) }); }
-      else if (raw.indexOf('=') >= 0) { const i = raw.indexOf('='); filters.push({ kind: 'eq', key: raw.slice(0, i), val: raw.slice(i + 1) }); }
-      else filters.push({ kind: 'has', key: raw });
-    }
-    return type && filters.length ? { type, filters } : null;
-  }
-  function bundledTagsMatch(tags, filters) {
-    tags = tags || {};
-    for (let i = 0; i < filters.length; i++) {
-      const f = filters[i], v = tags[f.key];
-      if (f.kind === 'missing') { if (v != null && v !== '') return false; }
-      else if (f.kind === 'has') { if (v == null || v === '') return false; }
-      else if (f.kind === 'eq') { if (String(v) !== f.val) return false; }
-      else if (f.kind === 're') { let rx; try { rx = new RegExp(f.re); } catch (e) { return false; } if (v == null || !rx.test(String(v))) return false; }
-    }
-    return true;
-  }
-  function bundledInBoxes(el, boxes) {
-    if (el.lat != null && el.lon != null) { const la = +el.lat, lo = +el.lon; return boxes.some(b => la >= b[0] && la <= b[2] && lo >= b[1] && lo <= b[3]); }
-    const g = el.geometry;
-    if (Array.isArray(g)) return g.some(p => p && boxes.some(b => +p.lat >= b[0] && +p.lat <= b[2] && +p.lon >= b[1] && +p.lon <= b[3]));
-    if (el.center && el.center.lat != null) { const la = +el.center.lat, lo = +el.center.lon; return boxes.some(b => la >= b[0] && la <= b[2] && lo >= b[1] && lo <= b[3]); }
-    return false;
-  }
-  function parseBundledGroups(q) {
-    const norm = normalizeOverpassQuery(q);
-    const groups = [];
-    const re = /\(([^]*?)\)(?:;?)(out (?:body geom qt|body geom|body qt|center|body))/g;
-    let m; while ((m = re.exec(norm))) {
-      const stmts = m[1].split(';').map(s => s.trim()).filter(Boolean).map(bundledFilters).filter(Boolean);
-      groups.push({ stmts, out: m[2] });
-    }
-    return groups;
-  }
-  function filterBundledExtract(extract, q, boxes) {
-    const groups = parseBundledGroups(q), src = (extract && extract.elements) || [], want = [];
-    for (const g of groups) {
-      const wantCenter = g.out === 'out center';
-      for (let i = 0; i < src.length; i++) {
-        const el = src[i];
-        if (!g.stmts.some(s => el.type === s.type && bundledTagsMatch(el.tags, s.filters))) continue;
-        if (!bundledInBoxes(el, boxes)) continue;
-        if (wantCenter && el.type === 'way' && !el.center) {
-          const gpts = (el.geometry || []).filter(Boolean);
-          if (gpts.length) {
-            let la = 0, lo = 0; for (const p of gpts) { la += +p.lat; lo += +p.lon; }
-            want.push({ type: el.type, id: el.id, tags: el.tags, center: { lat: la / gpts.length, lon: lo / gpts.length } });
-            continue;
-          }
-        }
-        // the bundled extracts keep way geometry but not node ids; junction finding (analyseOsm) matches ways by shared
-        // node ids, and OSM ways share a node exactly where their points coincide, so ids made from the coordinates work
-        if (el.type === 'way' && !el.nodes && Array.isArray(el.geometry)) {
-          want.push(Object.assign({}, el, { nodes: el.geometry.map(p => p ? 'g' + (+p.lat).toFixed(7) + ',' + (+p.lon).toFixed(7) : 'gnull') }));
-          continue;
-        }
-        want.push(el);
-      }
-    }
-    const seen = new Set(), elements = [];
-    for (const el of want) { const k = el.type + '/' + el.id; if (seen.has(k)) continue; seen.add(k); elements.push(el); }
-    return { version: 0.6, generator: 'rallyraid-bundled-extract', elements };
-  }
-  async function loadBundledFile(region, o) {
-    const key = region.file || region.id;
-    if (bundledMemo.files.has(key)) return bundledMemo.files.get(key);
-    const timeoutMs = (o.overpassBundledTimeoutMs != null ? o.overpassBundledTimeoutMs : DEFAULTS.overpassBundledTimeoutMs) * 2;
-    const base = bundledMemo.base || '/overpass-extracts/';
-    const rel = base + region.file;
-    const absRoot = (o.overpassExtractsUrl != null ? o.overpassExtractsUrl : DEFAULTS.overpassExtractsUrl).replace(/[^/]+$/, '');
-    const abs = absRoot + region.file;
-    const urls = rel === abs ? [rel] : [rel, abs];
-    let last = null;
-    for (const url of urls) {
-      try {
-        const data = await fetchTimed(url, timeoutMs, /\.gz(\?|$)/.test(url));
-        if (data && Array.isArray(data.elements)) { bundledMemo.files.set(key, data); return data; }
-      } catch (e) { last = e; }
-    }
-    throw last || new Error('extract not available');
-  }
-  async function tryBundledOverpass(q, o, log) {
-    try {
-      const boxes = overpassQueryBoxes(q);
-      if (!boxes.length) return null;
-      const index = await loadBundledIndex(o, log);
-      if (!index) return null;
-      const region = pickBundledRegion(index, boxes);
-      if (!region) return null;
-      const extract = await loadBundledFile(region, o);
-      const data = filterBundledExtract(extract, q, boxes);
-      if (log) log('overpass: bundled extract ' + region.id + ' (' + data.elements.length + ' elements)');
-      o._overpassSticky = 'bundled:' + region.id;
-      return data;
-    } catch (e) {
-      if (log) log('overpass bundled: ' + (e && e.message));
-      return null;
-    }
-  }
-  async function postOverpassProxy(url, q, timeoutMs) {
-    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const t = ctl ? setTimeout(() => ctl.abort(), timeoutMs) : null;
-    try {
-      if (typeof fetch === 'undefined') throw new Error('no fetch');
-      const r = await fetch(url, {
-        method: 'POST', body: 'data=' + encodeURIComponent(q),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
-        signal: ctl ? ctl.signal : undefined
-      });
-      const text = await r.text();
-      if (r.status === 429) { const err = new Error('proxy rate limit'); err.proxyLimited = true; throw err; }
-      if (r.status === 400 || r.status === 413) { const err = new Error('proxy rejected the query'); err.proxyRejected = true; throw err; }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = JSON.parse(text);
-      if (!data || !Array.isArray(data.elements)) throw new Error('unusable proxy response');
-      return data;
-    } finally { if (t) clearTimeout(t); }
-  }
-  async function tryOverpassProxy(q, o, log) {
-    const timeoutMs = o.overpassProxyTimeoutMs != null ? o.overpassProxyTimeoutMs : DEFAULTS.overpassProxyTimeoutMs;
-    const rel = o.overpassProxyPath != null ? o.overpassProxyPath : DEFAULTS.overpassProxyPath;
-    const abs = o.overpassProxyUrl != null ? o.overpassProxyUrl : DEFAULTS.overpassProxyUrl;
-    const urls = [];
-    if (rel) urls.push(rel);
-    if (abs && abs !== rel) urls.push(abs);
-    let last = null;
-    for (const url of urls) {
-      try {
-        const data = await postOverpassProxy(url, q, timeoutMs);
-        if (log) log('overpass: via proxy ' + url);
-        o._overpassSticky = url;
-        return data;
-      } catch (e) {
-        last = e;
-        if (e && (e.proxyLimited || e.proxyRejected)) {
-          if (log) log('overpass proxy: ' + e.message);
-          throw e;
-        }
-        if (log) log('overpass proxy ' + url + ': ' + (e && e.message));
-      }
-    }
-    return null;
-  }
-
   /**
    * One Overpass query, with mirrors.
    * Default (real network): prefer the last mirror that worked (or the official one), wait overpassStaggerMs,
@@ -1210,18 +981,6 @@ function boxInside(inner, outer) {
     return p;
   }
   async function askOverpassOnce(q, o, log) {
-    if (useOverpassCache(o)) {
-      const bundled = await tryBundledOverpass(q, o, log);
-      if (bundled) return bundled;
-      try {
-        const proxied = await tryOverpassProxy(q, o, log);
-        if (proxied) return proxied;
-      } catch (e) {
-        if (e && e.proxyLimited) throw e;          // do not fall through and hammer public mirrors
-        if (log && e && e.proxyRejected) log('overpass proxy rejected the query, trying public mirrors');
-      }
-      if (log) log('overpass: cache/proxy missed, asking public mirrors');
-    }
     const fetchOne = o.fetchOverpass || defaultOverpass;
     const order = overpassOrder(o, q);
     const race = o.overpassRace === true || (!o.fetchOverpass && o.overpassRace !== false);
@@ -2597,6 +2356,6 @@ function boxInside(inner, outer) {
     return n;
   }
 
-  return { VERSION, GENERATOR, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, useOverpassCache, tryBundledOverpass, tryOverpassProxy, normalizeOverpassQuery, filterBundledExtract, pickBundledRegion, resetBundledMemo, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
+  return { VERSION, GENERATOR, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
     geo: { dist, bearing, dest, rel, simplify, projector } };
 });

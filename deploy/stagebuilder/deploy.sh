@@ -33,11 +33,8 @@ cp "$SRC/stagegen.js" "$SITE/stagegen.js"
 cp "$SRC/stagegen.css" "$SITE/stagegen.css"
 rm -rf "$SITE/examples"
 cp -a "$SRC/examples" "$SITE/examples"
-# Bundled Overpass extracts (build them first: node stage-builder/scripts/build-overpass-extracts.js)
+# No Overpass extracts on main (the shared cache is on the branch overpass-cache); clear any left from the B20 deploy
 rm -rf "$SITE/overpass-extracts"
-if [ -f "$SRC/overpass-extracts/index.json" ]; then
-  cp -a "$SRC/overpass-extracts" "$SITE/overpass-extracts"
-fi
 # The public download zip is published only after wyans' in-game test OK.
 # This script does not copy a zip into site/download.
 

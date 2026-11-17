@@ -399,7 +399,7 @@ test('terrain-first: onPartial gets a terrain-only roadbook before OpenStreetMap
   const st = line(8, 30, 'direct');
   const seen = [], phases = new Set();
   let osmCalls = 0;
-  const rb = await RB.generate(st, { heightFn: () => 50, planOffPiste: true, density: 20, overpassCache: false, // the mock, not the bundled extracts
+  const rb = await RB.generate(st, { heightFn: () => 50, planOffPiste: true, density: 20,
     fetchOverpass: async () => { osmCalls++; return { elements: [] }; },
     onPartial: p => seen.push(p), onProgress: e => phases.add(e.phase) });
   assert.strictEqual(seen.length, 1); assert.strictEqual(seen[0].partial, 'terrain-only');
@@ -410,7 +410,7 @@ test('terrain-first: onPartial gets a terrain-only roadbook before OpenStreetMap
 
 test('OSM failure with osmOptional: terrain-only roadbook instead of an error', async () => {
   const st = line(5, 30, 'road');
-  const rb = await RB.generate(st, { heightFn: () => 50, osmOptional: true, overpassCache: false, overpassPauseMs: 1, overpassMaxPauseMs: 2, fetchOverpass: async () => { throw new Error('HTTP 504'); } });
+  const rb = await RB.generate(st, { heightFn: () => 50, osmOptional: true, overpassPauseMs: 1, overpassMaxPauseMs: 2, fetchOverpass: async () => { throw new Error('HTTP 504'); } });
   assert.strictEqual(rb.partial, 'terrain-only'); assert.ok(rb.sources.osm.failed);
 });
 
@@ -819,23 +819,15 @@ test('Overpass: a North America extract is tried after the official mirror for a
   assert.ok(calls[0] === official && calls.includes(na));
 });
 
-test('bundled extracts (ways without node ids): junctions still found, no crash', async () => {
-  // the extracts in stage-builder/overpass-extracts keep way geometry but drop node ids; filterBundledExtract makes ids
-  // from the coordinates, so two ways that meet at a point share a node, as in OSM
+test('OSM ways without node ids: no crash', async () => {
+  // some sources keep way geometry but drop node ids; analyseOsm must not throw on them
   const st = line(3, 90, 'road');
   const A = st.route.legs[0].points[0], B = st.route.legs[0].points[1];
   const mid = dest(A, 90, 1500), side = dest(mid, 0, 400);
   const g = pts => pts.map(p => ({ lat: p[0], lon: p[1] }));
-  const extract = { elements: [
+  const elements = [
     { type: 'way', id: 1, tags: { highway: 'track' }, geometry: g([A, mid, B]) },
-    { type: 'way', id: 2, tags: { highway: 'track' }, geometry: g([mid, side]) }] };
-  const bx = [Math.min(A[0], B[0]) - 0.05, Math.min(A[1], B[1]) - 0.05, Math.max(A[0], B[0]) + 0.05, Math.max(A[1], B[1]) + 0.05]
-  const q = RB.overpassQuery([bx], RB.DEFAULTS)
-  const data = RB.filterBundledExtract(extract, q, [bx]);
-
-  assert.ok(data.elements.every(w => Array.isArray(w.nodes) && w.nodes.length === w.geometry.length), 'every way has node ids');
-  const shared = data.elements[0].nodes.filter(n => data.elements[1].nodes.includes(n));
-  assert.equal(shared.length, 1, 'the two ways share the meeting point');
-  const rb = await RB.generate(st, { heightFn: () => 50, overpassCache: false, osm: { elements: data.elements } });
+    { type: 'way', id: 2, tags: { highway: 'track' }, geometry: g([mid, side]) }];
+  const rb = await RB.generate(st, { heightFn: () => 50, osm: { elements } });
   assert.ok(rb.boxes.length > 1);
 })
