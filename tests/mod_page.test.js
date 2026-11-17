@@ -1,6 +1,7 @@
-// The /mod page key lists must match the bindings shipped: the live page (stage-builder/mod.html) the 16 Nov zip it
-// links to (16 keys), the pending page (stage-builder/pending/mod.public-zip.html) this build's 9 driving keys, plus the
-// buttons that replaced the other keys (Wyans 2026-11-17).
+// The /mod page (stage-builder/mod.html) must match the public zip it links to, rallyraid_earth.zip (published
+// 17 Nov 2026): this build's 9 driving keys, the buttons that replaced the other keys (Wyans 2026-11-17), and an
+// EXPERIMENTAL / UNTESTED mark on every feature not yet tested in game. The old 16 Nov rallyraid_mod.zip stays in the
+// download folder (old links keep working) but is not linked.
 // node --test tests/mod_page.test.js
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
@@ -13,7 +14,6 @@ const MOD_HTML = path.join(ROOT, 'stage-builder/mod.html')
 const README = path.join(ROOT, 'README.md')
 const ACTIONS = path.join(ROOT, 'mod/lua/ge/extensions/core/input/actions/rallyRaid.json')
 const INPUTMAP = path.join(ROOT, 'mod/settings/inputmaps/keyboard_rallyRaid.json')
-const PENDING_HTML = path.join(ROOT, 'stage-builder/pending/mod.public-zip.html')
 // the keyboard file inside the 16 Nov zip (/download/rallyraid_mod.zip, sha 1c750311...), frozen here
 const LIVE_ZIP_BINDINGS = [['ctrl shift up', 'rallyRaid_tripPlus'], ['ctrl shift down', 'rallyRaid_tripMinus'], ['ctrl shift right', 'rallyRaid_wPlus'],
   ['ctrl shift left', 'rallyRaid_wMinus'], ['ctrl shift p', 'rallyRaid_partialReset'], ['ctrl shift home', 'rallyRaid_start'], ['ctrl shift pageup', 'rallyRaid_boxPrev'],
@@ -95,7 +95,7 @@ test('the frozen 16 Nov key list matches the zip in the download folder (when it
   assert.deepEqual(JSON.parse(txt).bindings, LIVE_ZIP_BINDINGS)
 })
 
-for (const [name, file, list] of [['live /mod page (16 Nov zip)', MOD_HTML, LIVE_ZIP_BINDINGS], ['pending /mod page (this build)', PENDING_HTML, null]]) {
+for (const [name, file, list] of [['/mod page (rallyraid_earth.zip)', MOD_HTML, null]]) {
 test(name + ': every bound key is listed with the right action', () => {
   const html = fs.readFileSync(file, 'utf8')
   const rows = parseKeyTable(html)
@@ -112,17 +112,26 @@ test(name + ': every bound key is listed with the right action', () => {
 })
 }
 
-test('live /mod page: the recce keys are marked "this download only", no next-build keys', () => {
+test('/mod page marks every feature not yet tested in game as EXPERIMENTAL / UNTESTED', () => {
   const html = fs.readFileSync(MOD_HTML, 'utf8')
-  for (const k of ['R', 'N', 'C', 'M', 'T', 'Delete', 'Z']) {
-    assert.match(html, new RegExp('Ctrl\\+Shift\\+' + k + '</code></td><td>[^<]*<i class="nb">\\(this download only\\)</i>'))
+  const block = html.match(/<ul id="experimental-list">([\s\S]*?)<\/ul>/)
+  assert.ok(block, 'experimental list missing')
+  const items = block[1].split('<li>').slice(1).map((x) => x.replace(/<[^>]+>/g, '').trim())
+  for (const f of ['Repair', 'Recover car', 'Crash resume', 'Planner', 'GPS MENU', 'Recce mode', 'Your own keys in the apps', 'Ctrl+Shift keys']) {
+    const it = items.find((x) => x.includes(f))
+    assert.ok(it, 'experimental list should name ' + f)
+    assert.match(it, /^EXPERIMENTAL \/ UNTESTED/)
   }
-  for (const k of ['F', 'G', 'H', 'J', 'W', 'B', 'K']) assert.doesNotMatch(html, new RegExp('Ctrl\\+Shift\\+' + k + '<'))
-  assert.match(html, /The next build keeps only the driving keys/)
+  assert.equal(items.length, 8)
+  const btn = html.match(/<h3>Buttons \(no default key\)<\/h3>[\s\S]*?<\/table>/)[0]
+  const rows = btn.split('<tr>').slice(1)
+  assert.equal(rows.length, 7)
+  for (const r of rows) assert.match(r, /EXPERIMENTAL \/ UNTESTED/, 'every button row is untested: ' + r.replace(/<[^>]+>/g, ''))
+  assert.match(html, /GPS and Roadbook apps have been driven on a full stage/)
 })
 
-test('pending /mod page: each unbound action names its button', () => {
-  const html = fs.readFileSync(PENDING_HTML, 'utf8')
+test('/mod page: each unbound action names its button', () => {
+  const html = fs.readFileSync(MOD_HTML, 'utf8')
   const block = html.match(/<h3>Buttons \(no default key\)<\/h3>[\s\S]*?<\/table>/)
   assert.ok(block, 'Buttons table missing')
   const txt = block[0].replace(/<[^>]+>/g, '')
@@ -145,18 +154,13 @@ test('/mod page does not call Left/Right trip step size, and names the 10m butto
   assert.match(html, /10 \/ 100 \/ 1000 m/)
 })
 
-test('/mod page download link stays on the 16 Nov zip until the public zip is OKd', () => {
+test('/mod page links rallyraid_earth.zip and no longer links the 16 Nov zip', () => {
   const html = fs.readFileSync(MOD_HTML, 'utf8')
-  assert.match(html, /href="\/download\/rallyraid_mod\.zip"/)
-  assert.match(html, /Download rallyraid_mod\.zip/)
-  assert.doesNotMatch(html, /wyans_rallyraid\.zip/)
-})
-
-test('pending public-zip /mod page is ready with the wyans_rallyraid.zip link', () => {
-  const html = fs.readFileSync(path.join(ROOT, 'stage-builder/pending/mod.public-zip.html'), 'utf8')
-  assert.match(html, /href="\/download\/wyans_rallyraid\.zip"/)
-  assert.match(html, /Download wyans_rallyraid\.zip/)
+  assert.match(html, /href="\/download\/rallyraid_earth\.zip"/)
+  assert.match(html, /Download rallyraid_earth\.zip/)
   assert.doesNotMatch(html, /rallyraid_mod\.zip/)
+  assert.doesNotMatch(html, /wyans_rallyraid/)
+  assert.match(html, /auto-generated/)
 })
 
 test('README lists every bound key, and a button for each unbound action', () => {
@@ -174,15 +178,17 @@ test('README lists every bound key, and a button for each unbound action', () =>
   assert.match(md, /Trip reset \| not bound by default/)
 })
 
-test('live download folder still has the existing zip and was not overwritten', (t) => {
+test('download folder has rallyraid_earth.zip and still has the old 16 Nov zip', (t) => {
   const download = path.join(ROOT, 'stage-builder/download')
   if (!fs.existsSync(download)) { t.skip('stage-builder/download is not in this checkout (git-ignored)'); return }
   const names = fs.readdirSync(download)
-  assert.ok(names.includes('rallyraid_mod.zip'), 'existing download zip should still be rallyraid_mod.zip: ' + names.join(','))
-  assert.ok(!names.includes('wyans_rallyraid.zip'), 'do not publish wyans_rallyraid.zip into the download folder yet')
+  assert.ok(names.includes('rallyraid_mod.zip'), 'the old 16 Nov zip stays so old links do not 404: ' + names.join(','))
+  assert.ok(names.includes('rallyraid_earth.zip'), 'the public zip is in the download folder: ' + names.join(','))
+  const dist = path.join(ROOT, 'dist/rallyraid_earth.zip')
+  if (fs.existsSync(dist)) assert.ok(fs.readFileSync(dist).equals(fs.readFileSync(path.join(download, 'rallyraid_earth.zip'))), 'download copy = dist build')
 })
 
-test('/mod page serves and shows every key of the 16 Nov zip (headless)', async (t) => {
+test('/mod page serves and shows every key of this build (headless)', async (t) => {
   let puppeteer
   try {
     puppeteer = require('puppeteer-core')
@@ -228,14 +234,14 @@ test('/mod page serves and shows every key of the 16 Nov zip (headless)', async 
       return { title: document.title, rows, href: dl && dl.getAttribute('href'), text: dl && dl.textContent, stepNote: document.body.innerText.includes('10m') }
     })
     assert.equal(errors.length, 0, errors.join('\n'))
-    const bindings = loadBindings(LIVE_ZIP_BINDINGS)
+    const bindings = loadBindings()
     assert.equal(got.rows.length, bindings.length)
     const byKey = Object.fromEntries(got.rows.map((r) => [r.key, r.action]))
     for (const b of bindings) {
       assert.ok(byKey[b.keyLabel], 'rendered page missing ' + b.keyLabel)
     }
-    assert.equal(got.href, '/download/rallyraid_mod.zip')
-    assert.match(got.text, /rallyraid_mod\.zip/)
+    assert.equal(got.href, '/download/rallyraid_earth.zip')
+    assert.match(got.text, /rallyraid_earth\.zip/)
     assert.equal(got.stepNote, true)
     assert.match(byKey['Ctrl+Shift+Left'], /W/)
     assert.doesNotMatch(byKey['Ctrl+Shift+Left'], /trip step size/i)

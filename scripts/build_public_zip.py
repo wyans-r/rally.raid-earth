@@ -16,7 +16,7 @@ of the repair + planner + resume build is OK.
 
 Usage:
   python3 scripts/build_public_zip.py
-  python3 scripts/build_public_zip.py --include-events --output dist/wyans_rallyraid_dev.zip
+  python3 scripts/build_public_zip.py --include-events --output dist/rallyraid_earth_dev.zip
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ MOD = ROOT / "mod"
 
 # Public filename confirmed by wyans on 17 Nov 2026 (no version number, username prefix).
 # Once used on BeamNG.com it should stay the same.
-DEFAULT_OUT = ROOT / "dist" / "wyans_rallyraid.zip"
+DEFAULT_OUT = ROOT / "dist" / "rallyraid_earth.zip"
 
 TOP_LEVEL = ("lua", "ui", "scripts", "settings", "rallyraid")
 
@@ -131,7 +131,7 @@ def build(output: Path, include_events: bool) -> None:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--include-events", action="store_true", help="include the unreleased Events app and official.lua")
-    ap.add_argument("--output", "-o", type=Path, default=DEFAULT_OUT, help="zip path (default: dist/wyans_rallyraid.zip)")
+    ap.add_argument("--output", "-o", type=Path, default=DEFAULT_OUT, help="zip path (default: dist/rallyraid_earth.zip)")
     args = ap.parse_args(argv)
     build(args.output if args.output.is_absolute() else (Path.cwd() / args.output), args.include_events)
     return 0
