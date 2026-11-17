@@ -15,7 +15,7 @@ labels: bug
 
 ## Where did it happen?
 
-- [ ] Stage builder website (https://stagebuilder.wyans.net)
+- [ ] Stage builder website (https://rrearth.wyans.net)
 - [ ] Roadbook editor
 - [ ] In BeamNG.drive (which app: GPS / Roadbook / Planner / Repair)
 

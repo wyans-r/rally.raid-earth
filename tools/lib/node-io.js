@@ -10,7 +10,7 @@ const RB = require(path.join(SITE, 'roadbook-gen.js'));
 const SG = require(path.join(SITE, 'stagegen-core.js'))(RB);
 const SC = require(path.join(SITE, 'stage-chain.js'))(SG, RB);
 const CACHE = process.env.RR_CACHE || path.join(__dirname, '..', '.cache');
-const UA = 'rallyraid-earth-batch/1.0 (+https://stagebuilder.wyans.net)';
+const UA = 'rallyraid-earth-batch/1.0 (+https://rrearth.wyans.net)';
 const cpath = (kind, key) => { const h = crypto.createHash('sha1').update(key).digest('hex'); return path.join(CACHE, kind, h.slice(0, 2), h); };
 const stats = { demHit: 0, demMiss: 0, osmHit: 0, osmMiss: 0, osmMs: 0, demMs: 0, osmFail: 0 };
 let logSink = m => console.error('   ' + m);

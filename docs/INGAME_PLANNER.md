@@ -2,7 +2,7 @@
 
 Build and edit a stage and its roadbook **inside BeamNG**, using the car as the pen: drive to a place, press a key,
 and a waypoint or a roadbook box is put there. Save, and load the stage straight into the rally computer. The files
-are the website's own (stage builder and roadbook editor on stagebuilder.wyans.net), in both directions.
+are the website's own (stage builder and roadbook editor on rrearth.wyans.net), in both directions.
 
 ## What it is made of, and why
 

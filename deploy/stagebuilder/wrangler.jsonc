@@ -1,5 +1,6 @@
 {
-  // Rally raid stage builder -> https://stagebuilder.wyans.net (public, static, no login)
+  // Rally raid stage builder -> https://rrearth.wyans.net (public, static, no login). Moved from stagebuilder.wyans.net
+  // on 17 Nov 2026; that host is now the redirect Worker in deploy/redirect-worker.
   // Source: stage-builder/ in this repository. Redeploy (only with wyans' OK): sh deploy/stagebuilder/deploy.sh
   // Static assets only: no Worker script, no /api routes. The shared Overpass cache (B20) is on the
   // branch `overpass-cache` until it is tested and reintegrated.
@@ -9,5 +10,5 @@
   "assets": { "directory": "./site" },
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [ { "pattern": "stagebuilder.wyans.net", "custom_domain": true } ]
+  "routes": [ { "pattern": "rrearth.wyans.net", "custom_domain": true } ]
 }

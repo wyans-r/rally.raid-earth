@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Moving your saved work – rally.raid Earth</title>
+<style>body{font:15px system-ui,sans-serif;background:#16181d;color:#e8e6e1;display:grid;place-items:center;min-height:90vh;margin:0}a{color:#f2a33a}</style>
+</head><body><p id="m">Moving your saved work from stagebuilder.wyans.net…</p>
+<script>
+// rally.raid Earth moved from stagebuilder.wyans.net to rrearth.wyans.net on 17 Nov 2026. The old host's
+// redirect page (deploy/redirect-worker) sends the site's saved data here once, in the URL fragment:
+//   #to=<path?query#hash>&d=<z + base64url(gzip(JSON)) | j + base64url(JSON)>
+// JSON: { v:1, ls:{ key: value }, docs:{ 'rb:<stage id>': { rb, stage, saved } } }
+// Only keys that start with "rallyraid" and roadbook autosaves ("rb:...") are taken, only when the
+// page came from the old host, and nothing newer here is overwritten. Then on to the target.
+(function () {
+  var OLD = 'https://stagebuilder.wyans.net', MARK = 'rallyraid-migrated-from-stagebuilder';
+  var h = new URLSearchParams(location.hash.slice(1)), to = h.get('to') || '/', d = h.get('d') || '';
+  if (!/^\/(?!\/)/.test(to)) to = '/';
+  try { history.replaceState(null, '', location.pathname) } catch (e) {}
+  var done = false;
+  function go() { if (done) return; done = true; location.replace(to) }
+  setTimeout(go, 8000);
+  if (!d || document.referrer.indexOf(OLD + '/') !== 0) return go();
+  unpack(d).then(function (o) {
+    if (!o || o.v !== 1) return go();
+    var wrote = 0, kept = 0;
+    Object.keys(o.ls || {}).forEach(function (k) {
+      if (k.indexOf('rallyraid') !== 0 || typeof o.ls[k] !== 'string') return;
+      try { if (localStorage.getItem(k) === null) { localStorage.setItem(k, o.ls[k]); wrote++ } else kept++ } catch (e) {}
+    });
+    writeDocs(o.docs || {}, function (n, k2) {
+      try { localStorage.setItem(MARK, JSON.stringify({ at: new Date().toISOString(), keys: wrote, roadbooks: n, keptNewer: kept + k2, leftBehind: o.left || 0 })) } catch (e) {}
+      go();
+    });
+  }).catch(go);
+
+  function unb64(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u }
+  function unpack(s) {
+    var bytes = unb64(s.slice(1));
+    if (s[0] === 'j') return Promise.resolve(JSON.parse(new TextDecoder().decode(bytes)));
+    if (s[0] !== 'z' || !window.DecompressionStream) return Promise.resolve(null);
+    return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text().then(JSON.parse);
+  }
+  function writeDocs(docs, cb) {
+    var keys = Object.keys(docs).filter(function (k) { return k.indexOf('rb:') === 0 && docs[k] && typeof docs[k] === 'object' });
+    if (!keys.length || !window.indexedDB) return cb(0, 0);
+    var n = 0, kept = 0, t = setTimeout(function () { cb(n, kept); cb = function () {} }, 4000);
+    var r = indexedDB.open('rallyraid-roadbook', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('cache'); r.result.createObjectStore('docs') };
+    r.onerror = function () { clearTimeout(t); cb(0, 0) };
+    r.onsuccess = function () {
+      var tx = r.result.transaction('docs', 'readwrite'), st = tx.objectStore('docs');
+      keys.forEach(function (k) {
+        var q = st.get(k);
+        q.onsuccess = function () {
+          var cur = q.result;
+          if (!cur || (cur.saved || 0) < (docs[k].saved || 0)) { st.put(docs[k], k); n++ } else kept++;
+        };
+      });
+      tx.oncomplete = tx.onerror = tx.onabort = function () { clearTimeout(t); cb(n, kept); cb = function () {} };
+    };
+  }
+})();
+</script></body></html>

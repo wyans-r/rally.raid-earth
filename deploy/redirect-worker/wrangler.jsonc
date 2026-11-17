@@ -1,0 +1,13 @@
+{
+  // stagebuilder.wyans.net -> https://rrearth.wyans.net (the site moved on 17 Nov 2026).
+  // Redirects every path (same path + query; the browser keeps the #hash) and copies people's saved
+  // work to the new origin once (src/index.js). No bindings: no D1, R2 or KV.
+  // Redeploy (only with wyans' OK): sh deploy/redirect-worker/deploy.sh
+  "name": "stagebuilder-redirect",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "account_id": "12d9d7f42a5a938f3f8aa5232a4557fb",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [ { "pattern": "stagebuilder.wyans.net", "custom_domain": true } ]
+}

@@ -1,6 +1,6 @@
 # rally.raid Earth 0.2.0 (17 Nov 2026)
 
-Dakar-style rally raid for [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth). It gives you a rally GPS with CAP and odometer that follows the FIM reveal rules, a scrolling roadbook, timed stages with penalties, and repairs. Plot your own stages for free at **[stagebuilder.wyans.net](https://stagebuilder.wyans.net)** (no login).
+Dakar-style rally raid for [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth). It gives you a rally GPS with CAP and odometer that follows the FIM reveal rules, a scrolling roadbook, timed stages with penalties, and repairs. Plot your own stages for free at **[rrearth.wyans.net](https://rrearth.wyans.net)** (no login).
 
 This is an early build. You need **BeamNG.drive** with the **BeamNG.Earth** mod installed and working. The GPS and Roadbook apps have been driven on a full stage in game. Everything marked **EXPERIMENTAL / UNTESTED** below has not been tested in game yet.
 
@@ -83,4 +83,4 @@ The code is released under the MIT Licence, Copyright (c) 2026 wyans.
 - Routing by OSRM, map queries by public Overpass mirrors, place names by Nominatim.
 - The roadbook symbols are an unofficial set drawn for this project.
 
-Made for BeamNG.Earth. This is not an official BeamNG, FIM or FIA product. Full credits: https://stagebuilder.wyans.net/credits.html
+Made for BeamNG.Earth. This is not an official BeamNG, FIM or FIA product. Full credits: https://rrearth.wyans.net/credits.html

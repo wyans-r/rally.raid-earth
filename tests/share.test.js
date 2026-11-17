@@ -6,8 +6,8 @@ const S = require('../stage-builder/share.js');
 const RB = require('../stage-builder/roadbook-gen.js');
 const EX = path.join(__dirname, '../stage-builder/examples');
 const manifest = JSON.parse(fs.readFileSync(path.join(EX, 'index.json'), 'utf8'));
-const BASE_S = 'https://stagebuilder.wyans.net/';
-const BASE_R = 'https://stagebuilder.wyans.net/roadbook.html';
+const BASE_S = 'https://rrearth.wyans.net/';
+const BASE_R = 'https://rrearth.wyans.net/roadbook.html';
 
 function loadPair(s) {
   const stage = JSON.parse(fs.readFileSync(path.join(EX, s.file), 'utf8'));
