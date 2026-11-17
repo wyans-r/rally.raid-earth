@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Credits - Rally Raid Stage Builder</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14171b">
+<style>
+  :root { --bg:#14171b; --panel:#1c2026; --line:#2c323a; --text:#e8eaed; --dim:#9aa0a6; --acc:#ffd400; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, Segoe UI, Roboto, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { margin:0 0 4px; font-size:26px; } h2 { margin:28px 0 8px; font-size:18px; color:var(--acc); }
+  .sub { color:var(--dim); margin:0 0 22px; }
+  a { color:var(--acc); }
+  nav { margin-bottom:20px; font-size:14px; }
+  li { margin:6px 0; }
+  .site-foot { margin-top:36px; padding-top:12px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; }
+</style>
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<main>
+<nav><a href="/">&larr; Stage builder</a> &middot; <a href="/roadbook">Roadbook editor</a> &middot; <a href="/mod">Get the mod</a></nav>
+<h1>Credits and data sources</h1>
+<p class="sub">Rally Raid for BeamNG.Earth &mdash; what this project uses, and how to credit it.</p>
+
+<p>This site and the BeamNG.drive Rally Raid mod are made for <a href="https://github.com/tecnagamer/beamng.earth">BeamNG.Earth</a>. They are not official BeamNG, FIM or FIA products. BeamNG.drive is a trademark of BeamNG GmbH. BeamNG's own files and terms are unchanged.</p>
+<p>The project's own code is offered under the MIT Licence (Copyright (c) 2026 wyans); the full text is in the project repository. The data and libraries below keep their own licences. If you share a stage or a roadbook built here, please keep the OpenStreetMap credit, because that work is built from OSM data.</p>
+
+<h2>OpenStreetMap</h2>
+<p>Roads, tracks, paths, places, landmarks, and any stage or roadbook generated from them. &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, licence: <a href="https://opendatacommons.org/licenses/odbl/">Open Database Licence (ODbL)</a>.</p>
+
+<h2>Nominatim (place search and auto-generated names)</h2>
+<p>The public search service at nominatim.openstreetmap.org, used when you search for a place and when the builder fills a stage name from nearby places. Their <a href="https://operations.osmfoundation.org/policies/nominatim/">usage policy</a> asks for no more than one request a second; automatic name lookups here are spaced at least 1.1 seconds apart.</p>
+
+<h2>OSRM (car routing)</h2>
+<p>&ldquo;Roads (car routing)&rdquo; legs are routed by the public OSRM demo server at router.project-osrm.org. That server is a courtesy, with no uptime promise; treat it as fair use (about one request a second).</p>
+
+<h2>Overpass API (OpenStreetMap questions)</h2>
+<p>Used for &ldquo;tracks &amp; paths&rdquo; legs, roadbook landmarks and junctions, and Stage-Gen. Queries go to public Overpass mirrors, including <a href="https://nextgis.com">NextGIS</a> Overpass, overpass-api.de, overpass.private.coffee, maps.mail.ru, and regional extracts on ovp.dresel.systems and overpass.osm.ch. The data they return is still OpenStreetMap data (ODbL). Answers are cached in your browser; a server that is silent or full is skipped.</p>
+
+<h2>ESA WorldCover (land cover / forest warnings)</h2>
+<p>ESA WorldCover 10 m 2021 v200, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
+<p>Attribution: &copy; ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium.</p>
+<p>Citation: Zanaga, D., Van De Kerchove, R., Daems, D., De Keersmaecker, W., Brockmann, C., Kirches, G., Wevers, J., Cartus, O., Santoro, M., Fritz, S., Lesiv, M., Herold, M., Tsendbazar, N.E., Xu, P., Ramoino, F., Arino, O., 2022. ESA WorldCover 10 m 2021 v200. <a href="https://doi.org/10.5281/zenodo.7254221">https://doi.org/10.5281/zenodo.7254221</a>.</p>
+<p>Tiles are fetched through the Microsoft Planetary Computer.</p>
+
+<h2>Elevation</h2>
+<p>Primary: <a href="https://mapterhorn.com">Mapterhorn</a> terrain tiles, built from open digital elevation models. The global baseline is Copernicus GLO-30 (produced by DLR and Airbus, provided under Copernicus by the European Union and ESA). Regional sources and their licences: <a href="https://mapterhorn.com/attribution">mapterhorn.com/attribution</a>.</p>
+<p>Fallback: Mapzen / Tilezen Terrarium tiles hosted on AWS. Source credits: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">Tilezen attribution</a>.</p>
+
+<h2>Map tiles</h2>
+<ul>
+  <li>OpenStreetMap standard tiles from tile.openstreetmap.org &mdash; &copy; OpenStreetMap contributors. The <a href="https://operations.osmfoundation.org/policies/tiles/">tile usage policy</a> applies.</li>
+  <li><a href="https://opentopomap.org">OpenTopoMap</a> &mdash; &copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA).</li>
+  <li>Esri World Imagery &mdash; Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community.</li>
+</ul>
+
+<h2>Libraries</h2>
+<ul>
+  <li><a href="https://leafletjs.com">Leaflet</a> 1.9.4 (BSD-2-Clause), for the maps</li>
+  <li><a href="https://github.com/parallax/jsPDF">jsPDF</a> 2.5.1 (MIT), for printable roadbooks</li>
+  <li><a href="https://github.com/101arrowz/fflate">fflate</a> (MIT), used to pack share links</li>
+  <li>The in-game apps use AngularJS as provided by BeamNG.drive (not bundled in the mod zip)</li>
+</ul>
+
+<h2>Roadbook symbols and rules</h2>
+<p>Waypoint types, radii and penalties follow the public 2026 FIM World Rally-Raid Championship sporting regulations, which you can change per stage on the Rules tab. The symbols drawn in the editor and in the game are a compact, unofficial set made for this project in the style of the public FIM / FIA / Dakar lexicons. This is not official FIM or FIA artwork, and those organisations have not endorsed the project.</p>
+
+<h2>BeamNG.Earth</h2>
+<p>The game world, the live latitude / longitude, and the roads you drive are from <a href="https://github.com/tecnagamer/beamng.earth">BeamNG.Earth</a>. You need BeamNG.Earth installed for the GPS and stages to make sense.</p>
+
+<footer class="site-foot">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). Built for BeamNG.Earth.</footer>
+</main>
+</body>
+</html>

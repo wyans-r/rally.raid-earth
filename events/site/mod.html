@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rally Raid mod for BeamNG.drive - download</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> <!-- mobile: viewport-fit lets the page use the full phone screen -->
+<meta name="theme-color" content="#14171b">
+<style>
+  :root { --bg:#14171b; --panel:#1c2026; --line:#2c323a; --text:#e8eaed; --dim:#9aa0a6; --acc:#ffd400; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, Segoe UI, Roboto, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { margin:0 0 4px; font-size:26px; } h2 { margin:28px 0 8px; font-size:18px; color:var(--acc); }
+  .sub { color:var(--dim); margin:0 0 22px; }
+  a { color:var(--acc); }
+  .dl { display:inline-block; background:var(--acc); color:#000; font-weight:700; text-decoration:none; padding:12px 22px; border-radius:6px; font-size:17px; }
+  .dl:hover { filter:brightness(1.1); }
+  .meta { color:var(--dim); font-size:13px; margin-top:8px; }
+  code { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:13px; word-break:break-all; }
+  li { margin:5px 0; }
+  table { border-collapse:collapse; font-size:14px; } td { border-bottom:1px solid var(--line); padding:4px 14px 4px 0; }
+  .note { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--acc); padding:10px 14px; border-radius:4px; }
+  nav { margin-bottom:20px; font-size:14px; }
+</style>
+<link rel="stylesheet" href="mobile.css"> <!-- mobile: phone layout, no effect above 900 px -->
+</head>
+<body><main>
+<nav><a href="/">&larr; Stage builder</a> &middot; <a href="/roadbook">Roadbook editor</a> &middot; <a href="/events/">Events</a></nav>
+<h1>Rally Raid for BeamNG.drive</h1>
+<p class="sub">Dakar-style rally raid for BeamNG.Earth: a GPS with CAP and odometer that follows the FIM reveal rules, a scrolling roadbook, timed stages with penalties, and a recce mode for refining notes as you drive.</p>
+
+<a class="dl" href="/download/rallyraid_mod.zip" download>Download rallyraid_mod.zip</a>
+<div class="meta">Test build, 16 Nov 2026 &middot; about 490 KB &middot; includes 15 example stages with roadbooks</div>
+
+<div class="note" style="margin-top:20px">This is an early test build that has not yet been tested much in game. Requires <b>BeamNG.drive</b> with the <b>BeamNG.Earth</b> mod installed and working.</div>
+
+<h2>Install</h2>
+<ol>
+  <li>Close BeamNG.drive.</li>
+  <li>Paste <code>%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\mods\</code> into the File Explorer address bar and press Enter.</li>
+  <li>Put <code>rallyraid_mod.zip</code> in that folder <b>without unzipping it</b>. When updating, replace the old zip.</li>
+  <li>Start the game, check the mod is on in the Mod Manager, load <b>BeamNG.Earth</b> and spawn a car.</li>
+  <li>Press Esc, open <b>UI Apps</b>, choose <b>Add app</b> and add <b>Rally Raid GPS</b> and <b>Rally Raid Roadbook</b> (category "Rally Raid"). Drag and resize them to taste.</li>
+</ol>
+
+<h2>Race a stage</h2>
+<ol>
+  <li>On the GPS app press <b>STAGES</b> (or <b>BOOK</b> on the roadbook app), click a stage and press <b>LOAD</b>, or double-click it.</li>
+  <li>Press <b>TP TO DSS</b> to teleport to the start, or drive there; the GPS points to the start until the stage begins.</li>
+  <li>Drive out of the start circle to start the clock, then navigate by roadbook. The GPS shows waypoint distance and heading only when you get close, as in a real rally.</li>
+</ol>
+
+<h2>Keys</h2>
+<table>
+  <tr><td><code>Ctrl+Shift+Up / Down</code></td><td>trip meter up / down</td></tr>
+  <tr><td><code>Ctrl+Shift+Left / Right</code></td><td>trip step size</td></tr>
+  <tr><td><code>Ctrl+Shift+P</code></td><td>reset partial</td></tr>
+  <tr><td><code>Ctrl+Shift+PageUp / PageDown</code></td><td>scroll roadbook boxes</td></tr>
+  <tr><td><code>Ctrl+Shift+End</code></td><td>"I'm at this box": set the trip to its km</td></tr>
+  <tr><td><code>Ctrl+Shift+R</code></td><td>recce mode on / off</td></tr>
+  <tr><td><code>Ctrl+Shift+N</code></td><td>recce: new box here</td></tr>
+  <tr><td><code>Ctrl+Shift+Z</code></td><td>recce: undo</td></tr>
+</table>
+
+<h2>Make your own stages</h2>
+<p>Plot a route in the <a href="/">stage builder</a> (the Examples button loads samples to learn from), export the stage <code>.json</code>, then make its roadbook in the <a href="/roadbook">roadbook editor</a>. Put stage files in <code>%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\rallyraid\stages\</code> and roadbooks in <code>...\current\rallyraid\roadbooks\</code> (create the folders).</p>
+
+<h2>Something broken?</h2>
+<p>Press <code>~</code> in game to open the console and screenshot any red errors.</p>
+</main></body></html>

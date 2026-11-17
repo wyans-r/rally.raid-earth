@@ -1,0 +1,20 @@
+{
+  "domElement": "<rally-raid-planner></rally-raid-planner>",
+  "name": "Rally Raid Planner",
+  "types": [
+    "ui.apps.categories.utility"
+  ],
+  "description": "Plan Rally Raid stages and roadbooks inside the game: drive the route and drop waypoints where the car is (Ctrl+Shift+W), record the driven line as the route (Ctrl+Shift+K), add and edit roadbook boxes at the car (Ctrl+Shift+B), generate a roadbook (full map data when the game has internet, from the route and the heights you drove when not), save and load the stage straight into the rally computer. Files are the stage builder's: open them on stagebuilder.wyans.net and back. Ctrl+Shift+J opens / closes it.",
+  "css": {
+    "top": "60px",
+    "left": "10px",
+    "height": "640px",
+    "width": "440px"
+  },
+  "author": "Rally Raid for BeamNG.Earth",
+  "version": "0.1.0",
+  "directive": "rallyRaidPlanner",
+  "appName": "rallyRaidPlanner",
+  "category": "Rally Raid",
+  "isAuxiliary": false
+}

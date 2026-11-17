@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rally Raid Stage Builder (BeamNG.Earth)</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> <!-- mobile: viewport-fit lets the page use the full phone screen -->
+<meta name="theme-color" content="#14171b">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+  :root { --bg:#14171b; --panel:#1c2026; --line:#2c323a; --text:#e8eaed; --dim:#9aa0a6; --acc:#ffd400; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font:13px/1.35 system-ui, Segoe UI, Roboto, sans-serif; }
+  #app { display:flex; height:100%; }
+  #side { width:400px; min-width:340px; display:flex; flex-direction:column; border-right:1px solid var(--line); background:var(--panel); }
+  #mapwrap { flex:1; position:relative; } #map { position:absolute; inset:0; }
+  header { padding:8px 10px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:15px; } header small { color:var(--dim); }
+  .tabs { display:flex; border-bottom:1px solid var(--line); }
+  .tabs button { flex:1; background:none; border:0; color:var(--dim); padding:7px; cursor:pointer; border-bottom:2px solid transparent; font-weight:600; }
+  .tabs button.on { color:var(--text); border-bottom-color:var(--acc); }
+  .pane { flex:1; overflow-y:auto; padding:8px 10px; display:none; } .pane.on { display:block; }
+  label { display:block; color:var(--dim); font-size:11px; margin:6px 0 2px; text-transform:uppercase; letter-spacing:.05em; }
+  input, select, textarea { width:100%; background:#0f1215; color:var(--text); border:1px solid var(--line); border-radius:4px; padding:4px 6px; font:inherit; }
+  textarea { resize:vertical; min-height:44px; }
+  button.b, a.b { background:#2a3038; color:var(--text); border:1px solid #3a414a; border-radius:4px; padding:4px 8px; cursor:pointer; font:inherit; }
+  button.b:hover, a.b:hover { background:#353c45; } button.b.p { background:#6b5a00; border-color:#a68b00; } button.b.d { background:#5a1f1f; border-color:#8a2f2f; }
+  .row { display:flex; gap:6px; align-items:center; } .row > * { flex:1; } .row > .nf { flex:0 0 auto; }
+  .types { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+  .types button { flex:0 0 auto; padding:3px 7px; border-radius:3px; border:1px solid #3a414a; background:#2a3038; color:#fff; cursor:pointer; font-weight:700; font-size:12px; }
+  .types button.on { outline:2px solid var(--acc); }
+  #list .pt { border:1px solid var(--line); border-radius:4px; padding:4px 6px; margin:4px 0; cursor:pointer; display:flex; gap:6px; align-items:center; }
+  #list .pt.sel { border-color:var(--acc); background:#252a20; }
+  #list .pt .tag { font-weight:700; min-width:62px; padding:1px 4px; border-radius:3px; text-align:center; color:#000; }
+  #list .pt .km { color:var(--dim); font-variant-numeric:tabular-nums; min-width:110px; }
+  #list .pt .nm { flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  #list .pt button { padding:0 5px; }
+  .stats { color:var(--dim); margin:6px 0; }
+  .warn { color:#ffb74d; } .err { color:#ff6a5c; } .ok { color:#7bd88f; }
+  table.rules { width:100%; border-collapse:collapse; font-size:12px; }
+  table.rules td, table.rules th { border-bottom:1px solid var(--line); padding:2px 3px; text-align:left; }
+  table.rules input, table.rules select { padding:2px 3px; }
+  #status { padding:5px 10px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; min-height:26px; }
+  .wpicon { border-radius:10px; border:2px solid #000; font:700 11px/1 system-ui, sans-serif; padding:3px 5px; white-space:nowrap; color:#000; box-shadow:0 1px 3px rgba(0,0,0,.6); }
+  .wpicon.sel { outline:3px solid #fff; }
+  .hint { color:var(--dim); font-size:12px; margin:4px 0; }
+  .hint a[data-rb] { color:var(--acc); cursor:pointer; text-decoration:underline; } .hint.legacy { color:#ffd88a; }
+  .mapbar { position:absolute; z-index:1000; top:10px; left:54px; display:flex; gap:6px; }
+  .mapbar input { width:260px; }
+  #searchres { position:absolute; z-index:1000; top:40px; left:54px; background:var(--panel); border:1px solid var(--line); max-width:420px; display:none; }
+  #searchres div { padding:4px 8px; cursor:pointer; } #searchres div:hover { background:#2a3038; }
+  #tip { position:fixed; z-index:5000; max-width:300px; background:#0b0d10; color:var(--text); border:1px solid #4a525c; border-radius:6px; padding:7px 9px; font-size:12px; line-height:1.4; box-shadow:0 4px 14px rgba(0,0,0,.6); pointer-events:none; display:none; }
+  #tip b.t { display:inline-block; padding:0 5px; border-radius:3px; color:#000; margin-right:5px; }
+  #tip .tr { color:var(--dim); margin-top:4px; font-size:11px; }
+  .g-card { border:1px solid var(--line); border-radius:6px; padding:7px 9px; margin:8px 0; background:#181c21; }
+  .g-card h3 { margin:0 0 4px; font-size:13px; display:flex; align-items:center; gap:7px; }
+  .g-card h3 .tag { font-weight:700; padding:1px 6px; border-radius:3px; color:#000; border:2px solid #000; border-radius:10px; font-size:11px; }
+  .g-card .facts { display:flex; flex-wrap:wrap; gap:4px 12px; color:var(--dim); font-size:11.5px; margin:4px 0; }
+  .g-card .facts b { color:var(--text); font-weight:600; }
+  .g-card p { margin:4px 0; } .g-card ul { margin:3px 0 2px; padding-left:18px; } .g-card li { margin:2px 0; }
+  .g-card .lab { color:var(--acc); font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-top:6px; }
+  .g-card.hl { border-color:var(--acc); }
+  .g-idx { display:flex; flex-wrap:wrap; gap:4px; margin:6px 0; }
+  .g-idx a { font-weight:700; font-size:11px; padding:2px 6px; border-radius:3px; color:#000; text-decoration:none; cursor:pointer; }
+  .tsum { color:var(--dim); font-size:12px; margin:4px 0 0; } .tsum a { color:var(--acc); cursor:pointer; }
+  header .head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  header .head .b { flex:0 0 auto; margin-top:2px; }
+  header .head .hbtns { display:flex; gap:4px; flex:0 0 auto; }
+  /* Share lives in the File tab on desktop so the header (and the panel below it) stay the same size; phones show it in the header button row. */
+  header .head #b-share { display:none; }
+  #ex-hint { display:none; align-items:center; gap:8px; padding:6px 10px; background:#2a2610; border-bottom:1px solid #6b5a00; color:var(--text); font-size:12px; }
+  #ex-hint.on { display:flex; }
+  #ex-hint span { flex:1; }
+  #ex-hint .b { flex:0 0 auto; }
+  .ex-gh { color:var(--acc); font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin:10px 0 4px; }
+  .ex-card { display:flex; gap:8px; border:1px solid var(--line); border-radius:6px; padding:6px; cursor:pointer; background:#181c21; text-align:left; width:100%; color:inherit; font:inherit; }
+  .ex-card:hover { border-color:var(--acc); background:#252a20; }
+  .ex-card img { width:112px; height:74px; object-fit:cover; border-radius:4px; flex:0 0 auto; background:#0f1215; }
+  .ex-card .ex-body { flex:1; min-width:0; }
+  .ex-card h3 { margin:0 0 2px; font-size:12.5px; line-height:1.25; }
+  .ex-card .meta { color:var(--dim); font-size:11px; }
+  .ex-card p { margin:3px 0 0; font-size:11.5px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  hr { border:0; border-top:1px solid var(--line); margin:10px 0; }
+</style>
+<link rel="stylesheet" href="mobile.css"> <!-- mobile: phone layout, no effect above 900 px -->
+<link rel="stylesheet" href="stagegen.css"> <!-- stagegen: Auto stage panel -->
+<script src="share.js"></script>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <header><div class="head"><div><h1>Rally Raid Stage Builder</h1><small>for BeamNG.Earth &middot; OpenStreetMap data &middot; stage format v1</small></div>
+      <span class="hbtns"><button class="b" id="ex-open" title="Load a sample stage and edit it">Examples</button>
+      <a class="b" href="/mod" title="Download the BeamNG.drive mod (GPS, roadbook, stages) and install steps" style="text-decoration:none;display:inline-flex;align-items:center">Get the mod</a>
+      <a class="b" href="/events/" title="Async rally raid events: enter, download the event packs, results and leaderboards" style="text-decoration:none;display:inline-flex;align-items:center">Events</a>
+      <button class="b" id="rb-open" title="Make the roadbook for this stage: auto-generated from terrain and OpenStreetMap, then edit it, print it (PDF) and use it in game">Roadbook</button>
+      <button class="b" id="b-share" title="Copy a link that opens this stage in someone else&rsquo;s browser. The link carries the stage itself; nothing is uploaded.">Share link</button></span></div></header>
+    <div id="ex-hint"><span>New here? Open a sample stage to get a feel for how to build your own.</span>
+      <button class="b p" id="ex-hint-go">Browse examples</button>
+      <button class="b" id="ex-hint-x" title="Dismiss">Dismiss</button></div>
+    <div class="tabs"><button data-tab="plot" class="on">Plot</button><button data-tab="stage">Stage</button><button data-tab="rules">Rules</button><button data-tab="file">File</button><button data-tab="guide" title="What each waypoint type is and where to use it">Guide</button></div>
+
+    <div class="pane on" id="pane-plot">
+      <label>Type for the next click</label>
+      <div class="types" id="typebtns"></div>
+      <div class="row">
+        <div><label>New leg follows</label>
+          <select id="legmode"><option value="road">OSM roads / tracks (OSRM)</option><option value="direct">straight line (off-piste)</option><option value="track">reference GPX track</option></select></div>
+        <div class="nf" style="padding-top:18px"><label style="display:inline;text-transform:none"><input type="checkbox" id="snap" style="width:auto" checked> snap clicks to road</label></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label style="display:inline;text-transform:none;flex:0 0 auto"><input type="checkbox" id="showradii" style="width:auto" checked> show radii</label>
+        <label style="display:inline;text-transform:none;flex:0 0 auto"><input type="checkbox" id="insertmode" style="width:auto"> insert after selected</label>
+      </div>
+      <div class="hint">Click the map to add a point. Drag markers to move. Click a marker or list row to select. Solid circle = validation radius, dashed = reveal (GPS opening) radius. NOTE = roadbook-only box (no GPS waypoint).</div>
+      <div class="stats" id="stats"></div>
+      <div id="problems"></div>
+      <div id="list"></div>
+      <div id="editor"></div>
+    </div>
+
+    <div class="pane" id="pane-stage">
+      <label>Stage name</label><input id="m-name" placeholder="SS1 ...">
+      <label>Stage id (file name, letters / digits / - only)</label><input id="m-id" placeholder="ss1-somewhere">
+      <label>Region</label><input id="m-region" placeholder="Moab, Utah, USA">
+      <label>Author</label><input id="m-author">
+      <label>Description</label><textarea id="m-desc"></textarea>
+      <label>Vehicle class / notes for drivers</label><input id="m-class" placeholder="any / T3 / trucks ...">
+      <label>Start position for "teleport to DSS" (blank = the DSS itself)</label>
+      <div class="row"><input id="m-slat" placeholder="lat"><input id="m-slon" placeholder="lon"><button class="b nf" id="m-sset" title="use the selected point">use selected</button></div>
+    </div>
+
+    <div class="pane" id="pane-rules">
+      <div class="hint">Defaults: FIM World Rally-Raid Championship 2026 (Art. 11.2 and 16). Change them to match another organiser's regulations; the stage file carries them, so everyone racing it uses the same rules.</div>
+      <table class="rules" id="rulestable"></table>
+      <hr>
+      <div class="row"><div><label>Speed zone tolerance (m)</label><input type="number" id="r-tol"></div><div><label>Impulse every (m)</label><input type="number" id="r-impd"></div><div><label>... or (s)</label><input type="number" id="r-impt"></div></div>
+      <label>Impulse penalties (km/h over : seconds)</label>
+      <div class="row"><input id="r-b1" title="1 to 5 km/h"><input id="r-b2" title="6 to 15"><input id="r-b3" title="16 to 40"><input id="r-b4" title="over 40"></div>
+      <div class="hint">1&ndash;5 / 6&ndash;15 / 16&ndash;40 / over 40 km/h</div>
+      <div class="row"><div><label>Category max km/h (blank = none)</label><input type="number" id="r-gmax"></div><div><label>Lookahead (WPs)</label><input type="number" id="r-look"></div></div>
+      <div class="row"><div><label>Start mode</label><select id="r-start"><option value="auto">auto (leave DSS circle)</option><option value="countdown">countdown (START button)</option></select></div>
+        <div><label>Trip snaps to WP km</label><select id="r-snap"><option value="true">yes</option><option value="false">no</option></select></div></div>
+      <div style="margin-top:10px"><button class="b" id="r-reset">Reset to FIM 2026</button></div>
+    </div>
+
+    <div class="pane" id="pane-file">
+      <div class="row"><button class="b p" id="f-export">Export stage .json</button><button class="b" id="f-gpx">Export .gpx</button><button class="b" id="f-share" title="Copy a link that opens this stage in someone else&rsquo;s browser. The link carries the stage itself; nothing is uploaded.">Copy share link</button></div>
+      <div class="hint">A share link carries this stage in the address itself, so it opens in another browser with no import step and nothing is stored online. Very long stages may not fit in some messaging apps; if the link fails, send the exported file instead.</div>
+      <hr>
+      <div id="examples">
+        <label>Example stages</label>
+        <div class="hint">Load any of these into the builder and edit them. They are the same sample stages shipped with the BeamNG mod. Changes stay in this browser until you export.</div>
+        <div id="ex-list">Loading examples&hellip;</div>
+      </div>
+      <hr>
+      <label>Roadbook</label>
+      <div class="row"><button class="b" id="f-roadbook">Open the roadbook editor</button></div>
+      <div class="hint">Generates the roadbook for this stage (terrain notes, junctions, hazards, a planned off-piste line), lets you edit every box, prints it as a PDF, and saves the <b>.roadbook.json</b> the in-game Rally Raid Roadbook app reads (put it in <b>&lt;BeamNG user folder&gt;/current/rallyraid/roadbooks/</b>).</div>
+      <label>Import stage .json or .gpx (or drop a file on the map)</label><input type="file" id="f-import" accept=".json,.gpx,application/json,application/gpx+xml">
+      <div class="hint">GPX: waypoints become stage waypoints (a name starting with a type, e.g. "WPM 3", keeps that type); a track becomes a dashed reference line you can follow with leg mode "reference GPX track".</div>
+      <hr>
+      <div class="row"><button class="b" id="f-recompute">Re-route all legs</button><button class="b d" id="f-new">New stage</button></div>
+      <hr>
+      <div class="hint">Put exported stages in <b>&lt;BeamNG user folder&gt;/current/rallyraid/stages/</b> (Windows: %LOCALAPPDATA%\BeamNG\BeamNG.drive\current\rallyraid\stages). The work in progress is saved in this browser automatically.</div>
+      <div class="hint">Map data &copy; OpenStreetMap contributors (ODbL), the same source BeamNG.Earth builds its roads from. Routing: OSRM demo server (fair use: about one request a second). Search: Nominatim.</div>
+    </div>
+    <div class="pane" id="pane-guide">
+      <div class="hint">What each point type means on the rally GPS, and where organisers usually put it. Radii and penalties come from the <b>Rules</b> tab, so if you change them there, this page follows. Hover a type button or a list tag on the Plot tab for a one-line reminder.</div>
+      <div class="g-idx" id="g-idx"></div>
+      <div id="guide"></div>
+      <div class="g-card"><h3>Placement rules of thumb</h3><ul>
+        <li>One GPS waypoint every 8&ndash;20 km: more where the route offers choices, fewer on obvious tracks.</li>
+        <li>Keep points at least ~300 m apart so their circles don't overlap (the builder warns you).</li>
+        <li>On long featureless legs, give the navigator something to check the trip meter against (a NOTE or a WPV) between hidden waypoints.</li>
+        <li>Every village gets a speed zone: DZ ~1&ndash;1.5 km before it, FZ ~1&ndash;1.5 km after. Close every zone before the next DZ and before the ASS.</li>
+        <li>Off-piste legs: end the roadbook note with the heading to hold, e.g. &ldquo;Hold CAP 247&rdquo; (the list shows the CAP leaving each point).</li>
+      </ul></div>
+    </div>
+    <div id="status">Ready.</div>
+  </div>
+  <div id="mapwrap">
+    <div id="map"></div>
+    <div class="mapbar"><input id="search" placeholder="Search a place or lat, lon (Nominatim)..."><button class="b" id="locate">Go</button></div>
+    <div id="searchres"></div>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+'use strict'
+var VERSION = '0.1.0'
+var TYPES = {
+  DSS: { color:'#2ecc71', label:'Start of stage' }, WPV: { color:'#ffffff', label:'Visible' }, WPE: { color:'#9ad0ff', label:'Eclipse' },
+  WPM: { color:'#ffd400', label:'Masked' }, WPN: { color:'#ff9f43', label:'Navigation' }, WPS: { color:'#ff5c5c', label:'Safety' },
+  WPC: { color:'#c792ea', label:'Control' }, WPP: { color:'#00e5c0', label:'Precise' }, DZ: { color:'#ff3b3b', label:'Speed zone start' },
+  FZ: { color:'#ff9a9a', label:'Speed zone end' }, ASS: { color:'#2ecc71', label:'Finish' }, NOTE: { color:'#8a9096', label:'Roadbook note (no GPS)' }
+}
+// plain-language guide to every point type (Guide tab + hover tips)
+var GUIDE = {
+  DSS: { name:'Départ Secteur Sélectif (stage start)', short:'Where the timed special starts. The clock starts when you leave its circle (or on the START countdown).',
+    what:'The start line of the timed special. Before it is the liaison (untimed road section); the GPS guides you to it.',
+    use:['On or right next to a track, where cars can line up and stand.', 'Exactly one per stage, always the first point.', 'Use the Stage tab "start position" if the teleport spot should be a bit before the line.'] },
+  WPV: { name:'Waypoint Visible', short:'Always shown on the GPS with distance and heading. An easy reassurance point.',
+    what:'A waypoint the GPS shows all the time, from any distance, like a normal sat-nav target.',
+    use:['Famous landmarks and obvious places: a big dune, a well, a lake shore, a fuel stop.', 'Fast sections where navigation is not the test.', 'Breaking up a long featureless leg so drivers can check their trip.'] },
+  WPE: { name:'Waypoint Eclipse', short:'Hidden until you validate the waypoint before it (or come close), then shown. Rewards taking the previous point.',
+    what:'Opens on the GPS only once you have validated the previous waypoint (or, if you missed it, when you get close). After a hard point, the drivers who found it get guided on; the ones who missed it have to find this one too.',
+    use:['Right after a WPS, WPC or a tricky WPM.', 'Where you want the route to continue from a known point rather than from wherever the driver happens to be.'] },
+  WPM: { name:'Waypoint Masked', short:'Hidden until you are within the reveal radius. The standard "you must pass here" point.',
+    what:'The workhorse of a rally-raid stage. Invisible on the GPS until you are close; before that you only have the roadbook (km and CAP) to find it.',
+    use:['Forks and track turn-offs where the roadbook says to turn.', 'Corners the fast crews would otherwise cut.', 'Anywhere the route must be followed but there is no particular danger.'] },
+  WPN: { name:'Waypoint Navigation', short:'Hidden until close, bigger validation circle, heavy miss penalty. The navigation test itself.',
+    what:'A masked waypoint used where finding it is the challenge: open sand or plains with no track and no landmark. Missing it costs a lot more than a WPM.',
+    use:['Dunes, gravel plains, dry lakes: places with only a CAP and a distance in the roadbook.', 'Use sparingly; it is the hardest-hitting point in the stage.'] },
+  WPS: { name:'Waypoint Safety', short:'Opens early, must be hit precisely. Forces crews onto the safe line around a danger.',
+    what:'Marks the safe passage near a hazard. The GPS opens it from far away so crews have time to slow down, but the validation circle is small, so they must actually take the safe line.',
+    use:['Before slip faces, blind crests, steep descents, washouts, cliffs, wildlife areas.', 'Always pair it with a roadbook note with "!!" or "!!!" (danger 2-3) explaining the hazard.'] },
+  WPC: { name:'Waypoint Control', short:'Never shown on the GPS (only its number). Large circle. Stops crews from shortcutting.',
+    what:'A secret control point. The GPS never reveals it; crews only notice it was validated. It proves they drove the intended route.',
+    use:['Where skipping a section would save time: the far side of an erg, inside a gorge, around a loop.', 'Do not use it where the route is genuinely hard to find; it is an anti-cheat point, not a navigation test.'] },
+  WPP: { name:'Waypoint Precise', short:'Opens only very close and must be hit within a few metres. Small penalty.',
+    what:'A pinpoint passage the crew must hit exactly. Because it is so small, the penalty for missing it is light.',
+    use:['A narrow gap: a gully exit, a pass between rocks, a river crossing point.', 'Use rarely, one or two per stage at most.'] },
+  DZ: { name:'Speed zone start (Début de Zone)', short:'Speed limit starts here (set km/h on the point). Over-speed gives penalty impulses until the FZ.',
+    what:'Starts a speed-controlled zone with the limit you set on the point. Inside the zone the GPS checks your speed; going over the limit gives time penalties in steps (impulses).',
+    use:['About 1-1.5 km before every village, camp or settlement.', 'On public roads the stage uses (60-90 km/h).', 'Typical limits: 30 km/h camps and small settlements, 40-50 km/h villages and road crossings.', 'A zone just after the DSS is common in real rallies.'] },
+  FZ: { name:'Speed zone end (Fin de Zone)', short:'Ends the speed zone opened by the previous DZ.',
+    what:'Closes the speed zone. The limit stops applying once you pass it.',
+    use:['About 1-1.5 km after the village.', 'Every DZ needs an FZ before the next DZ and before the ASS.'] },
+  ASS: { name:'Arrivée Secteur Sélectif (stage finish)', short:'Finish line. The clock stops when you validate it.',
+    what:'The end of the timed special. Validating it stops the clock and adds your penalties to the stage time.',
+    use:['On a track, with room to stop after it.', 'Exactly one per stage, always the last point.', 'Close any speed zone (FZ) before it.'] },
+  NOTE: { name:'Roadbook point', short:'A point the route goes through that gets a roadbook box. Nothing on the GPS, nothing to validate, no penalty.',
+    what:'A spot on the route with no GPS waypoint: it shapes the route and marks where a roadbook box goes. The box text (notes, symbols, tulip, danger) is written in the roadbook editor.',
+    use:['Junctions, landmarks, surface changes, small hazards you want a box for.', 'Bending an off-piste leg through a gap or round an obstacle.', 'Open the roadbook editor (Roadbook button) to write the box: "KEEP LEFT", "Hold CAP 247", danger ! / !! / !!!.'] }
+}
+function fmtPen(s) { if (s == null) return 'none (time is the result)'; if (s >= 60 && s % 60 === 0) return (s / 60) + ' min'; return s + ' s' }
+function revealText(r) {
+  if (!r) return 'not on the GPS'
+  var m = r.radius != null ? r.radius + ' m' : '?'
+  return { always:'always shown', never:'never shown (number only)', radius:'within ' + m, prev:'after previous WP is validated (else within ' + m + ')', radiusOrPrev:'within ' + m + ' or after previous WP' }[r.reveal] || r.reveal
+}
+function typeRule(t) { return st && st.rules && st.rules.waypoints ? st.rules.waypoints[t] : null }
+function tipHtml(t) {
+  var g = GUIDE[t], r = typeRule(t); if (!g) return ''
+  return '<b class="t" style="background:' + TYPES[t].color + '">' + t + '</b><b>' + esc(g.name) + '</b><div>' + esc(g.short) + '</div>' +
+    (r ? '<div class="tr">GPS: ' + esc(revealText(r)) + ' &middot; validate ' + r.validate + ' m &middot; missed: ' + esc(fmtPen(r.penalty)) + '</div>' : '<div class="tr">No GPS waypoint.</div>')
+}
+function tipText(t) { var g = GUIDE[t]; return g ? t + ' - ' + g.name + ': ' + g.short : t }
+function renderGuide() {
+  var sz = st.rules.speedZone
+  document.getElementById('g-idx').innerHTML = Object.keys(TYPES).map(function (t) { return '<a data-g="' + t + '" style="background:' + TYPES[t].color + '">' + t + '</a>' }).join('')
+  document.getElementById('guide').innerHTML = Object.keys(TYPES).map(function (t) {
+    var g = GUIDE[t], r = typeRule(t), facts
+    if (t === 'NOTE') facts = '<span>GPS: <b>not shown</b></span><span>Validate: <b>none</b></span><span>Missed: <b>no penalty</b></span>'
+    else facts = '<span>GPS shows it: <b>' + esc(revealText(r)) + '</b></span><span>Validate within: <b>' + r.validate + ' m</b></span><span>Missed: <b>' + esc(fmtPen(r.penalty)) + '</b></span>'
+    if (t === 'DZ') facts += '<span>Over-speed: <b>' + sz.bands.map(function (b, i) { return (i ? (sz.bands[i - 1].upTo + 1) : 1) + (b.upTo != null ? '-' + b.upTo : '+') + ' km/h ' + fmtPen(b.penalty) }).join(', ') + '</b>, every ' + sz.impulseDistance + ' m / ' + sz.impulseTime + ' s</span><span>Tolerance after DZ / before FZ: <b>' + sz.tolerance + ' m</b></span>'
+    return '<div class="g-card" id="g-' + t + '"><h3><span class="tag" style="background:' + TYPES[t].color + '">' + t + '</span>' + esc(g.name) + '</h3>' +
+      '<div class="facts">' + facts + '</div><p>' + esc(g.what) + '</p><div class="lab">Typical use</div><ul>' + g.use.map(function (u) { return '<li>' + esc(u) + '</li>' }).join('') + '</ul></div>'
+  }).join('')
+}
+function showGuide(t) {
+  document.querySelector('.tabs button[data-tab="guide"]').click()
+  var c = document.getElementById('g-' + t); if (!c) return
+  document.querySelectorAll('.g-card.hl').forEach(function (x) { x.classList.remove('hl') }); c.classList.add('hl'); c.scrollIntoView({ block:'start' })
+}
+var FIM2026 = {
+  preset: 'FIM-2026',
+  waypoints: {
+    DSS: { reveal:'prev', radius:1000, validate:200, penalty:null }, WPV: { reveal:'always', validate:200, penalty:900 },
+    WPE: { reveal:'prev', radius:1000, validate:90, penalty:900 }, WPM: { reveal:'radius', radius:800, validate:90, penalty:900 },
+    WPN: { reveal:'radius', radius:800, validate:200, penalty:3600 }, WPS: { reveal:'radius', radius:1000, validate:30, penalty:900 },
+    WPC: { reveal:'never', validate:300, penalty:900 }, WPP: { reveal:'radius', radius:100, validate:20, penalty:120 },
+    DZ: { reveal:'radiusOrPrev', radius:1000, validate:90, penalty:900 }, FZ: { reveal:'prev', radius:1000, validate:90, penalty:900 },
+    ASS: { reveal:'radius', radius:800, validate:90, penalty:null }
+  },
+  speedZone: { tolerance:90, warnBefore:90, alertMargin:5, impulseDistance:150, impulseTime:10,
+    bands:[{ upTo:5, penalty:10 }, { upTo:15, penalty:60 }, { upTo:40, penalty:120 }, { upTo:null, penalty:360 }] },
+  globalMaxKmh:null, globalImpulsePenalty:60, lookahead:5, tripSnapToWaypoint:true, startMode:'auto', countdown:5, falseStartPenalty:60
+}
+var REVEALS = ['always', 'never', 'radius', 'prev', 'radiusOrPrev']
+function clone(o) { return JSON.parse(JSON.stringify(o)) }
+
+// ------------------------------------------------------------------ geo
+var R = 6371008.8
+function rad(d) { return d * Math.PI / 180 }
+function dist(a, b) {
+  var p1 = rad(a[0]), p2 = rad(b[0]), dp = p2 - p1, dl = rad(b[1] - a[1])
+  var h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+function bearing(a, b) {
+  var p1 = rad(a[0]), p2 = rad(b[0]), dl = rad(b[1] - a[1])
+  var y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
+}
+function polyLen(pts) { var m = 0; for (var i = 1; i < pts.length; i++) m += dist(pts[i - 1], pts[i]); return m }
+// heading leaving the start of a polyline: towards the point ~40 m along it
+function capOf(pts) {
+  if (!pts || pts.length < 2) return null
+  var acc = 0
+  for (var i = 1; i < pts.length; i++) { acc += dist(pts[i - 1], pts[i]); if (acc >= 40) return bearing(pts[0], pts[i]) }
+  return bearing(pts[0], pts[pts.length - 1])
+}
+function r6(x) { return Math.round(x * 1e6) / 1e6 }
+
+// ------------------------------------------------------------------ state
+var st = newStage()
+var sel = -1
+var curType = 'DSS'
+var refTrack = null   // [[lat, lon], ...]
+function newStage() {
+  return { meta: { name:'', id:'', region:'', author:'', description:'', vehicleClass:'', start:null, created:new Date().toISOString() },
+    rules: clone(FIM2026), points: [] }
+}
+var uid = 1
+function newId() { return 'p' + Date.now().toString(36) + (uid++) }
+
+// ------------------------------------------------------------------ map
+var map = L.map('map', { zoomControl:true }).setView([38.5733, -109.5498], 12)
+var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap contributors' })
+var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom:17, attribution:'&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)' })
+var sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:19, attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics' })
+var satLabels = L.layerGroup([sat, L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, opacity:0.35 })])
+osm.addTo(map)
+L.control.layers({ 'OpenStreetMap': osm, 'OpenTopoMap (terrain)': topo, 'Satellite (Esri)': sat, 'Satellite + OSM': satLabels }).addTo(map)
+L.control.scale({ metric:true, imperial:false }).addTo(map)
+var gRoute = L.layerGroup().addTo(map), gRadii = L.layerGroup().addTo(map), gMarkers = L.layerGroup().addTo(map), gRef = L.layerGroup().addTo(map)
+
+function status(msg, cls) { var el = document.getElementById('status'); el.textContent = msg; el.className = cls || '' }
+
+// ------------------------------------------------------------------ OSRM (rate-limited queue, cached)
+var osrmCache = {}, osrmQueue = [], osrmBusy = false
+function osrm(url) {
+  if (osrmCache[url]) return Promise.resolve(osrmCache[url])
+  return new Promise(function (res, rej) { osrmQueue.push({ url:url, res:res, rej:rej }); pump() })
+}
+function pump() {
+  if (osrmBusy || !osrmQueue.length) return
+  osrmBusy = true
+  var job = osrmQueue.shift()
+  fetch(job.url).then(function (r) { return r.json() }).then(function (j) { osrmCache[job.url] = j; job.res(j) })
+    .catch(function (e) { job.rej(e) })
+    .finally(function () { setTimeout(function () { osrmBusy = false; pump() }, 1050) })
+}
+function snapToRoad(lat, lon) {
+  return osrm('https://router.project-osrm.org/nearest/v1/driving/' + lon + ',' + lat + '?number=1').then(function (j) {
+    if (j.code === 'Ok' && j.waypoints && j.waypoints[0] && j.waypoints[0].distance < 250) {
+      var l = j.waypoints[0].location; return [l[1], l[0]]
+    }
+    return [lat, lon]
+  }).catch(function () { return [lat, lon] })
+}
+function routeRoad(a, b) {
+  var url = 'https://router.project-osrm.org/route/v1/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson'
+  return osrm(url).then(function (j) {
+    if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error(j.message || j.code || 'no route')
+    var pts = j.routes[0].geometry.coordinates.map(function (c) { return [r6(c[1]), r6(c[0])] })
+    pts[0] = a; pts[pts.length - 1] = b
+    return pts
+  })
+}
+function nearestIdx(track, p) { var bi = 0, bd = Infinity; track.forEach(function (q, i) { var d = dist(q, p); if (d < bd) { bd = d; bi = i } }); return bi }
+function routeTrack(a, b) {
+  if (!refTrack) return null
+  var i = nearestIdx(refTrack, a), j = nearestIdx(refTrack, b)
+  var seg = i <= j ? refTrack.slice(i, j + 1) : refTrack.slice(j, i + 1).reverse()
+  return [a].concat(seg).concat([b])
+}
+
+// compute the leg arriving at point k
+function computeLeg(k) {
+  var p = st.points[k]
+  if (k === 0) { p.leg = null; return Promise.resolve() }
+  var a = [st.points[k - 1].lat, st.points[k - 1].lon], b = [p.lat, p.lon]
+  var mode = (p.leg && p.leg.mode) || 'direct'
+  p.leg = { mode:mode, points:[a, b], pending: mode === 'road' }
+  if (mode === 'direct') return Promise.resolve()
+  if (mode === 'track') { var t = routeTrack(a, b); if (t) p.leg.points = t; else status('No reference track loaded: leg drawn straight.', 'warn'); return Promise.resolve() }
+  var id = p.id
+  return routeRoad(a, b).then(function (pts) {
+    var q = st.points[k]; if (!q || q.id !== id) return
+    q.leg = { mode:'road', points:pts }
+    render()
+  }).catch(function (e) {
+    var q = st.points[k]; if (!q || q.id !== id) return
+    q.leg = { mode:'road', points:[a, b], failed:true }
+    status('Routing failed for leg to point ' + (k + 1) + ' (' + e.message + '): drawn straight.', 'warn'); render()
+  })
+}
+
+// ------------------------------------------------------------------ derived data: numbering, km, cap
+// the leg arriving at point i as a polyline (straight until it is routed)
+function legPts(i) {
+  var p = st.points[i], q = st.points[i - 1]
+  if (!p || !q) return null
+  if (p.leg && p.leg.points && p.leg.points.length > 1) return p.leg.points
+  return [[q.lat, q.lon], [p.lat, p.lon]]
+}
+function derive() {
+  var pts = st.points, km = 0, num = 0
+  var gpsCount = pts.filter(function (p) { return p.type !== 'NOTE' && p.type !== 'DSS' && p.type !== 'ASS' }).length
+  pts.forEach(function (p, i) {
+    if (i > 0) { p._legKm = polyLen(legPts(i)) / 1000; km += p._legKm }
+    else p._legKm = 0
+    p._km = km
+    if (p.type === 'NOTE') p._n = null
+    else if (p.type === 'DSS') p._n = 0
+    else if (p.type === 'ASS') p._n = gpsCount + 1
+    else p._n = ++num
+    var next = pts[i + 1]
+    p._cap = next ? capOf(legPts(i + 1)) : null
+  })
+  return km
+}
+function labelOf(p) { return p.type === 'NOTE' ? 'NOTE' : p.type + (p.type === 'DSS' || p.type === 'ASS' ? '' : ' ' + p._n) }
+function ruleOf(p) {
+  var r = st.rules.waypoints[p.type]
+  if (!r) return null
+  return { reveal: p.reveal || r.reveal, radius: p.revealRadius != null && p.revealRadius !== '' ? +p.revealRadius : r.radius,
+    validate: p.validate != null && p.validate !== '' ? +p.validate : r.validate }
+}
+function problems() {
+  var out = [], pts = st.points.filter(function (p) { return p.type !== 'NOTE' })
+  if (!pts.length) return out
+  if (pts[0].type !== 'DSS') out.push(['err', 'The first GPS point must be the DSS.'])
+  if (pts[pts.length - 1].type !== 'ASS') out.push(['err', 'The last GPS point must be the ASS.'])
+  var z = false
+  pts.forEach(function (p, i) {
+    if ((p.type === 'DSS' && i) || (p.type === 'ASS' && i !== pts.length - 1)) out.push(['err', p.type + ' only at the start / end (' + labelOf(p) + ').'])
+    if (p.type === 'DZ') { if (z) out.push(['err', 'DZ inside another speed zone.']); z = true; if (!(+p.speedLimit > 0)) out.push(['err', labelOf(p) + ' needs a speed limit.']) }
+    if (p.type === 'FZ') { if (!z) out.push(['err', 'FZ without a DZ before it.']); z = false }
+    if (i) { var q = pts[i - 1], d = dist([q.lat, q.lon], [p.lat, p.lon]), rq = ruleOf(q), rp = ruleOf(p)
+      if (rq && rp && d < rq.validate + rp.validate) out.push(['warn', labelOf(q) + ' and ' + labelOf(p) + ' are ' + Math.round(d) + ' m apart: their validation circles overlap.']) }
+  })
+  if (z) out.push(['err', 'A speed zone is never closed with an FZ.'])
+  st.points.forEach(function (p, i) { if (p.leg && p.leg.failed) out.push(['warn', 'Leg to ' + labelOf(p) + ' could not be routed (drawn straight).']) })
+  return out
+}
+
+// ------------------------------------------------------------------ rendering
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c] }) }
+function render() {
+  var total = derive()
+  gRoute.clearLayers(); gRadii.clearLayers(); gMarkers.clearLayers()
+  var showR = document.getElementById('showradii').checked
+  st.points.forEach(function (p, i) {
+    if (i) L.polyline(legPts(i), { color: !p.leg || p.leg.mode === 'direct' ? '#ff9f43' : p.leg.mode === 'track' ? '#c792ea' : '#1e88e5', weight:4, opacity:.85, dashArray: p.leg && p.leg.pending ? '4 6' : null }).addTo(gRoute)
+    var col = TYPES[p.type].color
+    var r = ruleOf(p)
+    if (showR && r) {
+      L.circle([p.lat, p.lon], { radius:r.validate, color:col, weight:2, opacity:1, fillOpacity:.25, interactive:false }).addTo(gRadii)
+      if ((r.reveal === 'radius' || r.reveal === 'prev' || r.reveal === 'radiusOrPrev') && r.radius) {
+        // (a dark halo under the dashed line keeps it readable on pale desert imagery)
+        L.circle([p.lat, p.lon], { radius:r.radius, color:'#000', weight:4, opacity:.35, fill:false, interactive:false }).addTo(gRadii)
+        L.circle([p.lat, p.lon], { radius:r.radius, color:col, weight:2, opacity:.95, dashArray:'8 6', fill:false, interactive:false }).addTo(gRadii)
+      }
+    }
+    var icon = L.divIcon({ className:'', html:'<div class="wpicon' + (i === sel ? ' sel' : '') + '" data-tip="' + p.type + '" style="background:' + col + '">' + esc(labelOf(p)) + (p.type === 'DZ' ? ' ' + (p.speedLimit || '?') : '') + '</div>', iconSize:null, iconAnchor:[14, 10] })
+    var m = L.marker([p.lat, p.lon], { icon:icon, draggable:true, title: labelOf(p) + '  km ' + p._km.toFixed(2) }).addTo(gMarkers)
+    m.on('click', function (e) { L.DomEvent.stopPropagation(e); select(i) })
+    m.on('dragend', function () { var ll = m.getLatLng(); movePoint(i, ll.lat, ll.lng) })
+  })
+  // list
+  var counts = {}; st.points.forEach(function (p) { counts[p.type] = (counts[p.type] || 0) + 1 })
+  document.getElementById('stats').innerHTML = '<b>' + total.toFixed(2) + ' km</b> &middot; ' + st.points.length + ' points &middot; ' +
+    Object.keys(counts).map(function (k) { return counts[k] + ' ' + k }).join(', ')
+  document.getElementById('problems').innerHTML = problems().map(function (x) { return '<div class="' + x[0] + '">' + esc(x[1]) + '</div>' }).join('')
+  document.getElementById('list').innerHTML = st.points.map(function (p, i) {
+    return '<div class="pt' + (i === sel ? ' sel' : '') + '" data-i="' + i + '"><span class="tag" data-tip="' + p.type + '" style="background:' + TYPES[p.type].color + '">' + esc(labelOf(p)) + '</span>' +
+      '<span class="km">' + p._km.toFixed(2) + ' km' + (p._cap != null ? ' &middot; ' + ('00' + Math.round(p._cap) % 360).slice(-3) + '&deg;' : '') + '</span>' +
+      '<span class="nm">' + esc(p.name || '') + '</span>' +
+      '<button class="b" data-a="up" title="move up">&uarr;</button><button class="b" data-a="down" title="move down">&darr;</button><button class="b d" data-a="del" title="delete">&times;</button></div>'
+  }).join('')
+  renderEditor()
+  if (document.getElementById('pane-guide').classList.contains('on')) renderGuide()
+  save()
+}
+function renderEditor() {
+  var el = document.getElementById('editor')
+  var p = st.points[sel]
+  if (!p) { el.innerHTML = ''; return }
+  var r = st.rules.waypoints[p.type] || {}
+  el.innerHTML = '<hr><b>' + esc(labelOf(p)) + '</b> <span class="hint">' + esc(TYPES[p.type].label) + ' &middot; ' + p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) + ' &middot; roadbook km ' + p._km.toFixed(2) + '</span>' +
+    '<div class="row"><div><label>Type</label><select id="e-type">' + Object.keys(TYPES).map(function (t) { return '<option title="' + esc(tipText(t)) + '"' + (t === p.type ? ' selected' : '') + '>' + t + '</option>' }).join('') + '</select></div>' +
+    '<div><label>Leg to here</label><select id="e-leg"' + (sel ? '' : ' disabled') + '>' + ['road', 'direct', 'track'].map(function (m) { return '<option' + (p.leg && p.leg.mode === m ? ' selected' : '') + '>' + m + '</option>' }).join('') + '</select></div>' +
+    '<div><label>Speed limit km/h</label><input id="e-spd" type="number" value="' + esc(p.speedLimit || '') + '"' + (p.type === 'DZ' ? '' : ' disabled') + '></div></div>' +
+    '<div class="tsum">' + esc(GUIDE[p.type].short) + ' <a data-g="' + p.type + '">More in the Guide &rarr;</a></div>' +
+    '<label>Name (optional)</label><input id="e-name" value="' + esc(p.name || '') + '">' +
+    '<div class="hint">Roadbook notes, symbols, tulips and danger are written in the <a data-rb="1">roadbook editor</a>, so they live in one place (the .roadbook.json) and never clash with the stage.</div>' +
+    (p.notes || p.danger ? '<div class="hint legacy" title="from an older stage file">Old roadbook text from the stage file (read-only): <b>' + esc(p.notes || '') + '</b>' + (p.danger ? ' ' + '!'.repeat(p.danger) : '') + '. It moves into the roadbook as a pinned box when you generate one.</div>' : '') +
+    '<div class="row">' +
+    '<div><label>Validate m (' + (r.validate != null ? r.validate : '-') + ')</label><input id="e-val" type="number" placeholder="type default" value="' + esc(p.validate != null ? p.validate : '') + '"></div>' +
+    '<div><label>Reveal m (' + (r.radius != null ? r.radius : '-') + ')</label><input id="e-rev" type="number" placeholder="type default" value="' + esc(p.revealRadius != null ? p.revealRadius : '') + '"></div></div>'
+  function bind(id, fn) { document.getElementById(id).addEventListener('change', function (e) { fn(e.target.value); render() }) }
+  bind('e-type', function (v) { p.type = v; if (v === 'DZ' && !p.speedLimit) p.speedLimit = 50 })
+  bind('e-leg', function (v) { p.leg = { mode:v, points:p.leg ? p.leg.points : [] }; computeLeg(sel).then(render) })
+  bind('e-spd', function (v) { p.speedLimit = v === '' ? null : +v })
+  bind('e-name', function (v) { p.name = v })
+  var rbl = el.querySelector('[data-rb]'); if (rbl) rbl.addEventListener('click', function (e) { e.preventDefault(); openRoadbook() })
+  bind('e-val', function (v) { p.validate = v === '' ? null : +v })
+  bind('e-rev', function (v) { p.revealRadius = v === '' ? null : +v })
+}
+function select(i) { sel = i; render() }
+
+// ------------------------------------------------------------------ editing
+function addPoint(lat, lon) {
+  var at = document.getElementById('insertmode').checked && sel >= 0 ? sel + 1 : st.points.length
+  var p = { id:newId(), type:curType, lat:r6(lat), lon:r6(lon), name:'', leg:{ mode: document.getElementById('legmode').value } }
+  if (curType === 'DZ') p.speedLimit = 50
+  st.points.splice(at, 0, p)
+  sel = at
+  // the next type: after DSS go on with WPM; after DZ propose FZ
+  if (curType === 'DSS') setType('WPM'); else if (curType === 'DZ') setType('FZ'); else if (curType === 'FZ') setType('WPM')
+  render()
+  Promise.all([computeLeg(at), at + 1 < st.points.length ? computeLeg(at + 1) : null]).then(render)
+}
+function movePoint(i, lat, lon) {
+  var p = st.points[i]
+  var go = document.getElementById('snap').checked && (p.leg ? p.leg.mode === 'road' : (st.points[i + 1] && st.points[i + 1].leg && st.points[i + 1].leg.mode === 'road'))
+  ;(go ? snapToRoad(lat, lon) : Promise.resolve([lat, lon])).then(function (ll) {
+    p.lat = r6(ll[0]); p.lon = r6(ll[1])
+    render()
+    Promise.all([computeLeg(i), i + 1 < st.points.length ? computeLeg(i + 1) : null]).then(render)
+  })
+}
+document.getElementById('list').addEventListener('click', function (e) {
+  var row = e.target.closest('.pt'); if (!row) return
+  var i = +row.dataset.i, a = e.target.dataset.a
+  if (a === 'del') {
+    st.points.splice(i, 1); sel = Math.min(sel, st.points.length - 1)
+    if (i < st.points.length) computeLeg(i).then(render)
+    render(); return
+  }
+  if (a === 'up' || a === 'down') {
+    var j = a === 'up' ? i - 1 : i + 1
+    if (j < 0 || j >= st.points.length) return
+    var t = st.points[i]; st.points[i] = st.points[j]; st.points[j] = t; sel = j
+    var lo = Math.min(i, j); render()
+    Promise.all([computeLeg(lo), computeLeg(lo + 1), lo + 2 < st.points.length ? computeLeg(lo + 2) : null]).then(render)
+    return
+  }
+  select(i)
+  map.panTo([st.points[i].lat, st.points[i].lon])
+})
+map.on('click', function (e) {
+  var lat = e.latlng.lat, lon = e.latlng.lng
+  var mode = document.getElementById('legmode').value
+  if (mode === 'track' && refTrack) { var q = refTrack[nearestIdx(refTrack, [lat, lon])]; addPoint(q[0], q[1]); return }
+  if (document.getElementById('snap').checked && mode === 'road') { status('Snapping to the nearest road...'); snapToRoad(lat, lon).then(function (ll) { status('Ready.'); addPoint(ll[0], ll[1]) }) }
+  else addPoint(lat, lon)
+})
+function setType(t) { curType = t; document.querySelectorAll('#typebtns button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t) }) }
+document.getElementById('typebtns').innerHTML = Object.keys(TYPES).map(function (t) { return '<button data-t="' + t + '" data-tip="' + t + '" aria-label="' + esc(tipText(t)) + '" style="background:' + TYPES[t].color + ';color:#000">' + t + '</button>' }).join('')
+document.getElementById('typebtns').addEventListener('click', function (e) { if (e.target.dataset.t) setType(e.target.dataset.t) })
+setType('DSS')
+document.getElementById('showradii').addEventListener('change', render)
+
+// tabs
+document.querySelectorAll('.tabs button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b) })
+    document.querySelectorAll('.pane').forEach(function (x) { x.classList.toggle('on', x.id === 'pane-' + b.dataset.tab) })
+    if (b.dataset.tab === 'guide') renderGuide()
+  })
+})
+document.addEventListener('click', function (e) { var a = e.target.closest('[data-g]'); if (a) { e.preventDefault(); showGuide(a.dataset.g) } })
+// hover popover for anything with data-tip="<TYPE>"
+;(function () {
+  var tip = document.getElementById('tip'), cur = null
+  function place(e) {
+    var w = tip.offsetWidth, h = tip.offsetHeight, x = e.clientX + 14, y = e.clientY + 16
+    if (x + w > innerWidth - 6) x = e.clientX - w - 10
+    if (y + h > innerHeight - 6) y = e.clientY - h - 10
+    tip.style.left = Math.max(4, x) + 'px'; tip.style.top = Math.max(4, y) + 'px'
+  }
+  document.addEventListener('mouseover', function (e) {
+    var el = e.target.closest && e.target.closest('[data-tip]')
+    if (el === cur) return
+    cur = el
+    if (!el || !GUIDE[el.dataset.tip]) { tip.style.display = 'none'; return }
+    tip.innerHTML = tipHtml(el.dataset.tip); tip.style.display = 'block'; place(e)
+  })
+  document.addEventListener('mousemove', function (e) { if (cur) place(e) })
+  document.addEventListener('mousedown', function () { tip.style.display = 'none'; cur = null })
+})()
+
+// ------------------------------------------------------------------ stage metadata
+var META = { 'm-name':'name', 'm-id':'id', 'm-region':'region', 'm-author':'author', 'm-desc':'description', 'm-class':'vehicleClass' }
+function metaToForm() {
+  Object.keys(META).forEach(function (id) { document.getElementById(id).value = st.meta[META[id]] || '' })
+  document.getElementById('m-slat').value = st.meta.start ? st.meta.start.lat : ''
+  document.getElementById('m-slon').value = st.meta.start ? st.meta.start.lon : ''
+}
+Object.keys(META).forEach(function (id) {
+  document.getElementById(id).addEventListener('input', function (e) {
+    st.meta[META[id]] = e.target.value
+    if (id === 'm-name' && !st.meta._idTouched) { st.meta.id = slug(e.target.value); document.getElementById('m-id').value = st.meta.id }
+    if (id === 'm-id') st.meta._idTouched = true
+    save()
+  })
+})
+function startFromForm() {
+  var la = parseFloat(document.getElementById('m-slat').value), lo = parseFloat(document.getElementById('m-slon').value)
+  st.meta.start = isFinite(la) && isFinite(lo) ? { lat:la, lon:lo } : null; save()
+}
+document.getElementById('m-slat').addEventListener('change', startFromForm)
+document.getElementById('m-slon').addEventListener('change', startFromForm)
+document.getElementById('m-sset').addEventListener('click', function () { var p = st.points[sel]; if (!p) return; document.getElementById('m-slat').value = p.lat; document.getElementById('m-slon').value = p.lon; startFromForm() })
+function slug(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) }
+
+// ------------------------------------------------------------------ rules editor
+function rulesToForm() {
+  var rw = st.rules.waypoints
+  document.getElementById('rulestable').innerHTML = '<tr><th>Type</th><th>Reveal</th><th>Reveal m</th><th>Validate m</th><th>Missed pen. s</th></tr>' +
+    Object.keys(FIM2026.waypoints).map(function (t) {
+      var r = rw[t]
+      return '<tr data-t="' + t + '"><td data-tip="' + t + '"><b>' + t + '</b></td><td><select data-k="reveal">' + REVEALS.map(function (m) { return '<option' + (m === r.reveal ? ' selected' : '') + '>' + m + '</option>' }).join('') + '</select></td>' +
+        '<td><input data-k="radius" type="number" value="' + (r.radius != null ? r.radius : '') + '"></td>' +
+        '<td><input data-k="validate" type="number" value="' + r.validate + '"></td>' +
+        '<td><input data-k="penalty" type="number" value="' + (r.penalty != null ? r.penalty : '') + '"' + (t === 'DSS' || t === 'ASS' ? ' disabled' : '') + '></td></tr>'
+    }).join('')
+  var sz = st.rules.speedZone
+  document.getElementById('r-tol').value = sz.tolerance
+  document.getElementById('r-impd').value = sz.impulseDistance
+  document.getElementById('r-impt').value = sz.impulseTime
+  ;['r-b1', 'r-b2', 'r-b3', 'r-b4'].forEach(function (id, i) { document.getElementById(id).value = sz.bands[i] ? sz.bands[i].penalty : '' })
+  document.getElementById('r-gmax').value = st.rules.globalMaxKmh || ''
+  document.getElementById('r-look').value = st.rules.lookahead
+  document.getElementById('r-start').value = st.rules.startMode
+  document.getElementById('r-snap').value = String(st.rules.tripSnapToWaypoint)
+}
+document.getElementById('rulestable').addEventListener('change', function (e) {
+  var tr = e.target.closest('tr'), k = e.target.dataset.k; if (!tr || !k) return
+  var r = st.rules.waypoints[tr.dataset.t], v = e.target.value
+  r[k] = k === 'reveal' ? v : (v === '' ? null : +v)
+  st.rules.preset = 'custom'; render()
+})
+function rulesFromForm() {
+  var sz = st.rules.speedZone
+  sz.tolerance = +document.getElementById('r-tol').value || 90
+  sz.impulseDistance = +document.getElementById('r-impd').value || 150
+  sz.impulseTime = +document.getElementById('r-impt').value || 10
+  ;['r-b1', 'r-b2', 'r-b3', 'r-b4'].forEach(function (id, i) { var v = +document.getElementById(id).value; if (sz.bands[i] && isFinite(v)) sz.bands[i].penalty = v })
+  var g = document.getElementById('r-gmax').value; st.rules.globalMaxKmh = g === '' ? null : +g
+  st.rules.lookahead = +document.getElementById('r-look').value || 5
+  st.rules.startMode = document.getElementById('r-start').value
+  st.rules.tripSnapToWaypoint = document.getElementById('r-snap').value === 'true'
+  st.rules.preset = 'custom'; save()
+}
+;['r-tol', 'r-impd', 'r-impt', 'r-b1', 'r-b2', 'r-b3', 'r-b4', 'r-gmax', 'r-look', 'r-start', 'r-snap'].forEach(function (id) { document.getElementById(id).addEventListener('change', rulesFromForm) })
+document.getElementById('r-reset').addEventListener('click', function () { st.rules = clone(FIM2026); rulesToForm(); render() })
+
+// ------------------------------------------------------------------ export / import
+function exportStage() {
+  var total = derive()
+  var gps = st.points.filter(function (p) { return p.type !== 'NOTE' })
+  var id = st.meta.id || slug(st.meta.name) || 'stage'
+  var boxes = [], prevKm = 0
+  st.points.forEach(function (p, i) {
+    boxes.push({ n:i + 1, id:p.id, km:+p._km.toFixed(3), partial:+(p._km - prevKm).toFixed(3), cap: p._cap != null ? Math.round(p._cap) : null,
+      waypoint: p.type === 'NOTE' ? null : p.id, label: labelOf(p), lat:p.lat, lon:p.lon,
+      // deprecated: roadbook text lives in the .roadbook.json. Text imported from an older stage file is passed on
+      // unchanged (never edited here) so the roadbook editor can move it into the roadbook
+      notes: p.notes || undefined, danger: p.danger || undefined })
+    prevKm = p._km
+  })
+  var out = {
+    format:'rallyraid-stage', schemaVersion:1, generator:'rallyraid-stage-builder ' + VERSION,
+    id:id, name:st.meta.name || id, region:st.meta.region || '', author:st.meta.author || '', description:st.meta.description || '',
+    vehicleClass:st.meta.vehicleClass || '', created:st.meta.created, modified:new Date().toISOString(),
+    dataSource:'OpenStreetMap contributors (ODbL), routed with OSRM',
+    lengthKm:+total.toFixed(3),
+    start: st.meta.start || undefined,
+    rules: st.rules,
+    waypoints: gps.map(function (p) {
+      var w = { id:p.id, n:p._n, type:p.type, lat:p.lat, lon:p.lon, km:+p._km.toFixed(3), cap:p._cap != null ? Math.round(p._cap) : null }
+      if (p.name) w.name = p.name
+      if (p.type === 'DZ') w.speedLimit = +p.speedLimit
+      if (p.validate != null && p.validate !== '') w.validate = +p.validate
+      if (p.revealRadius != null && p.revealRadius !== '') w.revealRadius = +p.revealRadius
+      w.box = st.points.indexOf(p) + 1
+      return w
+    }),
+    roadbook: { boxes:boxes, file:null },
+    route: { legs: st.points.slice(1).map(function (p, i) {
+      return { from:st.points[i].id, to:p.id, mode:p.leg ? p.leg.mode : 'direct', km:+p._legKm.toFixed(3),
+        points:legPts(i + 1).map(function (q) { return [r6(q[0]), r6(q[1])] }) }
+    }) },
+    builder: { notes: st.points.filter(function (p) { return p.type === 'NOTE' }).map(function (p) { return p.id }) }
+  }
+  return out
+}
+function download(name, text, mime) {
+  var a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([text], { type:mime }))
+  a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove() }, 500)
+}
+document.getElementById('f-export').addEventListener('click', function () {
+  var errs = problems().filter(function (x) { return x[0] === 'err' })
+  if (errs.length && !confirm('The stage has problems the game will refuse:\n- ' + errs.map(function (x) { return x[1] }).join('\n- ') + '\n\nExport anyway?')) return
+  var s = exportStage()
+  download(s.id + '.json', JSON.stringify(s, null, 1), 'application/json')
+  status('Exported ' + s.id + '.json (' + s.lengthKm + ' km).', 'ok')
+})
+document.getElementById('f-gpx').addEventListener('click', function () {
+  var s = exportStage()
+  var x = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="rallyraid-stage-builder" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc(s.name) + '</name></metadata>\n'
+  st.points.forEach(function (p) { x += '<wpt lat="' + p.lat + '" lon="' + p.lon + '"><name>' + esc(labelOf(p)) + '</name><desc>' + esc(p.name || '') + '</desc><type>' + p.type + '</type></wpt>\n' })
+  x += '<trk><name>' + esc(s.name) + '</name><trkseg>\n'
+  s.route.legs.forEach(function (l, i) { l.points.forEach(function (q, j) { if (i && !j) return; x += '<trkpt lat="' + q[0] + '" lon="' + q[1] + '"></trkpt>\n' }) })
+  x += '</trkseg></trk>\n</gpx>\n'
+  download(s.id + '.gpx', x, 'application/gpx+xml')
+})
+function importStage(j) {
+  if (j.format !== 'rallyraid-stage') throw new Error('not a rally raid stage file')
+  if ((j.schemaVersion || 0) > 1) throw new Error('made by a newer builder (schema ' + j.schemaVersion + ')')
+  var s = newStage()
+  s.meta = { name:j.name || '', id:j.id || '', region:j.region || '', author:j.author || '', description:j.description || '', vehicleClass:j.vehicleClass || '', start:j.start || null, created:j.created || new Date().toISOString(), _idTouched:true }
+  s.rules = Object.assign(clone(FIM2026), j.rules || {})
+  s.rules.waypoints = Object.assign(clone(FIM2026.waypoints), (j.rules && j.rules.waypoints) || {})
+  s.rules.speedZone = Object.assign(clone(FIM2026.speedZone), (j.rules && j.rules.speedZone) || {})
+  var legs = {}; ((j.route && j.route.legs) || []).forEach(function (l) { legs[l.to] = l })
+  var boxes = (j.roadbook && j.roadbook.boxes) || []
+  var byId = {}; (j.waypoints || []).forEach(function (w) { byId[w.id] = w })
+  var pts = []
+  if (boxes.length && boxes.every(function (b) { return b.lat != null })) {
+    boxes.forEach(function (b, i) {
+      var w = b.waypoint ? byId[b.waypoint] : null
+      var id = w ? w.id : (b.id || ('note' + i + '_' + newId()))
+      pts.push({ id:id, type: w ? w.type : 'NOTE', lat:w ? w.lat : b.lat, lon:w ? w.lon : b.lon, name:w ? (w.name || '') : '', notes:b.notes || '', danger:b.danger || 0,
+        speedLimit:w ? w.speedLimit : null, validate:w ? w.validate : null, revealRadius:w ? w.revealRadius : null,
+        leg: legs[id] ? { mode:legs[id].mode, points:legs[id].points } : null })
+    })
+  } else {
+    (j.waypoints || []).forEach(function (w) {
+      pts.push({ id:w.id || newId(), type:w.type, lat:w.lat, lon:w.lon, name:w.name || '', notes:'', danger:0, speedLimit:w.speedLimit, validate:w.validate, revealRadius:w.revealRadius,
+        leg: legs[w.id] ? { mode:legs[w.id].mode, points:legs[w.id].points } : { mode:'direct' } })
+    })
+  }
+  pts.forEach(function (p, i) { if (i && (!p.leg || !p.leg.points)) p.leg = { mode:(p.leg && p.leg.mode) || 'direct', points:[[pts[i - 1].lat, pts[i - 1].lon], [p.lat, p.lon]] } })
+  s.points = pts
+  return s
+}
+function parseGpx(text) {
+  var doc = new DOMParser().parseFromString(text, 'application/xml')
+  if (doc.querySelector('parsererror')) throw new Error('not valid GPX / XML')
+  var wpts = Array.prototype.map.call(doc.getElementsByTagName('wpt'), function (w) {
+    var nm = (w.getElementsByTagName('name')[0] || {}).textContent || ''
+    var ty = ((w.getElementsByTagName('type')[0] || {}).textContent || '').toUpperCase()
+    var m = nm.toUpperCase().match(/^(DSS|ASS|WPV|WPE|WPM|WPN|WPS|WPC|WPP|DZ|FZ|NOTE)\b/)
+    return { lat:+w.getAttribute('lat'), lon:+w.getAttribute('lon'), name:nm, type: TYPES[ty] ? ty : (m ? m[1] : null) }
+  })
+  var trk = []
+  ;['trkpt', 'rtept'].forEach(function (tag) { Array.prototype.forEach.call(doc.getElementsByTagName(tag), function (p) { trk.push([+p.getAttribute('lat'), +p.getAttribute('lon')]) }) })
+  return { wpts:wpts, track:trk }
+}
+function loadGpx(text) {
+  var g = parseGpx(text)
+  if (g.track.length > 1) {
+    refTrack = g.track
+    gRef.clearLayers(); L.polyline(refTrack, { color:'#c792ea', weight:3, dashArray:'6 6', opacity:.9 }).addTo(gRef)
+  }
+  var pts = g.wpts.map(function (w) { return { id:newId(), type:w.type || 'WPV', lat:r6(w.lat), lon:r6(w.lon), name:w.name, notes:'', danger:0, leg:{ mode: refTrack ? 'track' : 'direct' } } })
+  if (!pts.length && refTrack) pts = [{ id:newId(), type:'DSS', lat:refTrack[0][0], lon:refTrack[0][1], leg:null }, { id:newId(), type:'ASS', lat:refTrack[refTrack.length - 1][0], lon:refTrack[refTrack.length - 1][1], leg:{ mode:'track' } }]
+  if (pts.length) {
+    if (!pts.some(function (p) { return p.type === 'DSS' })) pts[0].type = 'DSS'
+    if (!pts.some(function (p) { return p.type === 'ASS' }) && pts.length > 1) pts[pts.length - 1].type = 'ASS'
+    st.points = pts
+    pts[0].leg = null
+    pts.forEach(function (p, i) { if (i) { if (p.leg.mode === 'track') { p.leg.points = routeTrack([pts[i - 1].lat, pts[i - 1].lon], [p.lat, p.lon]) } else p.leg.points = [[pts[i - 1].lat, pts[i - 1].lon], [p.lat, p.lon]] } })
+  }
+  if (refTrack) { document.getElementById('legmode').value = 'track'; map.fitBounds(L.polyline(refTrack).getBounds()) }
+  else if (pts.length) map.fitBounds(L.latLngBounds(pts.map(function (p) { return [p.lat, p.lon] })))
+  sel = -1; render()
+  status('GPX loaded: ' + g.wpts.length + ' waypoints, ' + g.track.length + ' track points.', 'ok')
+}
+function loadFile(file) {
+  var rd = new FileReader()
+  rd.onload = function () {
+    try {
+      var t = String(rd.result)
+      if (/\.gpx$/i.test(file.name) || /^\s*<\?xml|<gpx/i.test(t)) { loadGpx(t); return }
+      st = importStage(JSON.parse(t)); sel = -1
+      metaToForm(); rulesToForm(); render()
+      if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2))
+      status('Loaded ' + file.name + '.', 'ok')
+    } catch (e) { status('Cannot import ' + file.name + ': ' + e.message, 'err') }
+  }
+  rd.readAsText(file)
+}
+document.getElementById('f-import').addEventListener('change', function (e) { if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value = '' })
+document.getElementById('map').addEventListener('dragover', function (e) { e.preventDefault() })
+document.getElementById('map').addEventListener('drop', function (e) { e.preventDefault(); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]) })
+document.getElementById('f-new').addEventListener('click', function () { if (!confirm('Start a new, empty stage? (Export first if you want to keep this one.)')) return; st = newStage(); sel = -1; refTrack = null; gRef.clearLayers(); metaToForm(); rulesToForm(); setType('DSS'); render() })
+document.getElementById('f-recompute').addEventListener('click', function () {
+  status('Re-routing ' + (st.points.length - 1) + ' legs (about one a second)...')
+  Promise.all(st.points.map(function (p, i) { return computeLeg(i) })).then(function () { render(); status('All legs re-routed.', 'ok') })
+})
+
+// ------------------------------------------------------------------ search (Nominatim)
+function search() {
+  var q = document.getElementById('search').value.trim(); if (!q) return
+  var m = q.match(/^\s*(-?\d+(\.\d+)?)\s*[, ]\s*(-?\d+(\.\d+)?)\s*$/)
+  if (m) { map.setView([+m[1], +m[3]], 14); return }
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' + encodeURIComponent(q)).then(function (r) { return r.json() }).then(function (list) {
+    var box = document.getElementById('searchres')
+    box.innerHTML = list.map(function (x, i) { return '<div data-i="' + i + '">' + esc(x.display_name) + '</div>' }).join('') || '<div>No result</div>'
+    box.style.display = 'block'
+    box.onclick = function (e) { var x = list[+e.target.dataset.i]; if (x) map.fitBounds([[+x.boundingbox[0], +x.boundingbox[2]], [+x.boundingbox[1], +x.boundingbox[3]]]); box.style.display = 'none' }
+  }).catch(function (e) { status('Search failed: ' + e.message, 'err') })
+}
+document.getElementById('locate').addEventListener('click', search)
+document.getElementById('search').addEventListener('keydown', function (e) { if (e.key === 'Enter') search() })
+
+// ------------------------------------------------------------------ autosave
+var saveTimer = null
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(function () { try { localStorage.setItem('rallyraid-builder', JSON.stringify(exportStage())) } catch (e) {} }, 300) }
+function storedWork() {
+  try {
+    var raw = localStorage.getItem('rallyraid-builder')
+    if (!raw) return false
+    var j = JSON.parse(raw)
+    return !!((j.waypoints && j.waypoints.length) || (j.roadbook && j.roadbook.boxes && j.roadbook.boxes.length))
+  } catch (e) { return false }
+}
+function restoreStored() {
+  try {
+    var raw = localStorage.getItem('rallyraid-builder')
+    if (raw) { st = importStage(JSON.parse(raw)); if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2)) }
+  } catch (e) { st = newStage() }
+}
+function bootFromShare() {
+  var Share = window.RallyRaidShare
+  if (!Share) return false
+  var parsed = Share.parseHash(location.hash)
+  if (!parsed) return false
+  if (Share.redirectIfNeeded(parsed)) return true
+  try {
+    var data = Share.unpack(parsed)
+    if (data.kind !== 'stage' || !data.stage) throw new Error('This share link is not a stage.')
+    if (storedWork() && !confirm('You have a stage saved in this browser. Open the shared stage and replace it? (Export first if you want to keep it.)')) return false
+    applyStage(data.stage, data.stage.name || data.stage.id)
+    status('Opened a shared stage. The link carried the data; nothing was uploaded.', 'ok')
+    Share.clearHash()
+    return true
+  } catch (e) {
+    status(e.message, 'err')
+    Share.toast(e.message, 'err', 10000)
+    return false
+  }
+}
+var openedShare = false
+try { openedShare = bootFromShare() } catch (e) { openedShare = false; status((e && e.message) || String(e), 'err') }
+if (!openedShare) restoreStored()
+metaToForm(); rulesToForm(); render()
+window.addEventListener('hashchange', function () {
+  try {
+    if (bootFromShare()) { metaToForm(); rulesToForm(); render(); openedShare = true }
+  } catch (e) { status((e && e.message) || String(e), 'err') }
+})
+// ------------------------------------------------------------------ example stages
+function showTab(name) {
+  var b = document.querySelector('.tabs button[data-tab="' + name + '"]')
+  if (b) b.click()
+}
+function openExamples() {
+  showTab('file')
+  var el = document.getElementById('examples')
+  if (el) el.scrollIntoView({ block:'start' })
+  dismissHint(true)
+}
+function dismissHint(remember) {
+  var h = document.getElementById('ex-hint')
+  if (h) h.classList.remove('on')
+  if (remember) try { localStorage.setItem('rallyraid-examples-hint', '1') } catch (e) {}
+}
+function showHintIfNew() {
+  try { if (localStorage.getItem('rallyraid-examples-hint')) return } catch (e) {}
+  var h = document.getElementById('ex-hint')
+  if (h) h.classList.add('on')
+}
+document.getElementById('ex-open').addEventListener('click', openExamples)
+document.getElementById('ex-hint-go').addEventListener('click', openExamples)
+document.getElementById('ex-hint-x').addEventListener('click', function () { dismissHint(true) })
+
+var examplesList = []
+function hasWork() { return !!(st.points && st.points.length) }
+function applyStage(j, label) {
+  st = importStage(j); sel = -1; metaToForm(); rulesToForm(); render()
+  if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2))
+  status('Loaded ' + (label || st.meta.name || st.meta.id) + '.', 'ok')
+}
+function loadExample(id, skipConfirm) {
+  var meta = examplesList.filter(function (s) { return s.id === id })[0]
+  var title = (meta && meta.name) || id
+  if (!skipConfirm && hasWork() && !confirm('Load example “' + title + '”? This replaces the stage currently in the builder. Export first if you want to keep it.')) {
+    return Promise.resolve(false)
+  }
+  status('Loading example ' + title + '…')
+  return fetch('examples/' + encodeURIComponent(id) + '.json').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status)
+    return r.json()
+  }).then(function (j) {
+    applyStage(j, title)
+    showTab('plot')
+    return true
+  }).catch(function (e) {
+    status('Cannot load example ' + id + ': ' + e.message, 'err')
+    return false
+  })
+}
+function renderExamples(list) {
+  examplesList = list || []
+  var box = document.getElementById('ex-list')
+  if (!box) return
+  if (!examplesList.length) { box.textContent = 'No examples found.'; return }
+  var html = '', group = null
+  examplesList.forEach(function (s) {
+    if (s.group && s.group !== group) { group = s.group; html += '<div class="ex-gh">' + esc(group) + '</div>' }
+    var km = (s.lengthKm != null ? s.lengthKm : '') + ' km'
+    var wp = (s.waypoints != null ? s.waypoints : '') + ' waypoints'
+    var thumb = s.thumbnail ? '<img src="examples/' + esc(s.thumbnail) + '" alt="">' : ''
+    html += '<button type="button" class="ex-card" data-ex="' + esc(s.id) + '">' + thumb +
+      '<div class="ex-body"><h3>' + esc(s.name) + '</h3>' +
+      '<div class="meta">' + esc(s.region || '') + (s.inspiration ? ' · ' + esc(s.inspiration) : '') + ' · ' + esc(km) + ' · ' + esc(wp) + '</div>' +
+      (s.description ? '<p>' + esc(s.description) + '</p>' : '') +
+      '</div></button>'
+  })
+  box.innerHTML = html
+  box.onclick = function (e) {
+    var card = e.target.closest('[data-ex]')
+    if (card) loadExample(card.getAttribute('data-ex'))
+  }
+}
+function exampleQueryId() {
+  var m = /(?:\?|&)example=([^&]+)/.exec(location.search || '')
+  return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : ''
+}
+function initExamples() {
+  showHintIfNew()
+  return fetch('examples/index.json').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status)
+    return r.json()
+  }).then(function (data) {
+    renderExamples((data && data.stages) || [])
+    var qid = openedShare ? '' : exampleQueryId()
+    if (qid) return loadExample(qid)
+  }).catch(function (e) {
+    var box = document.getElementById('ex-list')
+    if (box) box.textContent = 'Examples are not available in this copy of the builder.'
+  })
+}
+initExamples()
+
+// the roadbook editor (roadbook.html) gets the current stage through localStorage and opens in its own tab
+function openRoadbook() {
+  if (st.points.length < 2) { alert('Plot a stage first (at least a DSS and an ASS), or load an example.'); return }
+  try { localStorage.setItem('rallyraid-roadbook-stage', JSON.stringify(exportStage())) } catch (e) { alert('Could not hand the stage to the roadbook editor: ' + e.message); return }
+  var w = window.open('roadbook.html?from=builder', 'rallyraid-roadbook')
+  if (!w) location.href = 'roadbook.html?from=builder'
+}
+document.getElementById('rb-open').addEventListener('click', openRoadbook)
+document.getElementById('f-roadbook').addEventListener('click', openRoadbook)
+
+function shareCurrentStage() {
+  var Share = window.RallyRaidShare
+  if (!Share) return
+  if (!st.points.length) { alert('Plot or load a stage first.'); return }
+  try {
+    var stage = exportStage()
+    var info = Share.linkFor(Share.pageUrl('stage'), Share.packStage(stage))
+    Share.shareOrCopy(info, { title: stage.name || stage.id, text: 'Rally raid stage: ' + (stage.name || stage.id) })
+  } catch (e) { status('Could not make a share link: ' + e.message, 'err') }
+}
+document.getElementById('b-share').addEventListener('click', shareCurrentStage)
+document.getElementById('f-share').addEventListener('click', shareCurrentStage)
+
+window.RallyRaidBuilder = { state:function () { return st }, exportStage:exportStage, importStage:function (j) { st = importStage(j); metaToForm(); rulesToForm(); render() }, applyStage:applyStage, loadExample:function (id, skipConfirm) { return loadExample(id, skipConfirm !== false) }, examples:function () { return examplesList }, openRoadbook:openRoadbook, shareCurrentStage:shareCurrentStage, storedWork:storedWork, openedShare:function () { return openedShare } }
+</script>
+<script src="mobile.js"></script> <!-- mobile: bottom sheet, add-points switch, tap tips -->
+<script src="stagegen.js"></script> <!-- stagegen: Auto stage button + panel (loads roadbook-gen.js and stagegen-core.js on first use) -->
+</body>
+</html>

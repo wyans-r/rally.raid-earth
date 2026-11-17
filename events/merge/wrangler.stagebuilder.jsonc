@@ -1,0 +1,27 @@
+{
+  // goes to /workspace/cf/stagebuilder/wrangler.jsonc at merge time (replaces the static-only one).
+  // Rally raid stage builder + async events -> https://stagebuilder.wyans.net
+  "name": "stagebuilder",
+  "compatibility_date": "2026-10-01",
+  "account_id": "12d9d7f42a5a938f3f8aa5232a4557fb",
+  "main": "src/index.js",
+  "assets": { "directory": "./site", "binding": "ASSETS" },
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [ { "pattern": "stagebuilder.wyans.net", "custom_domain": true } ],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "rallyraid-events", "database_id": "YOUR_D1_DATABASE_ID", "migrations_dir": "migrations" }
+  ],
+  "r2_buckets": [ { "binding": "FILES", "bucket_name": "rallyraid-events" } ],
+  "vars": {
+    "AUTH_PROVIDERS": "email,discord",
+    "MAIL_MODE": "resend",
+    "MAIL_FROM": "Rally Raid <noreply@example.com>",
+    "PUBLIC_BASE": "https://stagebuilder.wyans.net",
+    "GAME_UPLOAD_BASE": "http://stagebuilder.wyans.net",
+    "ADMIN_EMAILS": "",
+    "ADMIN_DISCORD_IDS": "",
+    "DISCORD_CLIENT_ID": ""
+  }
+  // secrets: wrangler secret put SESSION_SECRET / RESEND_API_KEY / DISCORD_CLIENT_SECRET
+}

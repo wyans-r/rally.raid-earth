@@ -1,0 +1,26 @@
+const puppeteer = require('puppeteer-core'), fs = require('fs'), http = require('http'), path = require('path')
+const ROOT = '/workspace/rallyraid'
+const srv = http.createServer((q, r) => {
+  let u = q.url.split('?')[0]
+  let f = u.startsWith('/ui/') ? path.join(ROOT, 'mod', u) : path.join(ROOT, u)
+  fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end() } else { r.writeHead(200, { 'Content-Type': f.endsWith('.css') ? 'text/css' : f.endsWith('.js') ? 'application/javascript' : 'text/html' }); r.end(d) } })
+}).listen(8767)
+;(async () => {
+  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] })
+  const page = await browser.newPage(); await page.setViewport({ width: 1180, height: 880 })
+  const errors = []; page.on('pageerror', e => errors.push(e.message))
+  await page.goto('http://127.0.0.1:8767/tests/app_preview.html', { waitUntil: 'networkidle0' })
+  await new Promise(r => setTimeout(r, 1000))
+  await page.click('#d .rrg-btn[ng-click="openStages()"]:not(.small)')
+  await new Promise(r => setTimeout(r, 400))
+  const n = await page.$$eval('#d .rrg-item', e => e.length)
+  const disabledBefore = await page.$eval('#d .rrg-overlay .rrg-btn[ng-click="load()"]', b => b.disabled)
+  await page.click('#d .rrg-item')
+  await new Promise(r => setTimeout(r, 200))
+  const disabledAfter = await page.$eval('#d .rrg-overlay .rrg-btn[ng-click="load()"]', b => b.disabled)
+  await page.evaluate(() => { calls.length = 0 })
+  await page.click('#d .rrg-overlay .rrg-btn[ng-click="load()"]')
+  const c = await page.evaluate(() => calls)
+  console.log(JSON.stringify({ items: n, disabledBefore, disabledAfter, calls: c, errors }))
+  await browser.close(); srv.close()
+})().catch(e => { console.error(e); process.exit(1) })

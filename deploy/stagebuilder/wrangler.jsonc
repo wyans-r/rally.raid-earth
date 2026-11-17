@@ -1,0 +1,19 @@
+{
+  // Rally raid stage builder -> https://stagebuilder.wyans.net (public, static, no login)
+  // Source: stage-builder/ in this repository. Redeploy (only with wyans' OK): sh deploy/stagebuilder/deploy.sh
+  // /api/overpass is a Worker route (shared Overpass cache). run_worker_first is ONLY /api/* so
+  // ordinary page and asset requests stay free static-asset traffic and do not count against
+  // the Workers Free 100,000 requests/day cap.
+  "name": "stagebuilder",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "account_id": "12d9d7f42a5a938f3f8aa5232a4557fb",
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [ { "pattern": "stagebuilder.wyans.net", "custom_domain": true } ]
+}

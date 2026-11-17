@@ -1,0 +1,20 @@
+{
+  "domElement": "<rally-raid-roadbook></rally-raid-roadbook>",
+  "name": "Rally Raid Roadbook",
+  "types": [
+    "ui.apps.categories.utility"
+  ],
+  "description": "Digital roadbook reader for Rally Raid stages: the roadbook made in the stage builder's editor scrolls with the trip odometer. Box up / down (Ctrl+Shift+PgUp / PgDn), sync the trip to a box (Ctrl+Shift+End). RECCE: record the driven line, mark, confirm, move, retag or delete boxes as you drive, and let the car detect jumps, crests, compressions, soft sand and slopes (Ctrl+Shift+R).",
+  "css": {
+    "top": "430px",
+    "right": "10px",
+    "height": "520px",
+    "width": "380px"
+  },
+  "author": "Rally Raid for BeamNG.Earth",
+  "version": "0.3.1",
+  "directive": "rallyRaidRoadbook",
+  "appName": "rallyRaidRoadbook",
+  "category": "Rally Raid",
+  "isAuxiliary": false
+}

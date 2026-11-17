@@ -1,0 +1,457 @@
+{
+ "format": "rallyraid-stage",
+ "schemaVersion": 1,
+ "generator": "rallyraid-stage-builder 0.1.0",
+ "id": "ksa-empty-quarter-shubaytah",
+ "name": "Dakar style: Empty Quarter (Shubaytah) dune loop",
+ "region": "Rub al Khali near Shaybah, Eastern Province, Saudi Arabia",
+ "author": "Rally Raid samples",
+ "description": "Patterned after the Dakar's Empty Quarter / Shubaytah days (2023, 2025 \"48h chrono\"): almost 100% off-piste in giant dunes, long straight CAP legs, very few waypoints and no tracks. Realistic: WPN (60 min if missed) where navigation is the challenge, WPC to force the route through the big dunes, WPS at a dangerous drop, a category speed limit (160 km/h) as in FIM rules.",
+ "vehicleClass": "Cars, trucks, SSV",
+ "created": "2026-11-16T05:33:11.107Z",
+ "modified": "2026-11-16T05:33:11.114Z",
+ "dataSource": "OpenStreetMap contributors (ODbL), routed with OSRM",
+ "lengthKm": 140.602,
+ "rules": {
+  "preset": "FIM-2026",
+  "waypoints": {
+   "DSS": {
+    "reveal": "prev",
+    "radius": 1000,
+    "validate": 200,
+    "penalty": null
+   },
+   "WPV": {
+    "reveal": "always",
+    "validate": 200,
+    "penalty": 900
+   },
+   "WPE": {
+    "reveal": "prev",
+    "radius": 1000,
+    "validate": 90,
+    "penalty": 900
+   },
+   "WPM": {
+    "reveal": "radius",
+    "radius": 800,
+    "validate": 90,
+    "penalty": 900
+   },
+   "WPN": {
+    "reveal": "radius",
+    "radius": 800,
+    "validate": 200,
+    "penalty": 3600
+   },
+   "WPS": {
+    "reveal": "radius",
+    "radius": 1000,
+    "validate": 30,
+    "penalty": 900
+   },
+   "WPC": {
+    "reveal": "never",
+    "validate": 300,
+    "penalty": 900
+   },
+   "WPP": {
+    "reveal": "radius",
+    "radius": 100,
+    "validate": 20,
+    "penalty": 120
+   },
+   "DZ": {
+    "reveal": "radiusOrPrev",
+    "radius": 1000,
+    "validate": 90,
+    "penalty": 900
+   },
+   "FZ": {
+    "reveal": "prev",
+    "radius": 1000,
+    "validate": 90,
+    "penalty": 900
+   },
+   "ASS": {
+    "reveal": "radius",
+    "radius": 800,
+    "validate": 90,
+    "penalty": null
+   }
+  },
+  "speedZone": {
+   "tolerance": 90,
+   "warnBefore": 90,
+   "alertMargin": 5,
+   "impulseDistance": 150,
+   "impulseTime": 10,
+   "bands": [
+    {
+     "upTo": 5,
+     "penalty": 10
+    },
+    {
+     "upTo": 15,
+     "penalty": 60
+    },
+    {
+     "upTo": 40,
+     "penalty": 120
+    },
+    {
+     "upTo": null,
+     "penalty": 360
+    }
+   ]
+  },
+  "globalMaxKmh": 160,
+  "globalImpulsePenalty": 60,
+  "lookahead": 5,
+  "tripSnapToWaypoint": true,
+  "startMode": "auto",
+  "countdown": 5,
+  "falseStartPenalty": 60
+ },
+ "waypoints": [
+  {
+   "id": "ksa-em-01",
+   "n": 0,
+   "type": "DSS",
+   "lat": 22.513876,
+   "lon": 53.960094,
+   "km": 0,
+   "cap": 247,
+   "name": "Shaybah road",
+   "box": 1
+  },
+  {
+   "id": "ksa-em-02",
+   "n": 1,
+   "type": "WPN",
+   "lat": 22.45,
+   "lon": 53.8,
+   "km": 17.917,
+   "cap": 247,
+   "box": 2
+  },
+  {
+   "id": "ksa-em-03",
+   "n": 2,
+   "type": "WPM",
+   "lat": 22.38,
+   "lon": 53.62,
+   "km": 37.99,
+   "cap": 243,
+   "box": 3
+  },
+  {
+   "id": "ksa-em-04",
+   "n": 3,
+   "type": "WPC",
+   "lat": 22.3,
+   "lon": 53.45,
+   "km": 57.607,
+   "cap": 291,
+   "box": 4
+  },
+  {
+   "id": "ksa-em-05",
+   "n": 4,
+   "type": "WPS",
+   "lat": 22.36,
+   "lon": 53.28,
+   "km": 76.323,
+   "cap": 307,
+   "box": 5
+  },
+  {
+   "id": "ksa-em-06",
+   "n": 5,
+   "type": "WPE",
+   "lat": 22.45,
+   "lon": 53.15,
+   "km": 93.018,
+   "cap": 320,
+   "box": 6
+  },
+  {
+   "id": "ksa-em-07",
+   "n": 6,
+   "type": "WPN",
+   "lat": 22.55,
+   "lon": 53.06,
+   "km": 107.48,
+   "cap": 62,
+   "box": 7
+  },
+  {
+   "id": "ksa-em-08",
+   "n": 7,
+   "type": "WPM",
+   "lat": 22.62,
+   "lon": 53.2,
+   "km": 123.825,
+   "cap": 67,
+   "box": 8
+  },
+  {
+   "id": "ksa-em-09",
+   "n": 8,
+   "type": "ASS",
+   "lat": 22.68,
+   "lon": 53.35,
+   "km": 140.602,
+   "cap": null,
+   "box": 9
+  }
+ ],
+ "roadbook": {
+  "boxes": [
+   {
+    "n": 1,
+    "id": "ksa-em-01",
+    "km": 0,
+    "partial": 0,
+    "cap": 247,
+    "waypoint": "ksa-em-01",
+    "label": "DSS",
+    "lat": 22.513876,
+    "lon": 53.960094,
+    "tulip": null
+   },
+   {
+    "n": 2,
+    "id": "ksa-em-02",
+    "km": 17.917,
+    "partial": 17.917,
+    "cap": 247,
+    "waypoint": "ksa-em-02",
+    "label": "WPN 1",
+    "lat": 22.45,
+    "lon": 53.8,
+    "tulip": null
+   },
+   {
+    "n": 3,
+    "id": "ksa-em-03",
+    "km": 37.99,
+    "partial": 20.073,
+    "cap": 243,
+    "waypoint": "ksa-em-03",
+    "label": "WPM 2",
+    "lat": 22.38,
+    "lon": 53.62,
+    "tulip": null
+   },
+   {
+    "n": 4,
+    "id": "ksa-em-04",
+    "km": 57.607,
+    "partial": 19.617,
+    "cap": 291,
+    "waypoint": "ksa-em-04",
+    "label": "WPC 3",
+    "lat": 22.3,
+    "lon": 53.45,
+    "tulip": null
+   },
+   {
+    "n": 5,
+    "id": "ksa-em-05",
+    "km": 76.323,
+    "partial": 18.715,
+    "cap": 307,
+    "waypoint": "ksa-em-05",
+    "label": "WPS 4",
+    "lat": 22.36,
+    "lon": 53.28,
+    "tulip": null
+   },
+   {
+    "n": 6,
+    "id": "ksa-em-06",
+    "km": 93.018,
+    "partial": 16.696,
+    "cap": 320,
+    "waypoint": "ksa-em-06",
+    "label": "WPE 5",
+    "lat": 22.45,
+    "lon": 53.15,
+    "tulip": null
+   },
+   {
+    "n": 7,
+    "id": "ksa-em-07",
+    "km": 107.48,
+    "partial": 14.461,
+    "cap": 62,
+    "waypoint": "ksa-em-07",
+    "label": "WPN 6",
+    "lat": 22.55,
+    "lon": 53.06,
+    "tulip": null
+   },
+   {
+    "n": 8,
+    "id": "ksa-em-08",
+    "km": 123.825,
+    "partial": 16.346,
+    "cap": 67,
+    "waypoint": "ksa-em-08",
+    "label": "WPM 7",
+    "lat": 22.62,
+    "lon": 53.2,
+    "tulip": null
+   },
+   {
+    "n": 9,
+    "id": "ksa-em-09",
+    "km": 140.602,
+    "partial": 16.777,
+    "cap": null,
+    "waypoint": "ksa-em-09",
+    "label": "ASS",
+    "lat": 22.68,
+    "lon": 53.35,
+    "tulip": null
+   }
+  ],
+  "file": null
+ },
+ "route": {
+  "legs": [
+   {
+    "from": "ksa-em-01",
+    "to": "ksa-em-02",
+    "mode": "direct",
+    "km": 17.917,
+    "points": [
+     [
+      22.513876,
+      53.960094
+     ],
+     [
+      22.45,
+      53.8
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-02",
+    "to": "ksa-em-03",
+    "mode": "direct",
+    "km": 20.073,
+    "points": [
+     [
+      22.45,
+      53.8
+     ],
+     [
+      22.38,
+      53.62
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-03",
+    "to": "ksa-em-04",
+    "mode": "direct",
+    "km": 19.617,
+    "points": [
+     [
+      22.38,
+      53.62
+     ],
+     [
+      22.3,
+      53.45
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-04",
+    "to": "ksa-em-05",
+    "mode": "direct",
+    "km": 18.715,
+    "points": [
+     [
+      22.3,
+      53.45
+     ],
+     [
+      22.36,
+      53.28
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-05",
+    "to": "ksa-em-06",
+    "mode": "direct",
+    "km": 16.696,
+    "points": [
+     [
+      22.36,
+      53.28
+     ],
+     [
+      22.45,
+      53.15
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-06",
+    "to": "ksa-em-07",
+    "mode": "direct",
+    "km": 14.461,
+    "points": [
+     [
+      22.45,
+      53.15
+     ],
+     [
+      22.55,
+      53.06
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-07",
+    "to": "ksa-em-08",
+    "mode": "direct",
+    "km": 16.346,
+    "points": [
+     [
+      22.55,
+      53.06
+     ],
+     [
+      22.62,
+      53.2
+     ]
+    ]
+   },
+   {
+    "from": "ksa-em-08",
+    "to": "ksa-em-09",
+    "mode": "direct",
+    "km": 16.777,
+    "points": [
+     [
+      22.62,
+      53.2
+     ],
+     [
+      22.68,
+      53.35
+     ]
+    ]
+   }
+  ]
+ },
+ "builder": {
+  "notes": []
+ }
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rally Raid Repair: RECOVER CAR + game-crash resume preview (outside the game)</title>
+<link rel="icon" href="data:,">
+<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+<style>body{background:#6d7a63;margin:0;font-family:sans-serif} .slot{position:absolute;width:360px;height:300px}
+#a{left:10px;top:10px} #b{left:380px;top:10px} #c{left:750px;top:10px} #d{left:10px;top:320px} #e{left:380px;top:320px} #f{left:750px;top:320px}
+#g{left:10px;top:630px} #h{left:380px;top:630px} #i{left:750px;top:630px} #j{left:1120px;top:630px} #k{left:1120px;top:10px} #l{left:1120px;top:320px}</style>
+<script>
+// a stand-in for the game's UI: the 'beamng.apps' module, bngApi, and RallyRaidRepair / RallyRaidRecover /
+// RallyRaidGameResume messages as rallyRaid/repair.lua, rallyRaid/resume.lua and rallyRaid/gameResume.lua send them
+var calls = []
+window.bngApi = { engineLua: function (cmd, cb) { calls.push(cmd) } }
+angular.module('beamng.apps', [])
+</script>
+<script src="/ui/modules/apps/RallyRaidRepair/app.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="a"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="b"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="c"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="d"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="e"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="f"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="g"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="h"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="i"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="j"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="k"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="l"><rally-raid-repair></rally-raid-repair></div>
+<script>
+function stageOpts() {
+  var o = []
+  ;['FL', 'FR', 'RL', 'RR'].forEach(function (c) { o.push({ id: 'wheel:' + c, kind: 'wheel', label: 'Change wheel ' + c, minutes: 2, spare: true, damage: 0, enabled: true }) })
+  o.push({ id: 'radiator', kind: 'radiator', label: 'Radiator', minutes: 12, damage: 0.4, enabled: true })
+  return o
+}
+var BAR = { open: false, mode: 'stage', stopped: true, options: stageOpts(), resumes: { rally: 0, max: 3, stage: 0, maxStage: 1 }, spares: { used: 0, max: 2 } }
+var OK_ASK = { allowed: true, penaltyS: 900, used: 0, max: 3, leftAfter: 2, stageUsed: 0, stageMax: 1, distToFinishM: 18420,
+  target: { lat: 38.57, lon: -109.5, heading: 84.2, d: 8120, km: 8.214, backM: 30, fromCarM: 52.3 }, crash: { offRouteM: 41.6 },
+  snapshot: { id: 7, ageS: 27.4 } }
+var REPAIR = {
+  a: BAR, b: Object.assign({}, BAR, { resumes: { rally: 1, max: 3, stage: 1, maxStage: 1 } }), c: Object.assign({}, BAR, { resumes: { rally: 1, max: 3, stage: 0, maxStage: 1 } }),
+  d: BAR, e: Object.assign({}, BAR, { resumes: { rally: 2, max: 3, stage: 1, maxStage: 1 } }),
+  f: Object.assign({}, BAR, { open: true }),
+  g: Object.assign({}, BAR, { mode: 'none' }), h: Object.assign({}, BAR, { mode: 'none' }), i: BAR, j: BAR,
+  k: Object.assign({}, BAR, { mode: 'none' }), l: Object.assign({}, BAR, { open: true })
+}
+var RESUME = {
+  // allowed: the confirm
+  a: { ask: OK_ASK, inStage: true, snapshots: 3 },
+  // refused: a second crash on this stage, retire offered
+  b: { ask: { allowed: false, reason: 'second recovery / reset on this stage (max 1 per stage): the stage is retired', retireInstead: true, used: 1, max: 3 }, inStage: true },
+  // the "sure?" step
+  c: { ask: { allowed: false, reason: 'within 1000 m of the ASS (640 m): no recovery here. Get to the finish or retire.', retireInstead: true }, askRetire: true, inStage: true },
+  // running
+  d: { busy: { phase: 'place' }, paused: true, inStage: true },
+  // done
+  e: { msg: 'Car recovery 2 of 3: +30 min, back on the route at km 8.21.', inStage: true },
+  // nothing to show: the stage menu with its RECOVER CAR button
+  f: { inStage: true, enabled: true },
+  g: {}, h: {}, i: { inStage: true }, j: { inStage: true }, k: {},
+  // switched off (repairConfig carRecovery.enabled = false)
+  l: { inStage: true, enabled: false }
+}
+var SUMMARY = { clock: 4521.4, validated: 6, missed: 1, penaltyTotal: 1080, sparesUsed: 1, recoveries: 1, target: 8 }
+var OFFER = { elapsedS: 4521.4, savedAgoS: 720, savedAt: '2026-11-17T04:12:09Z', saveReason: 'timer', used: 1, summary: SUMMARY, hasDamage: true,
+  stageTimeLostS: 21.5, policy: { penaltyS: 0, rallyCount: 1, stageCount: 1 }, text: 'Resume from last save (1:15:21 elapsed, saved 12 min ago)' }
+var GAME = {
+  a: {}, b: {}, c: {}, d: {}, e: {},
+  // the stage menu: saved to disk 12 s ago
+  f: { saves: 14, lastSaveAgeS: 12 },
+  // the offer after a relaunch
+  g: { offer: OFFER },
+  // DISCARD asks first; the newest save was damaged (the one before is offered); official rules: +15 min
+  h: { offer: Object.assign({}, OFFER, { used: 2, policy: { penaltyS: 900, rallyCount: 1 }, stageTimeLostS: null }), askDiscard: true },
+  // resumed: clock held, flagged
+  i: { hold: true, flagged: { count: 1, wallGapS: 720, stageTimeLostS: 21.5, summary: 'game-crash resume 1' }, msg: 'Resumed at 1:15:21 stage time.' },
+  // resuming
+  j: { busy: { phase: 'teleport' } },
+  // over an official limit: the stage is retired
+  k: { offer: Object.assign({}, OFFER, { policy: { refused: true, retire: true, reason: 'more than 1 resume(s) on this stage', penaltyS: 0 } }) },
+  l: { saves: 3, lastSaveAgeS: 4 }
+}
+function send(id) {
+  var el = document.querySelector('#' + id + ' .rrr-host')
+  var sc = angular.element(el).isolateScope()
+  sc.$broadcast('RallyRaidRepair', REPAIR[id])
+  sc.$broadcast('RallyRaidRecover', RESUME[id])
+  sc.$broadcast('RallyRaidGameResume', GAME[id])
+}
+setTimeout(function () { Object.keys(RESUME).forEach(send) }, 300)
+</script>
+</body></html>

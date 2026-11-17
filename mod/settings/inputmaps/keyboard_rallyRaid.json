@@ -1,0 +1,28 @@
+{
+  "displayName": "Keyboard",
+  "bindings": [
+    {"control": "ctrl shift up", "action": "rallyRaid_tripPlus"},
+    {"control": "ctrl shift down", "action": "rallyRaid_tripMinus"},
+    {"control": "ctrl shift right", "action": "rallyRaid_wPlus"},
+    {"control": "ctrl shift left", "action": "rallyRaid_wMinus"},
+    {"control": "ctrl shift p", "action": "rallyRaid_partialReset"},
+    {"control": "ctrl shift home", "action": "rallyRaid_start"},
+    {"control": "ctrl shift pageup", "action": "rallyRaid_boxPrev"},
+    {"control": "ctrl shift pagedown", "action": "rallyRaid_boxNext"},
+    {"control": "ctrl shift end", "action": "rallyRaid_boxSync"},
+    {"control": "ctrl shift r", "action": "rallyRaid_recce"},
+    {"control": "ctrl shift n", "action": "rallyRaid_recceDrop"},
+    {"control": "ctrl shift c", "action": "rallyRaid_recceConfirm"},
+    {"control": "ctrl shift m", "action": "rallyRaid_recceMove"},
+    {"control": "ctrl shift t", "action": "rallyRaid_recceRetag"},
+    {"control": "ctrl shift delete", "action": "rallyRaid_recceDelete"},
+    {"control": "ctrl shift z", "action": "rallyRaid_recceUndo"},
+    {"control": "ctrl shift f", "action": "rallyRaid_repairMenu"},
+    {"control": "ctrl shift g", "action": "rallyRaid_recoverCar"},
+    {"control": "ctrl shift h", "action": "rallyRaid_gameResume"},
+    {"control": "ctrl shift j", "action": "rallyRaid_plannerMenu"},
+    {"control": "ctrl shift w", "action": "rallyRaid_plannerWaypoint"},
+    {"control": "ctrl shift b", "action": "rallyRaid_plannerBox"},
+    {"control": "ctrl shift k", "action": "rallyRaid_plannerRec"}
+  ]
+}

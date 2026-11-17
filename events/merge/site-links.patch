@@ -1,0 +1,21 @@
+--- stage-builder/index.html	2026-11-17 00:32:24.811456868 -0600
++++ ../rallyraid-events/site/index.html	2026-11-17 06:07:01.971837542 -0600
+@@ -93,6 +93,7 @@
+     <header><div class="head"><div><h1>Rally Raid Stage Builder</h1><small>for BeamNG.Earth &middot; OpenStreetMap data &middot; stage format v1</small></div>
+       <span class="hbtns"><button class="b" id="ex-open" title="Load a sample stage and edit it">Examples</button>
+       <a class="b" href="/mod" title="Download the BeamNG.drive mod (GPS, roadbook, stages) and install steps" style="text-decoration:none;display:inline-flex;align-items:center">Get the mod</a>
++      <a class="b" href="/events/" title="Async rally raid events: enter, download the event packs, results and leaderboards" style="text-decoration:none;display:inline-flex;align-items:center">Events</a>
+       <button class="b" id="rb-open" title="Make the roadbook for this stage: auto-generated from terrain and OpenStreetMap, then edit it, print it (PDF) and use it in game">Roadbook</button>
+       <button class="b" id="b-share" title="Copy a link that opens this stage in someone else&rsquo;s browser. The link carries the stage itself; nothing is uploaded.">Share link</button></span></div></header>
+     <div id="ex-hint"><span>New here? Open a sample stage to get a feel for how to build your own.</span>
+--- stage-builder/mod.html	2026-11-16 23:17:21.027133611 -0600
++++ ../rallyraid-events/site/mod.html	2026-11-17 06:07:01.971837542 -0600
+@@ -25,7 +25,7 @@
+ <link rel="stylesheet" href="mobile.css"> <!-- mobile: phone layout, no effect above 900 px -->
+ </head>
+ <body><main>
+-<nav><a href="/">&larr; Stage builder</a> &middot; <a href="/roadbook">Roadbook editor</a></nav>
++<nav><a href="/">&larr; Stage builder</a> &middot; <a href="/roadbook">Roadbook editor</a> &middot; <a href="/events/">Events</a></nav>
+ <h1>Rally Raid for BeamNG.drive</h1>
+ <p class="sub">Dakar-style rally raid for BeamNG.Earth: a GPS with CAP and odometer that follows the FIM reveal rules, a scrolling roadbook, timed stages with penalties, and a recce mode for refining notes as you drive.</p>
+ 

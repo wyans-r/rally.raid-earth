@@ -1,0 +1,101 @@
+# BeamNG.com resources listing (draft — do not submit yet)
+
+This is a draft for a future upload to the official BeamNG repository at https://www.beamng.com/resources/. **Nothing has been submitted.** Submit only when wyans says so, and only after the public zip is the repair + planner + resume build he has tested in game.
+
+Official rules read on 17 November 2026:
+
+- [Modding Guidelines](https://www.beamng.com/game/support/policies/modding-guidelines/)
+- [Correctly packing mods](https://docs.beamng.com/modding/mod-support/mod_packing/) (last modified 22 April 2026)
+- [Uploading mods to the Repository](https://www.beamng.com/threads/uploading-mods-to-the-repository.16555/)
+- [Mod support / review time](https://docs.beamng.com/modding/mod-support/)
+
+The official repository generates `mod_info.json` for you. Do not put one in the zip.
+
+## Draft title
+
+Rally Raid for BeamNG.Earth
+
+## Draft tagline
+
+Dakar-style rally GPS, roadbook, repairs and stage tools for BeamNG.Earth.
+
+## Draft description (for the repository overview)
+
+Rally Raid is a Dakar-style navigation pack for BeamNG.Earth. Plot a stage on a real-world map, generate a roadbook, and race it in BeamNG.drive with a rally GPS that hides waypoints until you are close, a scrolling roadbook, timed penalties, mid-stage repairs, and a way to recover a stuck car or resume after the game crashes.
+
+**You need BeamNG.Earth installed.** This is a fan project, not an official BeamNG, FIM or FIA product.
+
+**Install.** Download the zip and drop it into your BeamNG mods folder (`%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\mods` on Windows). Turn the mod on in the Mod Manager, load BeamNG.Earth, spawn a car. Press Esc → UI Apps → Add app, and add **Rally Raid GPS**. Also add **Rally Raid Roadbook**, **Rally Raid Planner** and **Rally Raid Repair** if you want them.
+
+**Build or pick a stage.** Use the free website [stagebuilder.wyans.net](https://stagebuilder.wyans.net) (no login). The Examples list on the Guide tab loads sample stages. Export the stage `.json` and, if you want a roadbook, save the `.roadbook.json` from the roadbook editor. Put stages in `<BeamNG user folder>/current/rallyraid/stages/` and roadbooks in `.../roadbooks/`. The mod also ships several sample stages.
+
+**Race.** Load a stage from the GPS, teleport or drive to the start, and go. The GPS always shows your heading (CAP) and speed. Distance to a hidden waypoint appears only when you are close, the way a real rally GPS works. The roadbook scrolls with your trip odometer.
+
+**Useful keys** (rebind in Options → Controls → Bindings, search "Rally Raid"):
+
+- Ctrl+Shift+F — repair menu
+- Ctrl+Shift+G — recover a stuck or rolled car (press again to confirm)
+- Ctrl+Shift+H — resume the stage after a game crash (press twice)
+- Ctrl+Shift+J / W / B / K — open the planner, add a waypoint, add a roadbook box, record the driven line
+
+A full key list and a longer how-to are on the website's [mod page](https://stagebuilder.wyans.net/mod) and in the project README.
+
+**Credits.** Map data © OpenStreetMap contributors (ODbL). Land cover © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Built for BeamNG.Earth. Full credits: https://stagebuilder.wyans.net/credits.html
+
+**Bugs.** Please report them with a console screenshot (`~` in game), your BeamNG and BeamNG.Earth versions, and the stage file if you can share it.
+
+## Checklist against the official rules
+
+| Rule | Status |
+|---|---|
+| Install is drag-and-drop of the zip into the mods folder; no extra steps | Yes, once the zip is built with `scripts/build_public_zip.py` |
+| Zip packing: first folders inside the zip are the game's top-level folders, not a wrapper named after the mod | Yes: `lua`, `ui`, `scripts`, `settings`, and `rallyraid` are at the zip root. See the note below about `rallyraid/` |
+| Unique zip filename, only letters / digits / `-` / `_`, **no version number in the filename** | Name (chosen by wyans): `wyans_rallyraid.zip`. Keep that same name for every later update |
+| Unique file and part names; do not overwrite default game files | Yes. All Lua lives under `lua/ge/extensions/rallyRaid/` and `lua/vehicle/extensions/rallyRaid/`; UI apps are `RallyRaid*`; input actions are `rallyRaid_*`. No stock jbeam, meshes or materials |
+| Author is wyans (or has permission for any third-party content) | wyans is the author of this project. Third-party *data* is credited (OSM, WorldCover, tiles, etc.). Confirm you are happy to be listed as the resource author |
+| Describe the mod in the overview and include **at least two images** | Draft description above. Screenshots still need to be chosen (list below). Upload them with the site's **Upload Images** button, not by packing them in the zip |
+| 96×96 resource icon / thumbnail | Still needed. See the screenshot list |
+| Check the in-game console for errors before upload | Wait for wyans' in-game test OK |
+| No copyrighted content without permission | No BeamNG assets are bundled. Roadbook symbols are an unofficial set drawn for this project, not scanned FIM/FIA artwork. Official FIM/FIA PDFs are **not** in the zip and should not be in the public repo. Stages are built from OpenStreetMap and must keep the OSM credit |
+| No unused files; **do not include README files in the zip** — use the overview instead | The build script leaves README, LICENSE and docs out of the zip. Credits are shown in the apps and on the website |
+| No inappropriate content | None |
+| Do not pack several tiny mods as separate uploads; keep file size down | One zip. Sample stages are included; they are part of the product, not unused leftover files |
+| Do not change the zip name when updating; increment the version on the listing and summarise changes | Use "Post resource update", same filename |
+| Mods are reviewed by hand; this can take a few working days | Expected. If a submission disappears from "pending", look for a private message from the moderators |
+
+### Note about the `rallyraid/` folder
+
+BeamNG's packing page lists official top-level folders such as `lua`, `ui`, `scripts`, `settings`, `vehicles` and `levels`. This zip also has a top-level `rallyraid/` folder for stages, roadbooks and (later) user files, because the Lua looks for `/rallyraid/stages/` and the same path in the user's `current` folder. That is deliberate, and it is how the mod finds shipped samples. It is not on the published list of folder names. If a reviewer objects, we should ask them before moving the files (a move would break the documented install path).
+
+### Zip filename
+
+`rallyraid_mod.zip` is a bit generic and could clash with someone else's file. The guidelines suggest adding the username: **`wyans_rallyraid.zip`**. wyans confirmed this name on 17 Nov 2026. It should not change later.
+
+## Screenshots still needed
+
+At least two images, plus a 96×96 icon. Suggested set (crop tightly, no console junk, no personal paths):
+
+1. **96×96 icon** — a simple GPS / roadbook tulip mark on a dark background, readable at small size.
+2. The Rally Raid GPS during a stage, with a revealed waypoint, trip and CAP visible.
+3. The Rally Raid Roadbook app scrolling through boxes.
+4. The stage builder with a finished route (one of the sample stages is fine).
+5. The roadbook editor, showing the map, the list of boxes and a tulip.
+6. The Repair app open (mid-stage or bivouac).
+7. Optional: Recover car confirmation, or the planner with a driven line.
+
+Existing local screenshots in the working tree (for example `gps_app.png`, `roadbook_app.png`, `builder_guide.png`, `repair_app.png`, `planner_app.png`) can be a starting point, but they should be reviewed and, if needed, re-taken in the current game before upload.
+
+## What is not in the public zip
+
+- The Rally Raid Event app, `official.lua` and `sha256.lua` (Async Events is unreleased)
+- README, LICENSE, tests, docs, and website files
+- Any API tokens or `.env` files
+
+## Submission steps (for later — do not do these now)
+
+1. wyans confirms the in-game test of the repair + planner + resume build.
+2. Build `wyans_rallyraid.zip` with the public build script and check the folder layout.
+3. Confirm the zip name, the title, and the description.
+4. Log into beamng.com, go to Resources, **Add Resource**, pick a category (Utility / UI is the closest fit; confirm on the form), fill title, tagline, version (start at 0.2.0 or 1.0.0 as wyans prefers), description, tags.
+5. Upload the zip. Tick **Upload Resource Icon** and add the 96×96 image. Add at least two screenshots with **Upload Images**.
+6. Wait for review. Do not also upload a second copy under a different zip name.

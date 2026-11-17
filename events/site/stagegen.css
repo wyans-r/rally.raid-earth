@@ -1,0 +1,88 @@
+/* Stage-Gen panel (stagegen.js). Everything is scoped to #sg-*, so the builder's own layout is unchanged. */
+#sg-open .sg-bolt { color: var(--acc); }
+#sg-open .sg-short { display: none; }
+#sg-open.on { background: #6b5a00; border-color: #a68b00; }
+#sg-panel { display: none; position: absolute; z-index: 1001; top: 48px; left: 54px; width: 350px; max-height: calc(100% - 64px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.5); flex-direction: column; }
+#sg-panel.on { display: flex; }
+#sg-panel .sg-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+#sg-panel .sg-head b { font-size: 14px; } #sg-panel .sg-sub { color: var(--dim); font-size: 11px; flex: 1; }
+#sg-panel .sg-x, #sg-help .sg-x { padding: 0 8px; font-size: 16px; line-height: 22px; }
+#sg-panel .sg-body { overflow: auto; padding: 4px 10px 10px; -webkit-overflow-scrolling: touch; }
+#sg-panel .sg-step { padding: 6px 0 8px; border-bottom: 1px solid var(--line); }
+#sg-panel .sg-lab { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin: 4px 0 5px; }
+#sg-panel .sg-dim { color: var(--dim); font-size: 12px; }
+#sg-panel .sg-pts { display: flex; gap: 6px; }
+#sg-panel .sg-place { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+#sg-panel.sg-placing .sg-place:focus { outline: 2px solid var(--acc); }
+#sg-panel .sg-dot { display: inline-block; font-weight: 700; font-size: 11px; color: #000; border-radius: 8px; padding: 1px 5px; }
+#sg-panel .sg-dot.dss { background: #00e676; } #sg-panel .sg-dot.ass { background: #ff5252; }
+#sg-panel .sg-row2 { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+#sg-panel .sg-link { background: none; border-color: transparent; color: #8ab4f8; padding: 2px 0; }
+#sg-panel .sg-len { display: flex; align-items: center; gap: 6px; } #sg-panel .sg-len input { width: 90px; }
+#sg-panel .sg-presets { display: flex; gap: 6px; } #sg-panel .sg-presets .b { flex: 1; }
+#sg-panel .sg-presets .b.on { background: #6b5a00; border-color: #a68b00; }
+#sg-panel .sg-slider { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; font-size: 12px; color: var(--dim); }
+#sg-panel .sg-slider input { flex: 1; padding: 0; border: 0; background: none; accent-color: var(--acc); }
+#sg-panel .sg-rules { margin-top: 5px; font-size: 11px; }
+#sg-panel #sg-region { margin-bottom: 6px; }
+#sg-panel .sg-seedrow { display: flex; align-items: center; gap: 6px; }
+#sg-panel .sg-seedrow label { margin: 0; } #sg-panel .sg-seedrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; }
+#sg-panel label.sg-check { display: flex; gap: 6px; align-items: flex-start; text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--text); margin: 8px 0 0; cursor: pointer; }
+#sg-panel label.sg-check input { width: auto; margin-top: 2px; }
+#sg-panel .sg-note { margin-top: 6px; font-size: 12px; color: var(--dim); background: #0f1215; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+#sg-panel a { color: #8ab4f8; }
+#sg-panel .sg-go { width: 100%; margin: 10px 0 4px; padding: 7px; font-weight: 600; }
+#sg-panel .sg-prog { margin: 4px 0; } #sg-panel .sg-bar { height: 4px; background: #0f1215; border-radius: 2px; overflow: hidden; }
+#sg-panel .sg-bar i { display: block; height: 100%; width: 0; background: var(--acc); transition: width .3s; }
+#sg-panel .sg-msg { font-size: 12px; color: var(--dim); margin-top: 3px; }
+#sg-panel #sg-err { font-size: 12px; margin: 4px 0; }
+#sg-panel .sg-card { border: 1px solid var(--line); border-radius: 5px; padding: 7px 8px; margin-bottom: 6px; cursor: pointer; background: #181b20; }
+#sg-panel .sg-card.on { border-color: var(--acc); background: #20242a; }
+#sg-panel .sg-ch { display: flex; align-items: center; gap: 7px; }
+#sg-panel .sg-sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #000; }
+#sg-panel .sg-km { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+#sg-panel .sg-dl { font-size: 11px; } #sg-panel .sg-dl.ok { color: #7bd88f; } #sg-panel .sg-dl.warn { color: #ffb74d; }
+#sg-panel .sg-splitbar { height: 5px; margin: 6px 0 4px; border-radius: 3px; background: repeating-linear-gradient(90deg, #c9a227 0 6px, #6d5a1a 6px 10px); overflow: hidden; }
+#sg-panel .sg-splitbar i { display: block; height: 100%; background: #8d99a6; }
+#sg-panel .sg-cs { font-size: 12px; margin-top: 2px; }
+#sg-panel .sg-cb { display: none; gap: 6px; margin-top: 6px; }
+#sg-panel .sg-card.on .sg-cb, #sg-panel .sg-done .sg-cb { display: flex; }
+#sg-panel .sg-legend { margin: 2px 0 6px; font-size: 11px; }
+#sg-panel .sg-l1, #sg-panel .sg-l2 { display: inline-block; width: 18px; height: 0; border-top: 3px solid #ccc; vertical-align: middle; }
+#sg-panel .sg-l2 { border-top-style: dashed; }
+#sg-panel .sg-done, #sg-panel .sg-sealed { border: 1px solid #2f6b3a; border-radius: 5px; padding: 8px; margin: 6px 0; background: #16201a; }
+#sg-panel .sg-big { font-size: 15px; font-weight: 700; margin: 2px 0 4px; }
+#sg-panel .sg-handout { padding-left: 18px; margin: 8px 0; } #sg-panel .sg-handout li { margin-bottom: 7px; }
+#sg-panel code { font-size: 11px; }
+#sg-panel .sg-verify { margin-top: 10px; } #sg-panel .sg-verify summary { cursor: pointer; color: var(--dim); }
+#sg-panel .sg-verify label { text-transform: none; letter-spacing: 0; }
+#sg-panel .sg-verify .b { margin-top: 6px; }
+#sg-panel .sg-vres ul { padding-left: 4px; list-style: none; margin: 6px 0; }
+#sg-placebar { display: none; position: absolute; z-index: 1002; left: 50%; top: 10px; transform: translateX(-50%); background: #2a2610; border: 1px solid #a68b00;
+  border-radius: 6px; padding: 6px 8px 6px 12px; align-items: center; gap: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.5); white-space: nowrap; }
+#sg-placebar.on { display: flex; }
+#mapwrap.sg-crosshair #map, #mapwrap.sg-crosshair .leaflet-interactive { cursor: crosshair; }
+.sg-pin { opacity: .92; border-style: dashed; }
+#sg-help { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+#sg-help[hidden] { display: none; }
+#sg-help .sg-helpin { position: relative; max-width: 560px; max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 18px 14px; font-size: 13px; }
+#sg-help .sg-x { position: absolute; right: 8px; top: 8px; }
+#sg-help h3 { font-size: 14px; margin: 12px 0 6px; } #sg-help li { margin-bottom: 5px; }
+
+/* phones: the same query as mobile.css. The panel is a bottom sheet above the builder's sheet; while placing it folds away */
+@media (max-width: 900px), (max-height: 500px) and (pointer: coarse) {
+  #sg-open { padding: 4px 7px; }
+  #sg-open .sg-word { display: none; }
+  #sg-open .sg-short { display: inline; }
+  #sg-panel { position: fixed; z-index: 1600; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 62vh; max-height: 62dvh;
+    border-radius: 12px 12px 0 0; padding-bottom: env(safe-area-inset-bottom); font-size: 14px; }
+  #sg-panel .sg-head { padding: 10px 12px; }
+  #sg-panel .sg-body { padding: 4px 12px 12px; }
+  #sg-panel button.b { min-height: 36px; }
+  #sg-panel input { font-size: 16px; min-height: 34px; }   /* 16 px: iOS does not zoom into the field */
+  #sg-panel .sg-slider input { min-height: 28px; }
+  #sg-panel.sg-placing { display: none; }
+  #sg-placebar { position: fixed; z-index: 1600; top: auto; bottom: calc(14px + env(safe-area-inset-bottom)); font-size: 14px; }
+  #sg-placebar .b { min-height: 36px; }
+}

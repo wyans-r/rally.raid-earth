@@ -1,0 +1,259 @@
+/* ==========================================================================
+   mobile.css - phone layout for the Rally Raid Stage Builder site.
+   Linked from index.html, roadbook.html and mod.html (after their own styles).
+
+   Everything that changes an existing page sits inside the ONE media query
+   below, so desktop (wider than 900 px, or any mouse-driven screen) looks and
+   behaves exactly as before. The only rules outside it are:
+     - .rr-m-only  : hides the extra phone controls that mobile.js adds;
+     - .rr-content / .rr-table / .rr-cards : a reusable page pattern for future
+       content pages (event pages, leaderboards). Nothing uses them yet, so
+       they cannot change any existing page.
+   The same query string lives in mobile.js (MOBILE_QUERY) - keep them in sync.
+   ========================================================================== */
+
+.rr-m-only { display: none !important; }
+#rr-tip { position: fixed; z-index: 6000; max-width: min(320px, 92vw); background: #0b0d10; color: #e8eaed; border: 1px solid #4a525c;
+  border-radius: 8px; padding: 9px 11px; pointer-events: none; font: 14px/1.4 system-ui, Segoe UI, Roboto, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.6); display: none; }
+#rr-tip b.t { display: inline-block; padding: 0 5px; border-radius: 3px; color: #000; margin-right: 5px; }
+#rr-tip .tr { color: #9aa0a6; margin-top: 4px; font-size: 12.5px; }
+
+/* --------------------------------------------------------------------------
+   Reusable content-page pattern (for event pages, leaderboards, results...)
+   <body class="rr-content"><header class="rr-bar">...</header><main>...</main>
+   Tables: <table class="rr-table"> with data-label="Driver" on every <td>;
+   on a phone each row turns into a small card. See page-template.html.
+   -------------------------------------------------------------------------- */
+.rr-content { --bg:#14171b; --panel:#1c2026; --line:#2c323a; --text:#e8eaed; --dim:#9aa0a6; --acc:#ffd400;
+  margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, Segoe UI, Roboto, sans-serif; }
+.rr-content * { box-sizing: border-box; }
+.rr-content a { color: var(--acc); }
+.rr-content .rr-bar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+  padding: 8px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.rr-content .rr-bar .brand { font-weight: 700; margin-right: auto; color: var(--text); text-decoration: none; }
+.rr-content .rr-bar a { min-height: 44px; display: inline-flex; align-items: center; }
+.rr-content main { max-width: 960px; margin: 0 auto; padding: 24px 18px 60px; }
+.rr-content h1 { font-size: 26px; margin: 0 0 4px; } .rr-content h2 { font-size: 18px; color: var(--acc); margin: 28px 0 8px; }
+.rr-content .rr-sub { color: var(--dim); margin: 0 0 18px; }
+.rr-content .rr-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 6px;
+  background: #2a3038; color: var(--text); border: 1px solid #3a414a; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+.rr-content .rr-btn { margin: 0 6px 6px 0; }
+.rr-content .rr-btn.p { background: var(--acc); color: #000; border-color: var(--acc); }
+.rr-content .rr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.rr-content .rr-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.rr-content .rr-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rr-content .rr-table th, .rr-content .rr-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.rr-content .rr-table th { color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.rr-content .rr-table td.num, .rr-content .rr-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ==========================================================================
+   PHONES (portrait and landscape)
+   ========================================================================== */
+@media (max-width: 900px), (max-height: 500px) and (pointer: coarse) {
+  .rr-m-only { display: flex !important; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  button, a, label, select, .b { touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,212,0,.25); }
+  /* 16 px stops iPhone Safari from zooming in when you tap a text box */
+  input, select, textarea { font-size: 16px !important; }
+  input[type=checkbox] { width: 22px !important; height: 22px; vertical-align: middle; margin: 0 6px 0 0; }
+
+  /* ---- content-page pattern: tables become cards ---- */
+  .rr-content main { padding: 16px 14px 48px; }
+  .rr-content .rr-table thead { display: none; }
+  .rr-content .rr-table, .rr-content .rr-table tbody, .rr-content .rr-table tr, .rr-content .rr-table td { display: block; width: 100%; }
+  .rr-content .rr-table tr { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin: 0 0 10px; padding: 6px 10px; }
+  .rr-content .rr-table td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 4px 0; text-align: right; }
+  .rr-content .rr-table td::before { content: attr(data-label); color: var(--dim); text-align: left; font-size: 13px; }
+  .rr-content .rr-table td.num { text-align: right; }
+
+  /* ======================================================================
+     STAGE BUILDER (index.html): full-screen map + bottom sheet
+     body[data-sheet] = peek | half | full   (set by mobile.js)
+     ====================================================================== */
+  body:has(#app) { overflow: hidden; overscroll-behavior: none; }
+  #app { display: block; height: 100%; }
+  #app #mapwrap { position: fixed; inset: 0; bottom: var(--rr-map-bottom, 0px); }
+  #app #side { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; width: auto; min-width: 0;
+    border-right: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -6px 18px rgba(0,0,0,.55);
+    font-size: 15px; transition: height .2s ease; max-height: calc(100dvh - 56px); padding-bottom: env(safe-area-inset-bottom); }
+  body[data-sheet=peek] #side { height: auto; }
+  body[data-sheet=peek] #side .pane { display: none !important; }
+  body[data-sheet=half] #side { height: 52dvh; }
+  body[data-sheet=full] #side { height: calc(100dvh - 56px); }
+  #rr-sheet-handle { flex: 0 0 auto; height: 26px; width: 100%; align-items: center; justify-content: center; background: none; border: 0; cursor: pointer; padding: 0; }
+  #rr-sheet-handle span { display: block; width: 44px; height: 5px; border-radius: 3px; background: #5a626c; }
+  #app header { padding: 0 12px 6px; }
+  #app header .head { flex-wrap: wrap; gap: 6px; }
+  #app header h1 { font-size: 16px; } #app header small { display: none; }
+  #app header .head .hbtns { flex: 1 1 100%; }
+  #app header .head .hbtns .b { flex: 1; min-height: 44px; justify-content: center; margin: 0; }
+  #app header .head #b-share { display: flex; }
+  #ex-hint { flex-wrap: wrap; } #ex-hint .b { min-height: 44px; }
+  #app .tabs button { min-height: 46px; font-size: 14px; padding: 6px 2px; }
+  #app .pane { padding: 10px 12px 24px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  #app label { font-size: 12px; margin-top: 10px; }
+  #app label[style*="inline"] { display: inline-flex !important; align-items: center; min-height: 44px; font-size: 14px; }
+  #app input:not([type=checkbox]):not([type=file]), #app select { min-height: 44px; padding: 6px 8px; }
+  #app textarea { min-height: 88px; }
+  #app button.b, #app a.b { min-height: 44px; padding: 8px 12px; }
+  #app .row { flex-wrap: wrap; } #app .row > * { min-width: 0; }
+  #app .row > .nf { padding-top: 0 !important; }
+  #app .types { gap: 6px; }
+  #app .types button { min-width: 52px; min-height: 44px; font-size: 14px; border-radius: 6px; }
+  #app .hint, #app .stats, #app .g-card .facts { font-size: 13.5px; }
+  #list .pt { flex-wrap: wrap; padding: 6px 8px; gap: 6px 8px; min-height: 56px; }
+  #list .pt .tag { min-width: 60px; padding: 4px 6px; }
+  #list .pt .km { min-width: 0; flex: 1 1 auto; font-size: 13.5px; }
+  #list .pt .nm { order: 9; flex: 1 1 100%; white-space: normal; }
+  #list .pt .nm:empty { display: none; }
+  #list .pt button { min-width: 44px; min-height: 44px; padding: 0; font-size: 18px; }
+  #app table.rules { display: block; overflow-x: auto; font-size: 13px; }
+  #app table.rules input, table.rules select { min-height: 40px; min-width: 64px; }
+  #status { font-size: 13px; padding: 6px 12px; }
+  #app .ex-card { padding: 8px; } #app .ex-card img { width: 96px; height: 72px; }
+  #app .ex-card h3 { font-size: 14px; } #app .ex-card p { font-size: 13px; } #app .ex-card .meta { font-size: 12.5px; }
+  #app .g-idx a { padding: 8px 10px; font-size: 13px; }
+  #app .g-card { font-size: 14px; }
+  #tip { font-size: 14px; max-width: min(320px, 92vw); }
+  /* map: search bar between the zoom (left) and layers (right) controls */
+  #app .mapbar { left: 62px; right: 62px; top: max(10px, env(safe-area-inset-top)); }
+  #app .mapbar input { width: auto; flex: 1; min-width: 0; }
+  #app .mapbar .b { flex: 0 0 auto; }
+  #searchres { left: 10px !important; right: 10px; max-width: none; top: 62px; max-height: 50dvh; overflow: auto; font-size: 15px; }
+  #searchres div { padding: 12px; border-bottom: 1px solid var(--line); }
+  /* bigger touch targets for the map zoom buttons and the waypoint pins */
+  .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
+  .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; }
+  /* layer picker: the builder's "every input is a full-width text box" style was making the
+     radio list huge (and all-caps). Each row is a normal finger-sized control (36–44 px).
+     mobile.js closes the list after a layer is chosen. */
+  /* the search bar is a sibling of the map (same z-index 1000), so raise this corner or the open list sits under it */
+  .leaflet-top.leaflet-right { z-index: 1100; }
+  .leaflet-control-layers-expanded { padding: 8px 10px 8px 8px; }
+  .leaflet-control-layers-expanded label,
+  .leaflet-control-layers-expanded label > span {
+    display: flex; align-items: center; gap: 8px;
+    min-height: 36px; max-height: 40px; margin: 0 !important; padding: 0 !important;
+    font: 500 13px/1.25 system-ui, Segoe UI, Roboto, sans-serif;
+    color: #222; text-transform: none; letter-spacing: normal;
+    box-sizing: border-box; white-space: nowrap;
+  }
+  .leaflet-control-layers-expanded .leaflet-control-layers-selector,
+  .leaflet-control-layers-expanded input[type="radio"],
+  .leaflet-control-layers-expanded input[type="checkbox"] {
+    width: 18px !important; height: 18px !important; max-height: 18px !important; margin: 0 !important; padding: 0 !important;
+    flex: 0 0 18px; align-self: center; position: static; top: auto;
+    background: none; border: 0; border-radius: 0; box-shadow: none;
+    font-size: 13px !important; line-height: 18px !important;
+    accent-color: #111; appearance: radio; -webkit-appearance: radio;
+  }
+  .leaflet-control-layers-expanded input[type="checkbox"] {
+    appearance: checkbox; -webkit-appearance: checkbox;
+  }
+  #app .leaflet-bottom { bottom: var(--rr-sheet-over, 0px); transition: bottom .2s ease; }
+  #app #mapwrap { transition: none; }
+  .wpicon { position: relative; font-size: 13px; padding: 5px 8px; }
+  .wpicon::after { content: ""; position: absolute; inset: -12px; }   /* invisible finger-sized grab area */
+  /* floating "add points" switch above the sheet */
+  #rr-addbar { position: fixed; right: 10px; bottom: calc(var(--rr-sheet-h, 0px) + 12px); z-index: 1400; gap: 6px; transition: bottom .2s ease; }
+  #rr-addbar button { min-height: 48px; padding: 0 16px; border-radius: 24px; border: 1px solid #3a414a; background: #1c2026; color: #e8eaed;
+    font: 600 15px system-ui, sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,.6); }
+  #rr-addbar #rr-add.on { background: #ffd400; color: #000; border-color: #ffd400; }
+  #rr-addbar #rr-type { min-width: 64px; font-weight: 800; color: #000; }
+  #rr-addbar #rr-type:not(.on) { display: none; }
+  @media (orientation: portrait) { body[data-sheet=full] #rr-addbar { display: none !important; } }   /* no room above a full sheet */
+
+  /* landscape phone: panel becomes a left drawer instead of a bottom sheet */
+  @media (orientation: landscape) {
+    #app #side { top: 0; bottom: 0; right: auto; width: min(400px, 52vw); max-height: none; height: auto !important;
+      border-radius: 0 12px 12px 0; border-top: 0; border-right: 1px solid var(--line); transition: transform .2s ease; padding-left: env(safe-area-inset-left); }
+    body[data-sheet=peek] #side { transform: translateX(-100%); }
+    body[data-sheet=peek] #side .pane { display: block !important; }
+    body[data-sheet=peek] #side .pane:not(.on) { display: none !important; }
+    #rr-sheet-handle { height: 34px; justify-content: flex-end; padding-right: 12px; }
+    #rr-sheet-handle span { width: auto; height: auto; background: none; color: #9aa0a6; font: 600 13px system-ui; }
+    #rr-sheet-handle span::after { content: "Hide panel \2039"; }
+    #app .leaflet-bottom { bottom: 0; }
+    #app #mapwrap { bottom: 0; }
+    #rr-addbar { bottom: 12px; }
+    #rr-panelbtn { position: fixed; left: 10px; bottom: 12px; z-index: 1400; }
+    body:not([data-sheet=peek]) #rr-panelbtn { display: none !important; }
+    #app .mapbar { left: 62px; }
+    body:not([data-sheet=peek]) #app .mapbar { left: calc(min(400px, 52vw) + 10px); }
+  }
+  @media (orientation: portrait) { #rr-panelbtn { display: none !important; } }
+  #rr-panelbtn { min-height: 48px; padding: 0 16px; border-radius: 24px; border: 1px solid #3a414a; background: #1c2026; color: #e8eaed;
+    font: 600 15px system-ui, sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,.6); align-items: center; }
+
+  /* ======================================================================
+     ROADBOOK (roadbook.html): read-and-print layout
+     one view at a time, chosen with the Boxes / Map / Box bar (mobile.js)
+     ====================================================================== */
+  body:has(#rbe) { overflow: hidden; }
+  #rbe { height: 100dvh; font-size: 14px; }
+  #top { gap: 6px; padding: 6px 8px; }
+  #top .ttl { min-width: 0; flex: 1 1 0; order: 1; }
+  #top .ttl h1 { font-size: 16px; } #top .ttl small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #top #back { order: 0; }
+  /* the toolbar is one row you can swipe sideways (the page itself never scrolls sideways) */
+  #top .grp { order: 2; flex-wrap: nowrap; flex: 1 1 100%; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  #top .grp::-webkit-scrollbar { display: none; }
+  #top .grp > * { flex: 0 0 auto; }
+  #top .grp .split { order: -2; } #b-legend { order: -1; }
+  #b-save { order: -5; } #b-share { order: -4; } /* Save and Share sit at the front of the swipeable toolbar */
+  #top .grp.gen { flex-wrap: wrap; overflow: visible; }
+  #top .b { min-height: 44px; padding: 6px 10px; }
+  #top .split select { min-height: 44px; }
+  #rr-more { order: 1; min-height: 44px; }
+  /* editing tools are tucked behind "More" on a phone (they still work) */
+  body:not(.rr-rb-more) #top .grp.gen, body:not(.rr-rb-more) #b-recce, body:not(.rr-rb-more) #b-undo, body:not(.rr-rb-more) #b-redo { display: none !important; }
+  #top .grp.gen .dens { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; flex-wrap: wrap; }
+  #top .grp.gen .dens input { flex: 1; min-width: 120px; min-height: 44px; }
+  #progress { flex-wrap: wrap; gap: 6px; } #progress .phase, #progress .msg { min-width: 0; } #progress .bar { flex: 1 1 100%; order: 3; }
+  #rbe .banner { font-size: 13.5px; } #rbe .banner .b { min-height: 40px; }
+  #rr-rbviews { gap: 0; border-bottom: 1px solid var(--line); background: var(--panel); }
+  #rr-rbviews button { flex: 1; min-height: 46px; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--dim); font: 700 15px system-ui, sans-serif; }
+  #rr-rbviews button.on { color: var(--acc); border-bottom-color: var(--acc); }
+  #main { flex-direction: column; position: relative; }
+  #main > #left, #main > #mapwrap, #main > #right { display: none; width: 100%; min-width: 0; flex: 1; border: 0; }
+  body[data-rbview=list] #main > #left { display: flex; }
+  body[data-rbview=map] #main > #mapwrap { display: block; }
+  body[data-rbview=detail] #main > #right { display: block; }
+  #main > #legend:not([hidden]) { display: flex; }
+  #legend { position: fixed; } #legend > div.lgwrap { max-width: 100vw; max-height: 100dvh; padding: 12px; border-radius: 0; }
+  #left .tabs { flex-wrap: wrap; } #left .tabs button { min-height: 44px; font-size: 14px; }
+  #left .tabs input { min-height: 44px; flex: 1 1 140px; }
+  #rbe .opts { font-size: 13px; padding: 6px 8px; align-items: center; } #rbe .opts label { display: inline-flex; align-items: center; min-height: 40px; }
+  #rbe .row { padding: 6px 8px; } #rbe .row .tx .nt { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  #rbe .row .fl .flag:not(.pin) { display: none; }
+  #rbe #list.strip { overflow-x: hidden; } #rbe #list.strip .rb { max-width: 100%; }
+  #maptools { left: 62px; right: 10px; flex-wrap: wrap; }
+  #maptools .b { min-height: 44px; }
+  #rbe .overlay > div { max-width: calc(100vw - 24px); padding: 14px 16px; }
+  #rbe .overlay select, #rbe .overlay .b { min-height: 44px; }
+  #panel { padding: 12px; } #panel .b { min-height: 44px; }
+  #panel h3 { font-size: 16px; flex-wrap: wrap; }
+  #right input, #right select, #right textarea { max-width: 100%; }
+  /* landscape phone: everything in the header goes on one line so more of the roadbook fits */
+  @media (orientation: landscape) {
+    #top { flex-wrap: nowrap; }
+    #top .ttl { flex: 0 1 auto; max-width: 30vw; } #top .ttl small { display: none; } #top .ttl h1 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #top .grp { flex: 1 1 0; min-width: 0; order: 1; }
+    #rr-more { order: 2; }
+    body.rr-rb-more #top { flex-wrap: wrap; } body.rr-rb-more #top .grp.gen { flex: 1 1 100%; order: 3; }
+    #rbe .opts { display: none; }
+    #rr-rbviews button { min-height: 44px; }
+  }
+
+  /* ======================================================================
+     MOD PAGE (mod.html)
+     ====================================================================== */
+  body > main { padding: 18px 14px 48px; }
+  body > main h1 { font-size: 23px; }
+  body > main nav a { display: inline-flex; align-items: center; min-height: 44px; }
+  body > main .dl { display: flex; justify-content: center; min-height: 48px; align-items: center; }
+  body > main table { width: 100%; font-size: 14px; }
+  body > main table td { padding: 8px 8px 8px 0; vertical-align: top; }
+  body > main table td:first-child code { word-break: normal; white-space: nowrap; }
+  body > main ol { padding-left: 22px; }
+}

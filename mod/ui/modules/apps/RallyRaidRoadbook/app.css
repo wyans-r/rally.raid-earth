@@ -1,0 +1,75 @@
+/* Rally Raid Roadbook: a digital roadbook reader (white paper boxes on a black frame, like a tablet roadbook). */
+.rrb-host { width: 100%; height: 100%; overflow: hidden; position: relative; }
+.rrb { position: absolute; left: 0; top: 0; width: 380px; height: 520px; transform-origin: 0 0; box-sizing: border-box;
+  background: #050607; color: #f2f2f2; border: 2px solid #2a2d31; border-radius: 6px; padding: 5px 6px;
+  font-family: 'Arial Narrow', Arial, sans-serif; font-variant-numeric: tabular-nums; user-select: none; line-height: 1.1;
+  display: flex; flex-direction: column; }
+.rrb * { box-sizing: border-box; }
+.rrb-head { display: flex; justify-content: space-between; align-items: center; height: 22px; font-size: 13px; color: #c9ccd0; }
+.rrb-head b { color: #fff; font-size: 16px; }
+.rrb-trip { font-family: Consolas, 'DejaVu Sans Mono', monospace; font-size: 18px; font-weight: 700; color: #ffd400; }
+.rrb-next { height: 20px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9aa0a6; }
+.rrb-bar { flex: 1; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+.rrb-bar i { display: block; height: 100%; background: #ffd400; }
+.rrb-list { flex: 1; overflow: hidden; background: #fff; color: #111; border-radius: 3px; }
+.rrb-box { display: flex; height: 103px; border-bottom: 2px solid #111; position: relative; }
+.rrb-box.cur { outline: 4px solid #ffd400; outline-offset: -4px; }
+.rrb-box.d3 { background: #ffe9e6; }
+/* FIM: red line under the km = danger 2+; red frame = danger 3 */
+.rrb-box.d2 .rrb-km, .rrb-box.d3 .rrb-km { text-decoration: underline; text-decoration-color: #d00; text-decoration-thickness: 3px; }
+.rrb-box.d3 .rrb-c3 { outline: 3px solid #d00; outline-offset: -4px; }
+.rrb-c1 { width: 92px; border-right: 2px solid #111; position: relative; padding: 2px 5px; }
+.rrb-no { position: absolute; left: 4px; top: 3px; font-size: 12px; font-weight: 700; background: #111; color: #fff; padding: 0 4px; border-radius: 3px; }
+.rrb-km { font-size: 27px; font-weight: 700; text-align: right; margin-top: 22px; letter-spacing: -1px; }
+.rrb-part { font-size: 16px; text-align: right; color: #333; }
+.rrb-c2 { width: 102px; border-right: 2px solid #111; display: flex; align-items: center; justify-content: center; }
+.rrb-c2.off { background: #fbf8ef; }
+.rrb-c3 { flex: 1; padding: 3px 5px; position: relative; overflow: hidden; }
+.rrb-sym { display: flex; gap: 2px; flex-wrap: wrap; }
+.rrb-note { font-size: 13px; font-weight: 700; margin-top: 2px; max-height: 46px; overflow: hidden; }
+.rrb-cap { position: absolute; right: 5px; bottom: 2px; font-size: 15px; font-weight: 700; }
+.rrb-dng { position: absolute; right: 5px; top: 0; font-size: 20px; font-weight: 900; color: #d00; letter-spacing: -2px; }
+.rrb-empty { padding: 30px 14px; text-align: center; color: #555; font-size: 14px; }
+.rrb-foot { display: flex; justify-content: space-between; align-items: center; height: 30px; margin-top: 4px; }
+.rrb-btn { background: #1c1f23; color: #eee; border: 1px solid #3a3f45; border-radius: 4px; font-size: 13px; padding: 3px 9px; cursor: pointer; font-weight: 700; }
+.rrb-btn:hover { background: #2b3036; }
+.rrb-btn.on { background: #b8860b; color: #000; }
+.rrb-src { font-size: 10px; color: #777; max-width: 92px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* recce mode */
+.rrb-box.rc { box-shadow: inset 5px 0 0 #b24bd6; }
+.rrb-box.chk .rrb-no { background: #b24bd6; }
+.rrc { background: #1a1020; border: 1px solid #5a2a6a; border-radius: 4px; padding: 3px 5px; margin-bottom: 4px; font-size: 12px; color: #eee; }
+.rrc .rrb-btn { font-size: 11px; padding: 2px 6px; margin-left: 2px; }
+.rrc-top, .rrc-near, .rrc-row { display: flex; align-items: center; gap: 4px; min-height: 22px; }
+.rrc-near { justify-content: space-between; }
+.rrc-sp { flex: 1; }
+.rrc-dim { color: #a99bb0; font-size: 11px; }
+.rrc-dot { width: 9px; height: 9px; border-radius: 50%; background: #e33; display: inline-block; animation: rrcblink 1s infinite; }
+.rrc-dot.air { background: #3cf; }
+@keyframes rrcblink { 50% { opacity: .3; } }
+.rrc-last { color: #e58cff; font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rrc-ck { font-size: 11px; color: #ccc; }
+.rrc-add { width: 100%; }
+.rrc-syms { display: flex; flex-wrap: wrap; gap: 2px; background: #fff; border-radius: 3px; padding: 2px; margin: 2px 0; }
+.rrc-sym { border: 2px solid transparent; border-radius: 3px; cursor: pointer; line-height: 0; }
+.rrc-sym.on { border-color: #b24bd6; background: #f1def7; }
+.rrc-notes { flex: 1; background: #000; color: #fff; border: 1px solid #555; border-radius: 3px; font-size: 12px; padding: 2px 4px; text-transform: uppercase; }
+.rrb-foot { flex-wrap: nowrap; gap: 3px; } .rrb-foot > span { white-space: nowrap; } .rrb-foot .rrb-btn { padding: 3px 7px; }
+.rrc-top { white-space: nowrap; }
+.rrc-tabs { flex-wrap: wrap; gap: 2px; }
+.rrc-tabs .rrb-btn { font-size: 9px; padding: 1px 4px; }
+.rrc-find { width: 80px; font-size: 10px; background: #111; color: #eee; border: 1px solid #555; border-radius: 3px; padding: 1px 4px; }
+.rrc-syms { max-height: 124px; overflow-y: auto; }
+
+.rrb-overlay { position: absolute; inset: 0; background: rgba(5,6,7,.97); z-index: 6; padding: 8px; display: flex; flex-direction: column; box-sizing: border-box; }
+.rrb-plist { flex: 1; overflow-y: auto; margin: 6px 0; border: 1px solid #222; }
+.rrb-pitem { padding: 6px; font-size: 13px; color: #ddd; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
+.rrb-pitem:hover { background: #1b1e22; } .rrb-pitem.sel { background: #333a12; } .rrb-pitem.bad { color: #ff6a5c; }
+.rrb-pitem small { color: #8a9096; }
+
+
+.rr-credits { margin-top:6px; font-size:10px; line-height:1.35; color:#9aa0a6; max-width:100%; }
+.rr-credits summary { cursor:pointer; color:#c8ccd0; font-weight:700; letter-spacing:.02em; }
+.rr-credits p { margin:4px 0 0; }
+.rr-credits a { color:#ffd400; }

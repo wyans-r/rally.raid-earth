@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rally Raid GPS preview (outside the game)</title>
+<link rel="icon" href="data:,">
+<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+<style>body{background:#6d7a63 url() ;margin:0;font-family:sans-serif} .slot{position:absolute;width:380px;height:340px} #a{left:10px;top:10px} #b{left:400px;top:10px} #c{left:790px;top:10px} #d{left:10px;top:360px;width:570px;height:510px} #e{left:600px;top:360px}</style>
+<script>
+// a stand-in for the game's UI: the 'beamng.apps' module, bngApi, and RallyRaidUpdate messages
+var calls = []
+window.bngApi = { engineLua: function (cmd, cb) { calls.push(cmd); if (cb) cb([{ path: '/rallyraid/stages/moab-sand-flats-ss1.json', name: 'SS1 Moab Sand Flats (sample)', ok: true, km: 21.412, waypoints: 9 }, { path: '/rallyraid/stages/broken.json', name: 'broken.json', ok: false, error: 'the first waypoint must be the DSS' }]) } }
+angular.module('beamng.apps', [])
+</script>
+<script src="/ui/modules/apps/RallyRaidGPS/app.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="a"><rally-raid-gps></rally-raid-gps></div>
+<div class="slot" id="b"><rally-raid-gps></rally-raid-gps></div>
+<div class="slot" id="c"><rally-raid-gps></rally-raid-gps></div>
+<div class="slot" id="d"><rally-raid-gps></rally-raid-gps></div>
+<div class="slot" id="e"><rally-raid-gps></rally-raid-gps></div>
+<script>
+var STATES = {
+  a: { ok: true, phase: 'running', stage: 'SS1 Moab Sand Flats (sample)', clock: 754.3, penalty: 0, count: 9, validated: 3, missed: 0, cap: 87.4, speed: 92.3,
+       trip: 7.84, partial: 1.21, total: 34.7, tripStep: 10, wp: { index: 5, n: 4, type: 'WPM', revealed: false } },
+  b: { ok: true, phase: 'running', stage: 'SS1 Moab Sand Flats (sample)', clock: 1022, penalty: 900, count: 9, validated: 5, missed: 1, cap: 61, speed: 48,
+       trip: 14.21, partial: 0.42, total: 41.1, tripStep: 10, wp: { index: 6, n: 5, type: 'WPS', revealed: true, dtw: 412, ctw: 104, rel: 43, inside: false } },
+  c: { ok: true, phase: 'running', stage: 'SS1 Moab Sand Flats (sample)', clock: 140, penalty: 240, impulses: 2, count: 9, validated: 2, missed: 0, cap: 352, speed: 58,
+       trip: 2.31, partial: 0.77, total: 29.2, tripStep: 100, countDown: false, zone: { limit: 40, live: true, tolerance: false, impulses: 2, alert: true, over: true },
+       wp: { index: 3, n: 2, type: 'FZ', revealed: true, dtw: 845, ctw: 10, rel: 18 } },
+  d: { ok: true, phase: 'armed', stage: 'SS1 Moab Sand Flats (sample)', count: 9, validated: 0, missed: 0, cap: 211, speed: 0, trip: 0, partial: 0, total: 27.0,
+       tripStep: 10, atStart: true, wp: { index: 1, n: 0, type: 'DSS', revealed: true, dtw: 35, ctw: 190, rel: -21, inside: true } },
+  e: { ok: true, phase: 'finished', stage: 'SS1 Moab Sand Flats (sample)', clock: 990, penalty: 1200, impulses: 10, count: 9, validated: 9, missed: 0, cap: 300, speed: 12,
+       trip: 21.50, partial: 3.1, total: 48.5, tripStep: 10, result: { stageTime: 990, penaltyTime: 1200, totalTime: 2190, missed: 0, file: '/rallyraid/results/moab-sand-flats-ss1_20261115_221500.json' } }
+}
+setTimeout(function () {
+  Object.keys(STATES).forEach(function (id) {
+    var el = document.querySelector('#' + id + ' .rrg-host') || document.querySelector('#' + id + ' > *')
+    var sc = angular.element(el); (sc.isolateScope() || sc.scope()).$broadcast('RallyRaidUpdate', STATES[id])
+  })
+}, 300)
+</script>
+</body></html>

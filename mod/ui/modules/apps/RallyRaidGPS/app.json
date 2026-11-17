@@ -1,0 +1,20 @@
+{
+  "domElement": "<rally-raid-gps></rally-raid-gps>",
+  "name": "Rally Raid GPS",
+  "types": [
+    "ui.apps.categories.utility"
+  ],
+  "description": "Rally raid navigation GPS and rally computer for BeamNG.Earth stages: CAP, trip / partial odometer with corrections, hidden waypoints (FIM rules), speed zones, stage clock and penalties.",
+  "css": {
+    "top": "80px",
+    "right": "10px",
+    "height": "340px",
+    "width": "380px"
+  },
+  "author": "Rally Raid for BeamNG.Earth",
+  "version": "0.1.0",
+  "directive": "rallyRaidGps",
+  "appName": "rallyRaidGps",
+  "category": "Rally Raid",
+  "isAuxiliary": false
+}

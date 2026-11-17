@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roadbook editor - Rally Raid Stage Builder (BeamNG.Earth)</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> <!-- mobile: viewport-fit lets the page use the full phone screen -->
+<meta name="theme-color" content="#14171b">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<link rel="stylesheet" href="roadbook-editor.css">
+<link rel="stylesheet" href="mobile.css"> <!-- mobile: phone layout, no effect above 900 px -->
+<script src="roadbook-gen.js"></script>
+<script src="share.js"></script>
+<script src="roadbook-render.js"></script>
+<script src="roadbook-pdf.js"></script>
+</head>
+<body>
+<div id="rbe">
+  <header id="top">
+    <a class="b" id="back" href="./" title="Back to the stage builder">&larr; Stage builder</a>
+    <div class="ttl"><h1>Roadbook editor</h1><small id="stage-name">no stage loaded</small></div>
+    <div class="grp">
+      <label class="b file" title="Open a stage file (.json) exported from the builder">Stage&hellip;<input type="file" id="in-stage" accept=".json,application/json"></label>
+      <label class="b file" title="Open a roadbook you saved before (.roadbook.json)">Open roadbook&hellip;<input type="file" id="in-rb" accept=".json,application/json"></label>
+      <label class="b file" id="b-recce" title="Import a recce drive from the game (BeamNG user folder / current / rallyraid / recce / &lt;stage&gt;.recce.json): its track and the boxes you confirmed, moved, retagged, deleted or added, and what the car detected">Recce&hellip;<input type="file" id="in-recce" accept=".json,application/json"></label>
+      <button class="b" id="b-save" title="Download the roadbook. For the game, put it in BeamNG user folder / current / rallyraid / roadbooks /">Save .roadbook.json</button>
+      <button class="b" id="b-share" title="Copy a link that opens this roadbook (and its stage) in someone else&rsquo;s browser. The link carries the data itself; nothing is uploaded.">Share link</button>
+      <span class="split"><button class="b" id="b-pdf" title="Printable roadbook (PDF)">PDF</button><select id="pdf-format" title="Paper"><option value="a5">A5 pages</option><option value="roll">Roll, 148 mm</option></select></span>
+      <button class="b" id="b-legend" title="The roadbook symbols, tulip lines, danger marks and abbreviations (FIM / Dakar legend)">Symbol legend</button>
+      <button class="b" id="b-undo" title="Undo (Ctrl+Z)">&#8630;</button><button class="b" id="b-redo" title="Redo (Ctrl+Y)">&#8631;</button>
+    </div>
+    <div class="grp gen">
+      <label class="dens" title="Target boxes per 10 km. Low = long CAP legs and 2-10 km gaps like a real rally; high = a box at every wrinkle. Waypoints, junctions, gates, leaving / joining tracks and serious dangers are always kept.">Density <input type="range" id="density" min="2" max="25" step="1" value="4"> <b id="density-v">4</b>/10 km <span id="density-h" class="dens-h"></span></label>
+      <button class="b p" id="b-gen" title="Make a new roadbook from the stage (replaces the current one)">Generate</button>
+      <button class="b" id="b-regen" title="Make a fresh draft and merge it: your pinned, edited and deleted boxes are kept">Regenerate, keep edits</button>
+    </div>
+  </header>
+  <div id="progress" hidden><span class="phase"></span><div class="bar"><i></i></div><span class="msg"></span><button class="b" id="b-cancel">Cancel</button></div>
+  <div id="banners"></div>
+  <div id="main">
+    <aside id="left">
+      <div class="tabs"><button data-view="list" class="on">List</button><button data-view="strip">Strip</button>
+        <input id="filter" placeholder="filter: notes, km, symbol" title="Show only boxes whose notes / symbols contain this"></div>
+      <div class="opts"><label><input type="checkbox" id="show-deleted"> deleted boxes</label><span id="counts"></span></div>
+      <div id="list"></div>
+    </aside>
+    <div id="mapwrap"><div id="map"></div>
+      <div id="maptools">
+        <button class="b" id="b-addbox" title="Click the route to add a box there">+ Box on map</button>
+        <label class="b" title="Show and drag the off-piste planner's line (orange)"><input type="checkbox" id="edit-line"> Edit line</label>
+        <label class="b" title="The stage's own straight legs"><input type="checkbox" id="show-stage" checked> Stage legs</label>
+      </div>
+      <div id="empty" class="overlay"><div><h2>Roadbook editor</h2>
+        <p>Open a stage from the builder (the <b>Roadbook</b> button), an example, or a stage file, then <b>Generate</b>.
+        Terrain notes show first; OpenStreetMap notes (junctions, fords, gates, villages) follow when the map servers answer.</p>
+        <p><label class="b p file">Open a stage file&hellip;<input type="file" id="in-stage2" accept=".json,application/json"></label>
+        <select id="ex-pick"><option value="">or an example stage&hellip;</option></select></p></div></div>
+    </div>
+    <div id="legend" class="overlay" hidden><div class="lgwrap"><div class="fr"><h2>Symbol legend</h2><span style="margin-left:auto"></span><button class="b" id="lg-print" title="Open the legend on its own page to print or save as PDF">Print&hellip;</button><button class="b" id="lg-close">Close</button></div><div id="lg-body"></div></div></div>
+    <aside id="right"><div id="panel"><p class="dim">Click a box in the list or on the map to edit it. Click the orange off-piste line to re-plan or edit it.</p></div></aside>
+  </div>
+</div>
+<script src="roadbook-editor.js"></script>
+<script src="mobile.js"></script> <!-- mobile: Boxes / Map / Box details views -->
+</body>
+</html>

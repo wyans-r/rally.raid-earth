@@ -1,0 +1,23 @@
+{
+  // LOCAL tests only (wrangler dev --local): fake D1 + R2 in .wrangler/state, codes go to the dev outbox, Discord is a mock.
+  "name": "stagebuilder-events-local",
+  "compatibility_date": "2026-10-01",
+  "main": "src/index.js",
+  "assets": { "directory": "../site", "binding": "ASSETS" },
+  "d1_databases": [ { "binding": "DB", "database_name": "rallyraid-events", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" } ],
+  "r2_buckets": [ { "binding": "FILES", "bucket_name": "rallyraid-events" } ],
+  "vars": {
+    "DEV_MODE": "1",
+    "AUTH_PROVIDERS": "email,discord",
+    "MAIL_MODE": "outbox",
+    "PUBLIC_BASE": "http://127.0.0.1:8787",
+    "GAME_UPLOAD_BASE": "http://127.0.0.1:8787",
+    "ADMIN_EMAILS": "dev@example.com",
+    "ADMIN_DISCORD_IDS": "",
+    "SESSION_SECRET": "local-dev-placeholder-not-a-real-secret",
+    "DISCORD_CLIENT_ID": "local-dev",
+    "DISCORD_CLIENT_SECRET": "local-dev",
+    "DISCORD_API_BASE": "http://127.0.0.1:8799/api",
+    "DISCORD_AUTHORIZE_URL": "http://127.0.0.1:8799/oauth2/authorize"
+  }
+}

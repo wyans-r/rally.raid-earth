@@ -1,0 +1,664 @@
+{
+ "format": "rallyraid-stage",
+ "schemaVersion": 1,
+ "generator": "rallyraid-stage-builder 0.1.0",
+ "id": "nam-ss2-terrace-bay-mowe-bay-dunes",
+ "name": "Skeleton Coast SS2: Terrace Bay - Mowe Bay dune crossing",
+ "region": "Skeleton Coast National Park, Kunene, Namibia",
+ "author": "Rally Raid samples",
+ "description": "Patterned after the Dakar's \"dune marathon\" days (the Atlantic-side dune sea is the Namib equivalent of the Erg stages): a short road transfer north out of Terrace Bay, then 60+ km of pure off-piste through the coastal dune belt to the Mowe Bay ranger station. Realistic: long straight CAP legs, few waypoints, a WPC to stop competitors running the beach instead of the dunes, a WPS on the big slip face, and an eclipse WPE that only opens after the WPS is taken.",
+ "vehicleClass": "Cars, trucks, SSV",
+ "created": "2026-11-16T05:34:34.973Z",
+ "modified": "2026-11-16T05:34:34.979Z",
+ "dataSource": "OpenStreetMap contributors (ODbL), routed with OSRM",
+ "lengthKm": 83.002,
+ "rules": {
+  "preset": "FIM-2026",
+  "waypoints": {
+   "DSS": {
+    "reveal": "prev",
+    "radius": 1000,
+    "validate": 200,
+    "penalty": null
+   },
+   "WPV": {
+    "reveal": "always",
+    "validate": 200,
+    "penalty": 900
+   },
+   "WPE": {
+    "reveal": "prev",
+    "radius": 1000,
+    "validate": 90,
+    "penalty": 900
+   },
+   "WPM": {
+    "reveal": "radius",
+    "radius": 800,
+    "validate": 90,
+    "penalty": 900
+   },
+   "WPN": {
+    "reveal": "radius",
+    "radius": 800,
+    "validate": 200,
+    "penalty": 3600
+   },
+   "WPS": {
+    "reveal": "radius",
+    "radius": 1000,
+    "validate": 30,
+    "penalty": 900
+   },
+   "WPC": {
+    "reveal": "never",
+    "validate": 300,
+    "penalty": 900
+   },
+   "WPP": {
+    "reveal": "radius",
+    "radius": 100,
+    "validate": 20,
+    "penalty": 120
+   },
+   "DZ": {
+    "reveal": "radiusOrPrev",
+    "radius": 1000,
+    "validate": 90,
+    "penalty": 900
+   },
+   "FZ": {
+    "reveal": "prev",
+    "radius": 1000,
+    "validate": 90,
+    "penalty": 900
+   },
+   "ASS": {
+    "reveal": "radius",
+    "radius": 800,
+    "validate": 90,
+    "penalty": null
+   }
+  },
+  "speedZone": {
+   "tolerance": 90,
+   "warnBefore": 90,
+   "alertMargin": 5,
+   "impulseDistance": 150,
+   "impulseTime": 10,
+   "bands": [
+    {
+     "upTo": 5,
+     "penalty": 10
+    },
+    {
+     "upTo": 15,
+     "penalty": 60
+    },
+    {
+     "upTo": 40,
+     "penalty": 120
+    },
+    {
+     "upTo": null,
+     "penalty": 360
+    }
+   ]
+  },
+  "globalMaxKmh": null,
+  "globalImpulsePenalty": 60,
+  "lookahead": 5,
+  "tripSnapToWaypoint": true,
+  "startMode": "auto",
+  "countdown": 5,
+  "falseStartPenalty": 60
+ },
+ "waypoints": [
+  {
+   "id": "nam-ss-01",
+   "n": 0,
+   "type": "DSS",
+   "lat": -19.989761,
+   "lon": 13.034149,
+   "km": 0,
+   "cap": 111,
+   "name": "Terrace Bay",
+   "box": 1
+  },
+  {
+   "id": "nam-ss-02",
+   "n": 1,
+   "type": "WPV",
+   "lat": -19.881907,
+   "lon": 12.978545,
+   "km": 14.18,
+   "cap": 16,
+   "box": 2
+  },
+  {
+   "id": "nam-ss-03",
+   "n": 2,
+   "type": "WPM",
+   "lat": -19.78,
+   "lon": 13.01,
+   "km": 25.98,
+   "cap": 348,
+   "box": 3
+  },
+  {
+   "id": "nam-ss-04",
+   "n": 3,
+   "type": "WPC",
+   "lat": -19.665,
+   "lon": 12.985,
+   "km": 39.032,
+   "cap": 330,
+   "box": 4
+  },
+  {
+   "id": "nam-ss-05",
+   "n": 4,
+   "type": "WPN",
+   "lat": -19.56,
+   "lon": 12.92,
+   "km": 52.548,
+   "cap": 318,
+   "box": 5
+  },
+  {
+   "id": "nam-ss-06",
+   "n": 5,
+   "type": "WPS",
+   "lat": -19.47,
+   "lon": 12.835,
+   "km": 65.946,
+   "cap": 309,
+   "box": 6
+  },
+  {
+   "id": "nam-ss-07",
+   "n": 6,
+   "type": "WPE",
+   "lat": -19.42,
+   "lon": 12.77,
+   "km": 74.741,
+   "cap": 309,
+   "box": 7
+  },
+  {
+   "id": "nam-ss-08",
+   "n": 7,
+   "type": "ASS",
+   "lat": -19.373,
+   "lon": 12.709,
+   "km": 83.002,
+   "cap": null,
+   "name": "Mowe Bay",
+   "box": 8
+  }
+ ],
+ "roadbook": {
+  "boxes": [
+   {
+    "n": 1,
+    "id": "nam-ss-01",
+    "km": 0,
+    "partial": 0,
+    "cap": 111,
+    "waypoint": "nam-ss-01",
+    "label": "DSS",
+    "lat": -19.989761,
+    "lon": 13.034149,
+    "tulip": null
+   },
+   {
+    "n": 2,
+    "id": "nam-ss-02",
+    "km": 14.18,
+    "partial": 14.18,
+    "cap": 16,
+    "waypoint": "nam-ss-02",
+    "label": "WPV 1",
+    "lat": -19.881907,
+    "lon": 12.978545,
+    "tulip": null
+   },
+   {
+    "n": 3,
+    "id": "nam-ss-03",
+    "km": 25.98,
+    "partial": 11.8,
+    "cap": 348,
+    "waypoint": "nam-ss-03",
+    "label": "WPM 2",
+    "lat": -19.78,
+    "lon": 13.01,
+    "tulip": null
+   },
+   {
+    "n": 4,
+    "id": "nam-ss-04",
+    "km": 39.032,
+    "partial": 13.052,
+    "cap": 330,
+    "waypoint": "nam-ss-04",
+    "label": "WPC 3",
+    "lat": -19.665,
+    "lon": 12.985,
+    "tulip": null
+   },
+   {
+    "n": 5,
+    "id": "nam-ss-05",
+    "km": 52.548,
+    "partial": 13.516,
+    "cap": 318,
+    "waypoint": "nam-ss-05",
+    "label": "WPN 4",
+    "lat": -19.56,
+    "lon": 12.92,
+    "tulip": null
+   },
+   {
+    "n": 6,
+    "id": "nam-ss-06",
+    "km": 65.946,
+    "partial": 13.398,
+    "cap": 309,
+    "waypoint": "nam-ss-06",
+    "label": "WPS 5",
+    "lat": -19.47,
+    "lon": 12.835,
+    "tulip": null
+   },
+   {
+    "n": 7,
+    "id": "nam-ss-07",
+    "km": 74.741,
+    "partial": 8.796,
+    "cap": 309,
+    "waypoint": "nam-ss-07",
+    "label": "WPE 6",
+    "lat": -19.42,
+    "lon": 12.77,
+    "tulip": null
+   },
+   {
+    "n": 8,
+    "id": "nam-ss-08",
+    "km": 83.002,
+    "partial": 8.261,
+    "cap": null,
+    "waypoint": "nam-ss-08",
+    "label": "ASS",
+    "lat": -19.373,
+    "lon": 12.709,
+    "tulip": null
+   }
+  ],
+  "file": null
+ },
+ "route": {
+  "legs": [
+   {
+    "from": "nam-ss-01",
+    "to": "nam-ss-02",
+    "mode": "road",
+    "km": 14.18,
+    "points": [
+     [
+      -19.989761,
+      13.034149
+     ],
+     [
+      -19.990281,
+      13.035592
+     ],
+     [
+      -19.990645,
+      13.036638
+     ],
+     [
+      -19.990729,
+      13.036839
+     ],
+     [
+      -19.990808,
+      13.036978
+     ],
+     [
+      -19.990977,
+      13.037193
+     ],
+     [
+      -19.990324,
+      13.037016
+     ],
+     [
+      -19.989942,
+      13.036913
+     ],
+     [
+      -19.988206,
+      13.036442
+     ],
+     [
+      -19.987829,
+      13.036341
+     ],
+     [
+      -19.985852,
+      13.035808
+     ],
+     [
+      -19.985282,
+      13.035654
+     ],
+     [
+      -19.98416,
+      13.035278
+     ],
+     [
+      -19.983487,
+      13.035053
+     ],
+     [
+      -19.982212,
+      13.034436
+     ],
+     [
+      -19.981002,
+      13.033674
+     ],
+     [
+      -19.978527,
+      13.031588
+     ],
+     [
+      -19.975784,
+      13.029345
+     ],
+     [
+      -19.975552,
+      13.029195
+     ],
+     [
+      -19.973203,
+      13.028374
+     ],
+     [
+      -19.972124,
+      13.027993
+     ],
+     [
+      -19.971826,
+      13.027779
+     ],
+     [
+      -19.971604,
+      13.02758
+     ],
+     [
+      -19.971055,
+      13.026964
+     ],
+     [
+      -19.968998,
+      13.02463
+     ],
+     [
+      -19.967394,
+      13.022817
+     ],
+     [
+      -19.965025,
+      13.020161
+     ],
+     [
+      -19.963562,
+      13.018552
+     ],
+     [
+      -19.963109,
+      13.018128
+     ],
+     [
+      -19.961929,
+      13.017522
+     ],
+     [
+      -19.961774,
+      13.017457
+     ],
+     [
+      -19.960956,
+      13.017114
+     ],
+     [
+      -19.959957,
+      13.016798
+     ],
+     [
+      -19.958909,
+      13.016567
+     ],
+     [
+      -19.958213,
+      13.016363
+     ],
+     [
+      -19.957716,
+      13.016143
+     ],
+     [
+      -19.957214,
+      13.015846
+     ],
+     [
+      -19.956808,
+      13.015513
+     ],
+     [
+      -19.95639,
+      13.01513
+     ],
+     [
+      -19.955636,
+      13.014341
+     ],
+     [
+      -19.955175,
+      13.013882
+     ],
+     [
+      -19.95486,
+      13.013636
+     ],
+     [
+      -19.954489,
+      13.013394
+     ],
+     [
+      -19.953793,
+      13.01308
+     ],
+     [
+      -19.953034,
+      13.012783
+     ],
+     [
+      -19.952114,
+      13.012423
+     ],
+     [
+      -19.95131,
+      13.012147
+     ],
+     [
+      -19.950813,
+      13.011954
+     ],
+     [
+      -19.949823,
+      13.011505
+     ],
+     [
+      -19.943634,
+      13.008387
+     ],
+     [
+      -19.924307,
+      13.002232
+     ],
+     [
+      -19.919638,
+      12.998536
+     ],
+     [
+      -19.903023,
+      12.991837
+     ],
+     [
+      -19.893368,
+      12.984485
+     ],
+     [
+      -19.892773,
+      12.984054
+     ],
+     [
+      -19.892195,
+      12.983578
+     ],
+     [
+      -19.889935,
+      12.981405
+     ],
+     [
+      -19.889516,
+      12.981013
+     ],
+     [
+      -19.889122,
+      12.980756
+     ],
+     [
+      -19.888581,
+      12.980523
+     ],
+     [
+      -19.88713,
+      12.980099
+     ],
+     [
+      -19.881907,
+      12.978545
+     ],
+     [
+      -19.881907,
+      12.978545
+     ]
+    ]
+   },
+   {
+    "from": "nam-ss-02",
+    "to": "nam-ss-03",
+    "mode": "direct",
+    "km": 11.8,
+    "points": [
+     [
+      -19.881907,
+      12.978545
+     ],
+     [
+      -19.78,
+      13.01
+     ]
+    ]
+   },
+   {
+    "from": "nam-ss-03",
+    "to": "nam-ss-04",
+    "mode": "direct",
+    "km": 13.052,
+    "points": [
+     [
+      -19.78,
+      13.01
+     ],
+     [
+      -19.665,
+      12.985
+     ]
+    ]
+   },
+   {
+    "from": "nam-ss-04",
+    "to": "nam-ss-05",
+    "mode": "direct",
+    "km": 13.516,
+    "points": [
+     [
+      -19.665,
+      12.985
+     ],
+     [
+      -19.56,
+      12.92
+     ]
+    ]
+   },
+   {
+    "from": "nam-ss-05",
+    "to": "nam-ss-06",
+    "mode": "direct",
+    "km": 13.398,
+    "points": [
+     [
+      -19.56,
+      12.92
+     ],
+     [
+      -19.47,
+      12.835
+     ]
+    ]
+   },
+   {
+    "from": "nam-ss-06",
+    "to": "nam-ss-07",
+    "mode": "direct",
+    "km": 8.796,
+    "points": [
+     [
+      -19.47,
+      12.835
+     ],
+     [
+      -19.42,
+      12.77
+     ]
+    ]
+   },
+   {
+    "from": "nam-ss-07",
+    "to": "nam-ss-08",
+    "mode": "direct",
+    "km": 8.261,
+    "points": [
+     [
+      -19.42,
+      12.77
+     ],
+     [
+      -19.373,
+      12.709
+     ]
+    ]
+   }
+  ]
+ },
+ "builder": {
+  "notes": []
+ }
+}

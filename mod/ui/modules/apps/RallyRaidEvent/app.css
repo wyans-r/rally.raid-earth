@@ -1,0 +1,13 @@
+.rre { font-family: 'Roboto Mono', monospace; color: #eee; background: rgba(12,14,18,.88); border: 1px solid #333; border-radius: 6px;
+  padding: 8px; font-size: 12px; height: 100%; box-sizing: border-box; overflow-y: auto; }
+.rre-title { font-weight: bold; color: #ffb000; letter-spacing: .5px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.rre-off { color: #8ab; }
+.rre-pack { border: 1px solid #333; border-radius: 4px; padding: 5px 6px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.rre-pack .n { font-weight: bold; }
+.rre-dim { color: #9aa; font-size: 11px; }
+.rre-ok { color: #4caf50; } .rre-bad { color: #ff5252; } .rre-warn { color: #ffb000; }
+.rre-btn { background: #263238; color: #fff; border: 1px solid #546e7a; border-radius: 3px; padding: 3px 8px; cursor: pointer; font: inherit; }
+.rre-btn.go { background: #1b5e20; border-color: #4caf50; }
+.rre-line { margin: 3px 0; word-break: break-word; }
+
+.rre-soon { background:#5a3a00; color:#ffd400; font-size:11px; font-weight:700; padding:6px 8px; margin:0 0 8px; border-radius:3px; line-height:1.3; }

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rally Raid mod for BeamNG.drive - download</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> <!-- mobile: viewport-fit lets the page use the full phone screen -->
+<meta name="theme-color" content="#14171b">
+<style>
+  :root { --bg:#14171b; --panel:#1c2026; --line:#2c323a; --text:#e8eaed; --dim:#9aa0a6; --acc:#ffd400; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, Segoe UI, Roboto, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { margin:0 0 4px; font-size:26px; } h2 { margin:28px 0 8px; font-size:18px; color:var(--acc); }
+  .sub { color:var(--dim); margin:0 0 22px; }
+  a { color:var(--acc); }
+  .dl { display:inline-block; background:var(--acc); color:#000; font-weight:700; text-decoration:none; padding:12px 22px; border-radius:6px; font-size:17px; }
+  .dl:hover { filter:brightness(1.1); }
+  .meta { color:var(--dim); font-size:13px; margin-top:8px; }
+  code { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:13px; word-break:break-all; }
+  li { margin:5px 0; }
+  table { border-collapse:collapse; font-size:14px; } td { border-bottom:1px solid var(--line); padding:4px 14px 4px 0; }
+  .note { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--acc); padding:10px 14px; border-radius:4px; }
+  nav { margin-bottom:20px; font-size:14px; }
+  .site-foot { margin-top:36px; padding-top:12px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; }
+  .site-foot a { color:var(--acc); }
+  .credits ul { padding-left:18px; }
+</style>
+<link rel="stylesheet" href="mobile.css"> <!-- mobile: phone layout, no effect above 900 px -->
+</head>
+<body><main>
+<nav><a href="/">&larr; Stage builder</a> &middot; <a href="/roadbook">Roadbook editor</a></nav>
+<h1>Rally Raid for BeamNG.drive</h1>
+<p class="sub">Dakar-style rally raid for BeamNG.Earth: a GPS with CAP and odometer that follows the FIM reveal rules, a scrolling roadbook, timed stages with penalties, and a recce mode for refining notes as you drive.</p>
+
+<a class="dl" href="/download/wyans_rallyraid.zip" download>Download wyans_rallyraid.zip</a>
+<div class="meta">Public filename: <code>wyans_rallyraid.zip</code> &middot; includes 15 example stages with roadbooks. The file is published here after in-game testing.</div>
+
+<div class="note" style="margin-top:20px">This is an early test build that has not yet been tested much in game. Requires <b>BeamNG.drive</b> with the <b>BeamNG.Earth</b> mod installed and working.</div>
+
+<h2>Install</h2>
+<ol>
+  <li>Close BeamNG.drive.</li>
+  <li>Paste <code>%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\mods\</code> into the File Explorer address bar and press Enter.</li>
+  <li>Put <code>wyans_rallyraid.zip</code> in that folder <b>without unzipping it</b>. When updating, replace the old zip (keep the same filename).</li>
+  <li>Start the game, check the mod is on in the Mod Manager, load <b>BeamNG.Earth</b> and spawn a car.</li>
+  <li>Press Esc, open <b>UI Apps</b>, choose <b>Add app</b> and add <b>Rally Raid GPS</b> and <b>Rally Raid Roadbook</b> (category "Rally Raid"). Also add <b>Rally Raid Repair</b> and <b>Rally Raid Planner</b> if you want those menus. Drag and resize them to taste.</li>
+</ol>
+
+<h2>Race a stage</h2>
+<ol>
+  <li>On the GPS app press <b>STAGES</b> (or <b>BOOK</b> on the roadbook app), click a stage and press <b>LOAD</b>, or double-click it.</li>
+  <li>Press <b>TP TO DSS</b> to teleport to the start, or drive there; the GPS points to the start until the stage begins.</li>
+  <li>Drive out of the start circle to start the clock, then navigate by roadbook. The GPS shows waypoint distance and heading only when you get close, as in a real rally.</li>
+</ol>
+
+<h2>Keys</h2>
+<p>These are the defaults shipped in the mod (rebind them in Options &gt; Controls &gt; Bindings, search "Rally Raid"):</p>
+<table>
+  <tr><td><code>Ctrl+Shift+Up</code></td><td>trip + (hold to repeat)</td></tr>
+  <tr><td><code>Ctrl+Shift+Down</code></td><td>trip &minus; (hold to repeat)</td></tr>
+  <tr><td><code>Ctrl+Shift+Left</code></td><td>W&minus; (back to a missed waypoint)</td></tr>
+  <tr><td><code>Ctrl+Shift+Right</code></td><td>W+ (skip waypoint)</td></tr>
+  <tr><td><code>Ctrl+Shift+P</code></td><td>reset the partial odometer</td></tr>
+  <tr><td><code>Ctrl+Shift+Home</code></td><td>start the 5 s countdown (stand in the start circle)</td></tr>
+  <tr><td><code>Ctrl+Shift+PageUp</code></td><td>roadbook box up (the trip is not changed)</td></tr>
+  <tr><td><code>Ctrl+Shift+PageDown</code></td><td>roadbook box down (the trip is not changed)</td></tr>
+  <tr><td><code>Ctrl+Shift+End</code></td><td>sync the trip to the box on screen (&ldquo;I am at this box&rdquo;)</td></tr>
+  <tr><td><code>Ctrl+Shift+R</code></td><td>recce mode on / off</td></tr>
+  <tr><td><code>Ctrl+Shift+N</code></td><td>recce: drop a box here (press again to save it as it is)</td></tr>
+  <tr><td><code>Ctrl+Shift+C</code></td><td>recce: confirm the nearest box</td></tr>
+  <tr><td><code>Ctrl+Shift+M</code></td><td>recce: move the nearest box here</td></tr>
+  <tr><td><code>Ctrl+Shift+T</code></td><td>recce: retag the nearest box</td></tr>
+  <tr><td><code>Ctrl+Shift+Delete</code></td><td>recce: delete the nearest box</td></tr>
+  <tr><td><code>Ctrl+Shift+Z</code></td><td>recce: undo</td></tr>
+  <tr><td><code>Ctrl+Shift+F</code></td><td>repair menu</td></tr>
+  <tr><td><code>Ctrl+Shift+G</code></td><td>recover car (press again to confirm)</td></tr>
+  <tr><td><code>Ctrl+Shift+H</code></td><td>resume after a game crash (press twice: once to see the save, again to resume; then GO if the clock is held)</td></tr>
+  <tr><td><code>Ctrl+Shift+J</code></td><td>planner: open / close</td></tr>
+  <tr><td><code>Ctrl+Shift+W</code></td><td>planner: waypoint here</td></tr>
+  <tr><td><code>Ctrl+Shift+B</code></td><td>planner: roadbook box here</td></tr>
+  <tr><td><code>Ctrl+Shift+K</code></td><td>planner: record the driven line on / off</td></tr>
+</table>
+<p>Trip step size (10 / 100 / 1000 m) is the <b>10m</b> button on the GPS app, not a key. Trip reset and start a new rally have no default keys; you can bind them in Options &gt; Controls.</p>
+
+<h2>Make your own stages</h2>
+<p>Plot a route in the <a href="/">stage builder</a> (the Examples button loads samples to learn from), export the stage <code>.json</code>, then make its roadbook in the <a href="/roadbook">roadbook editor</a>. Put stage files in <code>%LOCALAPPDATA%\BeamNG\BeamNG.drive\current\rallyraid\stages\</code> and roadbooks in <code>...\current\rallyraid\roadbooks\</code> (create the folders).</p>
+
+<h2>Something broken?</h2>
+<p>Press <code>~</code> in game to open the console and screenshot any red errors.</p>
+
+<h2 id="credits">Credits and data sources</h2>
+<p>This mod is made for <a href="https://github.com/tecnagamer/beamng.earth">BeamNG.Earth</a>. It is not an official BeamNG, FIM or FIA product.</p>
+<ul class="credits">
+  <li>Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>).</li>
+  <li>Land cover: ESA WorldCover 10 m 2021 v200 (CC BY 4.0). &copy; ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium. <a href="https://doi.org/10.5281/zenodo.7254221">Citation</a>.</li>
+  <li>Elevation from <a href="https://mapterhorn.com">Mapterhorn</a> (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors, including NextGIS. Place names: Nominatim.</li>
+  <li>Roadbook symbols are an unofficial set drawn for this project in the style of the public FIM / FIA lexicons.</li>
+</ul>
+<p>The full list is on the <a href="credits.html">credits page</a>.</p>
+<footer class="site-foot">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). Built for BeamNG.Earth. <a href="credits.html">Full credits</a></footer>
+</main></body></html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rally Raid Event app preview (outside the game)</title>
+<link rel="icon" href="data:,">
+<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+<style>body{background:#6d7a63;margin:0;font-family:sans-serif} .slot{position:absolute;width:380px;height:260px} #a{left:10px;top:10px} #b{left:400px;top:10px} #c{left:790px;top:10px}</style>
+<script>
+// a stand-in for the game's UI: 'beamng.apps', bngApi, and RallyRaidOfficial messages as official.lua sends them
+var calls = []
+window.bngApi = { engineLua: function (cmd) { calls.push(cmd) } }
+angular.module('beamng.apps', [])
+</script>
+<script src="/ui/modules/apps/RallyRaidEvent/app.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="a"><rally-raid-event></rally-raid-event></div>
+<div class="slot" id="b"><rally-raid-event></rally-raid-event></div>
+<div class="slot" id="c"><rally-raid-event></rally-raid-event></div>
+<script>
+var S = {
+  a: { active: false, packs: [
+    { path: '/rallyraid/events/moab-winter-rally-ss1.rrevent.json', event: 'Moab Winter Rally', stage: 'SS1 Sand Flats', entrant: 'Alice', class: 'T1 Prototype', opensAt: '2026-11-20T18:00:00Z', closesAt: '2026-11-27T18:00:00Z' },
+    { path: '/rallyraid/events/moab-winter-rally-ss2.rrevent.json', event: 'Moab Winter Rally', stage: 'SS2 Porcupine Rim', entrant: 'Alice', class: 'T1 Prototype', opensAt: '2026-11-20T18:00:00Z', closesAt: '2026-11-27T18:00:00Z' } ] },
+  b: { active: true, event: 'Moab Winter Rally', stage: 'SS1 Sand Flats', entrant: 'Alice', checks: { ok: true, errors: [], warnings: [] },
+       last: { status: 'uploaded', file: '/rallyraid/results/official/ev_x_ss1_20261121_120501.rrresult.json', bytes: 18067, server: { status: 'pass' } }, msg: 'Result uploaded: pass' },
+  c: { active: true, event: 'Moab Winter Rally', stage: 'SS1 Sand Flats', entrant: 'Alice', checks: { ok: true, errors: [], warnings: [] },
+       last: { status: 'saved', file: '/rallyraid/results/official/ev_x_ss1_20261121_120501.rrresult.json', bytes: 18067, error: 'no LuaSocket in this game build' },
+       msg: 'Upload failed (no LuaSocket in this game build). Upload the file on the event page.' }
+}
+angular.element(document).ready(function () {
+  setTimeout(function () {
+    ['a', 'b', 'c'].forEach(function (k) { var s = angular.element(document.querySelector('#' + k + ' .bngApp')).isolateScope(); s.$emit('RallyRaidOfficial', S[k]); s.$apply() })
+    window.READY = true
+  }, 200)
+})
+</script>
+</body></html>

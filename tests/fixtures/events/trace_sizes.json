@@ -1,0 +1,26 @@
+[
+ {
+  "km": 20,
+  "bytes": 9919,
+  "points": 222,
+  "minutes": 17
+ },
+ {
+  "km": 80,
+  "bytes": 37721,
+  "points": 819,
+  "minutes": 64
+ },
+ {
+  "km": 150,
+  "bytes": 69109,
+  "points": 1471,
+  "minutes": 118
+ },
+ {
+  "km": 250,
+  "bytes": 121857,
+  "points": 2563,
+  "minutes": 203
+ }
+]

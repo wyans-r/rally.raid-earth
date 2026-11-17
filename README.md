@@ -1,0 +1,164 @@
+# Rally Raid for BeamNG.Earth
+
+Dakar-style rally raid for [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth): plot a stage on a real map, make a roadbook, and race it in BeamNG.drive with a rally GPS, a scrolling roadbook, repairs, and a way to recover a stuck car or resume after the game crashes.
+
+The public website (no login) is **[stagebuilder.wyans.net](https://stagebuilder.wyans.net)**.
+
+This is a fan project. It is not an official BeamNG, FIM or FIA product. You need [BeamNG.Earth](https://github.com/tecnagamer/beamng.earth) installed for the stages to sit on the real world.
+
+**Async Events** (online organised events, logins, official result uploads) is not released yet. The public website has no Events section. The public mod zip leaves that app out.
+
+## Licence
+
+The project's original code is released under the **MIT Licence**, Copyright (c) 2026 wyans. See `LICENSE`.
+
+Why MIT (and not, for example, GPL-3.0):
+
+- It is short and easy for players and other modders to understand.
+- It lets people fork, fix and share the tools, including in their own packs, without a "share the source of everything you combine it with" rule.
+- OpenStreetMap data already has its own share-alike rule (ODbL). Stages and roadbooks built from OSM stay under that data licence no matter which code licence we pick, so MIT does not weaken the map-data credit.
+- Leaflet (BSD-2-Clause), jsPDF (MIT) and fflate (MIT) all work with MIT.
+
+The MIT text covers only this project's own code and artwork. It does not cover OpenStreetMap data, ESA WorldCover, map tiles, elevation data, third-party libraries, or BeamNG / BeamNG.Earth themselves. See [Credits](docs/CREDITS.md).
+
+## What you get
+
+| Part | Where | What it does |
+|---|---|---|
+| Stage builder | [stagebuilder.wyans.net](https://stagebuilder.wyans.net) | Plot waypoints on a map, name the stage, set rules, share a link or export a `.json` file |
+| Roadbook editor | [stagebuilder.wyans.net/roadbook](https://stagebuilder.wyans.net/roadbook) | Auto-generate a roadbook from terrain and OpenStreetMap, edit boxes, print a PDF |
+| Game mod | `mod/` (built as a zip — see below) | Runs the stage in BeamNG.drive: clock, hidden waypoints, penalties, speed zones, results |
+| Rally Raid GPS | in-game UI app | CAP, trip odometer, waypoint reveal, speed-zone alarm, stage picker |
+| Rally Raid Roadbook | in-game UI app | Scrolls the roadbook with the trip; recce mode while you drive |
+| Rally Raid Planner | in-game UI app | Build a stage and roadbook by driving it |
+| Rally Raid Repair | in-game UI app | Mid-stage repairs, bivouac, Recover car, resume after a game crash |
+| Sample stages | shipped in the mod, and as Examples in the builder | Moab plus stages in Namibia, Saudi Arabia, Morocco, Baja, the Gobi, Liwa, Fiambalá and Finke |
+
+The public zip is the **repair + planner + resume** version only after wyans has said the in-game test is OK. Until then, treat any zip you are given as a test build. Do not publish it on the download page or on BeamNG.com without that OK.
+
+## 1. Install the mod
+
+1. You need BeamNG.drive and BeamNG.Earth installed and working.
+2. Find the BeamNG user folder. On Windows, paste this into File Explorer's address bar: `%LOCALAPPDATA%\BeamNG\BeamNG.drive\current`
+3. Copy the mod zip into the `mods` folder inside that `current` folder. The zip itself is the mod — do not unzip it there. (The public file is named `wyans_rallyraid.zip`, so it does not clash with someone else's file. Keep that name when you update.)
+4. Start the game, turn the mod on in the Mod Manager if it is not already, load BeamNG.Earth, and spawn a car.
+
+To edit the files yourself: unzip to `...\current\mods\unpacked\rallyraid\` so that folder contains `lua`, `scripts`, `ui`, `rallyraid` and `settings`. After a change, press Ctrl+L to reload Lua, or restart the game.
+
+## 2. Put the apps on the HUD
+
+1. Press Esc, then **UI Apps**.
+2. **Add app**, search **Rally Raid**. Add **GPS**, and if you want them: **Roadbook**, **Planner**, **Repair**.
+3. Drag each app where you want it; resize from the corner.
+
+You may need to move the mouse to click buttons while driving. For racing, bind the keys instead (section 5). You can hide BeamNG.Earth's own minimap if you want to navigate by roadbook and GPS only; this mod cannot turn it off for you.
+
+## 3. Build a stage (website)
+
+Open [stagebuilder.wyans.net](https://stagebuilder.wyans.net) in Chrome, Edge or Firefox (it needs internet for the map, routing and search).
+
+1. **Examples** (on the Guide tab) loads a sample you can edit. The first change blanks the example's name so you do not overwrite the sample by accident.
+2. Search a place, or type `lat, lon`. The layer button (top right) switches OpenStreetMap, terrain and satellite.
+3. Pick a point type (start with **DSS**, the stage start), then click the map. Drag markers to move them.
+   - **New leg follows**: *roads* uses car routing; *tracks & paths* follows small OpenStreetMap tracks (a stretch with no track is drawn dotted red); *my loaded GPX track* follows a file you imported; *straight line* is off-piste.
+   - **Insert after selected** adds a point between two existing ones. **Clear all** empties the route (you can undo once).
+4. On the **Stage** tab, fill the name and description, or press **Generate name and description** (uses real nearby place names only).
+5. On the **Rules** tab, the defaults follow FIM 2026. Change them if your event uses other regulations; the file carries the rules with it.
+6. **File** tab: export the stage `.json`, import a file, or copy a share link (the link carries the stage itself; nothing is uploaded).
+7. Press **Roadbook** to generate and edit the roadbook, then save `<stage id>.roadbook.json`.
+
+**Route** points (saved in the file as type `NOTE`) shape the line and get a roadbook box, but they are not GPS waypoints. A yellow forest warning means a leg goes through thick trees with no mapped track along that line.
+
+Put stage files in `<BeamNG user folder>/current/rallyraid/stages/` and roadbooks in `.../current/rallyraid/roadbooks/` (create the folders). A shareable "stage pack" can also be a zip whose top-level folder is `rallyraid/stages/`.
+
+## 4. Race a stage
+
+1. On the GPS app, press **STAGES**, pick a stage, **LOAD**. Broken files show in red with the reason.
+2. **TP TO DSS** teleports you to the start through BeamNG.Earth, or drive there: before the start the GPS always points to the DSS.
+3. In the DSS circle, press **START** (5 s countdown) or just drive off: with the default start mode the clock starts when you leave the circle. Leaving during the countdown is a false start.
+4. Navigate. The GPS always shows **CAP** (your heading) and speed. The next waypoint's distance and heading appear only inside its reveal radius (a Visible waypoint is shown all the time; a Control waypoint never shows a distance).
+5. **Trip** is the odometer you match to the roadbook: **+** / **−** correct it, **0** resets it (the reset key is not bound by default). **PART** is a partial you reset at each box. When you take a waypoint, the trip snaps to that box's km.
+6. **Speed zones**: once you have passed the start of a zone, going over the limit adds time (impulses). The bar warns you and flashes red when you are over.
+7. Validating the **ASS** (finish) stops the clock. The result is saved. Teleporting during a stage marks the result unofficial. **ABORT** restarts the stage.
+
+## 5. Keys
+
+Rebind them in Options > Controls > Bindings, search "Rally Raid". A wheel or handlebar button works too. These are the defaults shipped in the mod (checked against `mod/settings/inputmaps/keyboard_rallyRaid.json`):
+
+| Action | Default key |
+|---|---|
+| Trip + / trip − (hold to repeat) | Ctrl+Shift+Up / Ctrl+Shift+Down |
+| W+ (skip waypoint) / W− (back to a missed one) | Ctrl+Shift+Right / Ctrl+Shift+Left |
+| Partial reset | Ctrl+Shift+P |
+| Start countdown | Ctrl+Shift+Home |
+| Roadbook box up / down | Ctrl+Shift+PageUp / Ctrl+Shift+PageDown |
+| Sync trip to the box on screen | Ctrl+Shift+End |
+| Recce mode on / off | Ctrl+Shift+R |
+| Recce: drop a box here (press again to save it as it is) | Ctrl+Shift+N |
+| Recce: confirm nearest box | Ctrl+Shift+C |
+| Recce: move nearest box here | Ctrl+Shift+M |
+| Recce: retag nearest box | Ctrl+Shift+T |
+| Recce: delete nearest box | Ctrl+Shift+Delete |
+| Recce: undo | Ctrl+Shift+Z |
+| Repair menu | **Ctrl+Shift+F** |
+| Recover car (press again to confirm) | **Ctrl+Shift+G** |
+| Resume after a game crash (press twice; then GO if the clock is held) | **Ctrl+Shift+H** |
+| Planner: open / close | **Ctrl+Shift+J** |
+| Planner: waypoint here | **Ctrl+Shift+W** |
+| Planner: roadbook box here | **Ctrl+Shift+B** |
+| Planner: record the driven line on / off | **Ctrl+Shift+K** |
+| Trip reset | not bound by default |
+| Start a new rally (recoveries / resets back to 0) | not bound by default |
+
+Trip step size (10 / 100 / 1000 m) is the **10m** button on the GPS app, not a key.
+
+## 6. Repair, recover, resume
+
+Add the **Rally Raid Repair** app, then press **Ctrl+Shift+F**.
+
+- Mid-stage, standing still: change a wheel, fix one corner's suspension, or fix the radiator. The time is added to the stage.
+- After the finish, the bivouac opens: whole-car repair and engine change from a time budget.
+- During a stage, BeamNG's own reset keys are blocked. A reset the app did not make counts as a car recovery.
+- **Stuck or rolled?** **Ctrl+Shift+G** (press again to confirm), or **RECOVER CAR** in the menu, puts the car back on the route a short way behind, with a time penalty. Limits apply per stage and per rally.
+- **The game crashed?** The stage is saved to disk on a short heartbeat and at each waypoint. After you relaunch, load the stage and press **Ctrl+Shift+H** twice (or use **Resume from last save**). There is no time penalty, but the result is flagged for the organiser to review.
+
+Details: [docs/REPAIR.md](docs/REPAIR.md).
+
+## 7. Recce and the in-game planner
+
+**Recce.** In the Roadbook app, press RECCE or **Ctrl+Shift+R**. The line you drive, and jumps, crests, compressions, soft sand and slopes the car finds, are recorded. You can drop, move, retag and delete boxes as you go. The file lands in `<BeamNG user folder>/current/rallyraid/recce/`. Merge it in the game, or import it in the roadbook editor.
+
+**Planner.** Add **Rally Raid Planner**, or press **Ctrl+Shift+J**. Start a new stage, record the line you drive (**Ctrl+Shift+K**), drop waypoints (**Ctrl+Shift+W**) and roadbook boxes (**Ctrl+Shift+B**), generate a roadbook, then save and load it into the rally computer. Files are the same ones the website uses, in `rallyraid/stages/` and `rallyraid/roadbooks/`. More detail: [docs/INGAME_PLANNER.md](docs/INGAME_PLANNER.md).
+
+## 8. Build a public zip (for maintainers)
+
+From this repository:
+
+```sh
+python3 scripts/build_public_zip.py
+```
+
+That writes `dist/wyans_rallyraid.zip` with the correct BeamNG folder layout (`lua`, `ui`, `scripts`, `settings`, `rallyraid` at the zip root). The **Rally Raid Event** app and the official-event Lua are left out. The script does not put the zip on the website or on BeamNG.com.
+
+For a private build that includes the unreleased Events app:
+
+```sh
+python3 scripts/build_public_zip.py --include-events --output dist/wyans_rallyraid_dev.zip
+```
+
+Do not include a README inside a zip you submit to BeamNG.com — their rules ask you to put the description on the listing instead.
+
+## 9. Bug reporting
+
+1. Press `~` in the game to open the console, and take a screenshot of any red errors.
+2. Note the BeamNG.drive version, the BeamNG.Earth version, and what you were doing (which stage, which app, which key).
+3. If you can, attach the stage `.json` and the roadbook file (or a share link from the website).
+4. Open a GitHub issue with the **bug report** template once the repository is published. Until then, report it to wyans on the BeamNG.Earth Discord.
+
+Please do not paste secret keys (Cloudflare, Discord, email, or anything similar) into an issue or a chat.
+
+## Credits
+
+A short credits line is in the Guide tab of the stage builder, in the footer of the site, and in each in-game app (open **Credits**). The full list, including the exact ESA WorldCover citation and map-tile credits, is in [docs/CREDITS.md](docs/CREDITS.md) and at [stagebuilder.wyans.net/credits.html](https://stagebuilder.wyans.net/credits.html) once that page is deployed.
+
+Map data © OpenStreetMap contributors (ODbL). Land cover © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0).

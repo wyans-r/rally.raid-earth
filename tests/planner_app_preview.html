@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rally Raid Planner preview (outside the game)</title>
+<link rel="icon" href="data:,">
+<script>
+// ?nosubtle=1: a page without crypto.subtle, as the game's UI may be (not a "secure context"): the app brings its own SHA-256
+if (/nosubtle=1/.test(location.search)) try { Object.defineProperty(window.crypto, 'subtle', { value: undefined, configurable: true }) } catch (e) {}
+</script>
+<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+<style>body{background:#6d7a63;margin:0;font-family:sans-serif} .slot{position:absolute;left:10px;top:10px;width:440px;height:640px} #b{left:470px;width:330px;height:480px}</style>
+<script>
+// A stand-in for the game: the 'beamng.apps' module, bngApi.engineLua, and a mock of rallyRaid/planner.lua behind
+// rallyRaid_core.plannerCall / cmd (the same answers, with Lua's habit of sending an empty list as {}).
+angular.module('beamng.apps', [])
+var calls = [], files = {}, loads = [], CHUNK = 30000
+var car = { lat: 38.567602, lon: -109.531389, alt: 1350, heading: 40, camera: false }
+var rec = { on: false, piece: [], km: 0, last: null }
+var P = { open: false, appSeen: false, game: {} }
+var reads = {}, writes = {}, seq = 0
+function dist(a, b) { var R = 6371008.8, r = Math.PI / 180, p1 = a[0] * r, p2 = b[0] * r, dp = p2 - p1, dl = (b[1] - a[1]) * r; var h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2; return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))) }
+function pose() { return { ok: true, lat: +car.lat.toFixed(6), lon: +car.lon.toFixed(6), alt: car.alt, heading: car.heading, speed: 0, camera: car.camera } }
+function luaList(a) { return a.length ? a : {} }
+function state() { return { schema: 1, open: P.open, pose: pose(), rec: { on: rec.on, points: rec.piece.length, km: Math.round(rec.km * 100) / 100, breaks: 0 }, game: P.game } }
+setInterval(function () { push() }, 250) // the game sends the state 4 times a second while the planner is open
+function push() { var el = document.querySelector('#a .rpl-host'); if (el) angular.element(el).isolateScope().$broadcast('RallyRaidPlanner', state()) }
+function key(k) { var el = document.querySelector('#a .rpl-host'); angular.element(el).isolateScope().$broadcast('RallyRaidPlannerKey', { key: k }) }
+// the car drives to a point (recording a point every 10 m when REC is on)
+function driveTo(lat, lon, alt) {
+  var from = [car.lat, car.lon], d = dist(from, [lat, lon]), n = Math.max(1, Math.round(d / 10))
+  for (var i = 1; i <= n; i++) {
+    var q = [car.lat + (lat - car.lat) / (n - i + 1), car.lon + (lon - car.lon) / (n - i + 1)]
+    car.lat = q[0]; car.lon = q[1]; if (alt != null) car.alt = alt
+    if (rec.on) { if (rec.last) rec.km += dist(rec.last, q) / 1000; rec.last = q; rec.piece.push([+q[0].toFixed(6), +q[1].toFixed(6), car.alt]) }
+  }
+}
+var api = {
+  state: function () { return state() },
+  pose: function () { return pose() },
+  mark: function () { var out = Object.assign(pose(), { recording: rec.on, piece: luaList(rec.piece) }); rec.piece = rec.on ? [[out.lat, out.lon, car.alt]] : []; return out },
+  rec: function (a) { rec.on = !!a.on; if (rec.on) { rec.piece = [[car.lat, car.lon, car.alt]]; rec.last = [car.lat, car.lon]; rec.km = 0 } return { on: rec.on } },
+  list: function () {
+    var st = []
+    Object.keys(files).filter(function (p) { return /^\/rallyraid\/stages\/[^/]+\.json$/.test(p) }).sort().forEach(function (p) {
+      try { var j = JSON.parse(files[p]); var rbp = '/rallyraid/roadbooks/' + j.id + '.roadbook.json'
+        st.push({ path: p, file: p.split('/').pop(), id: j.id, name: j.name, ok: true, waypoints: j.waypoints.length, km: j.waypoints[j.waypoints.length - 1].km, roadbook: files[rbp] ? rbp : undefined })
+      } catch (e) { st.push({ path: p, file: p.split('/').pop(), name: p, ok: false, error: e.message }) }
+    })
+    var dr = Object.keys(files).filter(function (p) { return p.indexOf('/rallyraid/planner/drafts/') === 0 }).map(function (p) { return { path: p, file: p.split('/').pop() } })
+    return { stages: luaList(st), drafts: luaList(dr), userPath: 'C:/Users/wyans/AppData/Local/BeamNG.drive/0.34/' }
+  },
+  exists: function (a) { return { exists: !!files[a.path] } },
+  readOpen: function (a) { var t = files[a.path]; if (t == null) return { ok: false, why: 'no such file' }; var k = 't' + (++seq); reads[k] = t.replace(/[\u007f-\uffff]/g, function (c) { return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4) }); return { ok: true, token: k, size: reads[k].length, chunks: Math.max(1, Math.ceil(reads[k].length / CHUNK)), path: a.path } },
+  readChunk: function (a) { return reads[a.token].slice((a.i - 1) * CHUNK, a.i * CHUNK) },
+  writeBegin: function (a) { if (!/^\/rallyraid\/[\w\-./]+\.json$/.test(a.path) || /\.\./.test(a.path)) return { ok: false, why: 'not a /rallyraid/ .json path' }; var k = 'w' + (++seq); writes[k] = { path: a.path, parts: [] }; return { ok: true, token: k } },
+  writeChunk: function (a, text) { writes[a.token].parts.push(text); return true },
+  writeCommit: function (a) { var w = writes[a.token]; delete writes[a.token]; var t = w.parts.join(''); try { JSON.parse(t) } catch (e) { return { ok: false, why: 'the text is not JSON' } } if (/[^\x00-\x7e\n\r\t]/.test(t)) return { ok: false, why: 'not ASCII' }; var backup = files[w.path] && files[w.path] !== t ? '/rallyraid/planner/backup/x.json' : undefined; files[w.path] = t; return { ok: true, path: w.path, bytes: t.length, backup: backup } },
+  load: function (a) { if (P.game.phase === 'running' && !a.force) return { ok: false, why: 'running', message: 'A stage is running (' + P.game.stageName + '). Loading another ends it.' }; var j = JSON.parse(files[a.path]); loads.push(a); P.game = { stageId: j.id, stageName: j.name, phase: 'armed', path: a.path }; return { ok: true, path: a.path, teleported: !!a.teleport } },
+  reloadRoadbook: function () { loads.push({ reload: true }); return { ok: true } }
+}
+window.bngApi = { engineLua: function (code, cb) {
+  calls.push(code.length > 300 ? code.slice(0, 300) + '...' : code)
+  var r
+  var m = code.match(/^rallyRaid_core and rallyRaid_core\.plannerCall\('(\w+)', \[(=*)\[\n([\s\S]*?)\]\2\](?:, \[(=*)\[\n([\s\S]*?)\]\4\])?\)$/)
+  if (m) r = api[m[1]] ? api[m[1]](JSON.parse(m[3]), m[5]) : { ok: false, why: 'unknown call' }
+  var c = code.match(/rallyRaid_core\.cmd\('(\w+)'\)/)
+  if (c) { if (c[1] === 'plannerAppHere') P.appSeen = true; if (c[1] === 'plannerMenu') P.open = !P.open; setTimeout(push, 0) }
+  if (cb) setTimeout(function () { cb(r === undefined ? null : JSON.parse(JSON.stringify(r))) }, 2)
+} }
+</script>
+<script src="/ui/modules/apps/RallyRaidPlanner/app.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="a"><rally-raid-planner></rally-raid-planner></div>
+<div class="slot" id="b"><rally-raid-planner></rally-raid-planner></div>
+</body></html>

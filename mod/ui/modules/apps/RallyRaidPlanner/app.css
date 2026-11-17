@@ -1,0 +1,76 @@
+/* Rally Raid Planner: the in-game stage / roadbook planner (dark panel, like the other Rally Raid apps). */
+.rpl-host { width: 100%; height: 100%; overflow: hidden; position: relative; pointer-events: none; }
+.rpl { position: absolute; left: 0; top: 0; width: 440px; height: 640px; transform-origin: 0 0; box-sizing: border-box;
+  font-family: 'Roboto Mono', Consolas, monospace; font-size: 12px; color: #e8e8e8; display: flex; flex-direction: column; }
+.rpl * { box-sizing: border-box; }
+.rpl-bar { pointer-events: auto; background: rgba(12, 14, 12, 0.85); border: 1px solid #444; border-radius: 4px; padding: 4px 8px;
+  display: flex; justify-content: space-between; align-items: center; gap: 6px; cursor: pointer; flex: none; }
+.rpl-bar .t { color: #ffd400; font-weight: bold; letter-spacing: 1px; }
+.rpl-bar .k { color: #888; font-size: 11px; }
+.rpl-bar .nm { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #ccc; }
+.rpl-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #555; vertical-align: middle; }
+.rpl-dot.on { background: #e03a2f; box-shadow: 0 0 6px #e03a2f; }
+.rpl-panel { pointer-events: auto; margin-top: 4px; background: rgba(12, 14, 12, 0.92); border: 1px solid #555; border-radius: 4px;
+  padding: 5px 6px; flex: 1; display: flex; flex-direction: column; min-height: 0; gap: 4px; }
+.rpl-tabs { display: flex; gap: 3px; flex: none; }
+.rpl-tabs .rpl-btn { flex: 1; }
+.rpl-row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; flex: none; }
+.rpl-row.sp { justify-content: space-between; }
+.rpl-btn { background: #2b2f2b; color: #eee; border: 1px solid #666; border-radius: 3px; padding: 3px 7px; font: inherit; cursor: pointer; }
+.rpl-btn:hover { border-color: #aaa; }
+.rpl-btn:disabled { opacity: 0.35; cursor: default; }
+.rpl-btn.on { background: #5a4d0a; border-color: #ffd400; color: #fff; }
+.rpl-btn.go { background: #2f5a2a; border-color: #5c9a52; }
+.rpl-btn.warn { background: #5a2a2a; border-color: #9a5252; }
+.rpl-btn.rec.on { background: #6a1f1a; border-color: #e03a2f; }
+.rpl input, .rpl select { background: #1b1e1b; color: #eee; border: 1px solid #555; border-radius: 3px; font: inherit; padding: 2px 4px; }
+.rpl input.w { flex: 1; min-width: 60px; }
+.rpl-dim { color: #8a8f8a; font-size: 11px; }
+.rpl-gps { color: #9ad0ff; font-size: 11px; }
+.rpl-gps.bad { color: #ff7a6b; }
+.rpl-map { flex: none; height: 168px; background: #1d241c; border: 1px solid #3a423a; border-radius: 3px; position: relative; overflow: hidden; cursor: crosshair; }
+.rpl-map svg { display: block; }
+.rpl-mapbtns { position: absolute; right: 3px; top: 3px; display: flex; gap: 2px; }
+.rpl-mapbtns .rpl-btn { padding: 0 5px; font-size: 11px; background: rgba(30, 34, 30, 0.85); }
+.rpl-list { flex: 1; overflow-y: auto; min-height: 40px; border: 1px solid #333; border-radius: 3px; }
+.rpl-item { display: flex; gap: 6px; padding: 2px 5px; cursor: pointer; border-bottom: 1px solid #252825; align-items: center; }
+.rpl-item:hover { background: rgba(255, 255, 255, 0.05); }
+.rpl-item.sel { background: rgba(255, 212, 0, 0.15); outline: 1px solid #ffd400; outline-offset: -1px; }
+.rpl-item .l { width: 64px; font-weight: bold; }
+.rpl-item .km { width: 58px; text-align: right; color: #ffd400; }
+.rpl-item .md { width: 46px; color: #9a9; font-size: 11px; }
+.rpl-item .nm { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #bbb; }
+.rpl-item .fl { color: #ff9f43; }
+.rpl-item .d { color: #ff5c5c; font-weight: bold; }
+.rpl-edit { flex: none; border: 1px solid #444; border-radius: 3px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.rpl-probs { flex: none; max-height: 52px; overflow-y: auto; font-size: 11px; }
+.rpl-probs .err { color: #ff7a6b; }
+.rpl-probs .warn { color: #ffb36b; }
+.rpl-msg { flex: none; font-size: 11px; padding: 2px 4px; border-radius: 3px; background: #1f2a1f; color: #bfe6b8; min-height: 18px; }
+.rpl-msg.warn { background: #2e2716; color: #ffd27a; }
+.rpl-msg.err { background: #301a18; color: #ff9d90; }
+.rpl-ask { flex: none; background: #3a2f10; border: 1px solid #ffd400; border-radius: 3px; padding: 4px; display: flex; gap: 6px; align-items: center; }
+.rpl-ask span { flex: 1; }
+.rpl-boxview { flex: none; background: #fff; color: #111; border-radius: 3px; display: flex; height: 84px; overflow: hidden; }
+.rpl-boxview .c1 { width: 70px; border-right: 2px solid #111; padding: 2px 4px; font-family: 'Arial Narrow', Arial, sans-serif; }
+.rpl-boxview .c1 .no { background: #111; color: #fff; font-size: 11px; padding: 0 4px; border-radius: 3px; font-weight: 700; }
+.rpl-boxview .c1 .km { font-size: 21px; font-weight: 700; text-align: right; margin-top: 8px; }
+.rpl-boxview .c1 .pt { font-size: 13px; text-align: right; color: #333; }
+.rpl-boxview .c2 { width: 84px; border-right: 2px solid #111; display: flex; align-items: center; justify-content: center; }
+.rpl-boxview .c3 { flex: 1; padding: 2px 4px; overflow: hidden; font-family: 'Arial Narrow', Arial, sans-serif; }
+.rpl-boxview .c3 .n { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.rpl-boxview.d2 .c1 .km, .rpl-boxview.d3 .c1 .km { text-decoration: underline; text-decoration-color: #d00; text-decoration-thickness: 3px; }
+.rpl-syms { display: flex; flex-wrap: wrap; gap: 2px; max-height: 66px; overflow-y: auto; background: #f4f4f0; border-radius: 3px; padding: 2px; flex: none; }
+.rpl-sym { cursor: pointer; border: 1px solid transparent; border-radius: 3px; line-height: 0; }
+.rpl-sym.on { border-color: #d00; background: #ffe5e0; }
+.rpl-grps { display: flex; gap: 2px; flex-wrap: wrap; flex: none; }
+.rpl-grps .rpl-btn { padding: 0 4px; font-size: 10px; }
+.rpl-prog { height: 4px; background: #333; border-radius: 2px; overflow: hidden; flex: none; }
+.rpl-prog i { display: block; height: 100%; background: #ffd400; }
+.rpl-file small { color: #8a8f8a; }
+
+
+.rr-credits { margin-top:6px; font-size:10px; line-height:1.35; color:#9aa0a6; max-width:100%; }
+.rr-credits summary { cursor:pointer; color:#c8ccd0; font-weight:700; letter-spacing:.02em; }
+.rr-credits p { margin:4px 0 0; }
+.rr-credits a { color:#ffd400; }
