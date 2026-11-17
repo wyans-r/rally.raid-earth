@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calendar - rally.raid Earth</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14171b">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --bg:#14171b; --panel:#1c2026; --line:#2c323a; --text:#e8eaed; --dim:#9aa0a6; --acc:#ffd400; --warn:#ff9f1a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, Segoe UI, Roboto, sans-serif; }
+  main { max-width:980px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { margin:0 0 4px; font-size:26px; } h2 { margin:28px 0 8px; font-size:18px; color:var(--acc); }
+  .sub { color:var(--dim); margin:0 0 18px; }
+  a { color:var(--acc); }
+  nav { margin-bottom:20px; font-size:14px; }
+  .exp { display:inline-block; background:var(--warn); color:#111; font-size:11px; font-weight:700; border-radius:3px; padding:1px 6px; vertical-align:middle; letter-spacing:.5px; }
+  .disc { color:#9ab; font-style:italic; font-size:14px; margin:4px 0 12px; }
+  .rounds { display:grid; gap:10px; }
+  .round { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:12px 14px; display:flex; gap:14px; align-items:center; }
+  .round .n { font-size:22px; font-weight:700; color:var(--acc); width:34px; text-align:center; }
+  .round .b { flex:1; } .round .t { font-weight:600; } .round .m { color:var(--dim); font-size:13px; }
+  .round.ph { opacity:.6; }
+  .btn { display:inline-block; background:#2b2f2b; color:var(--text); border:1px solid #556; border-radius:4px; padding:6px 12px; text-decoration:none; font-size:14px; }
+  .btn.go { background:#2f5a2a; border-color:#5c9a52; }
+  #map { height:440px; border:1px solid var(--line); border-radius:6px; margin:10px 0; background:#0e1013; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--dim); font-weight:600; }
+  td.r, th.r { text-align:right; white-space:nowrap; }
+  .tag { font-size:11px; border:1px solid #556; border-radius:3px; padding:0 4px; margin-left:4px; color:var(--dim); white-space:nowrap; }
+  .tag.m { border-color:var(--warn); color:var(--warn); } .tag.r { border-color:#5c9a52; color:#8c8; }
+  .tot { display:flex; flex-wrap:wrap; gap:18px; color:var(--dim); font-size:14px; margin:6px 0; } .tot b { color:var(--text); }
+  .note { color:var(--dim); font-size:13px; }
+  .site-foot { margin-top:36px; padding-top:12px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; }
+  @media (max-width:700px) { .hide-s { display:none; } #map { height:320px; } }
+</style>
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<main>
+<nav><a href="/">&larr; Stage builder</a> &middot; <a href="/roadbook">Roadbook editor</a> &middot; <a href="/mod">Get the mod</a> &middot; <a href="calendar.html">Calendar</a></nav>
+<div id="app"><p class="sub">Loading&hellip;</p></div>
+<footer class="site-foot">Stage lines: rally.raid Earth Stage-Gen on map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL), terrain Mapterhorn, land cover ESA WorldCover 2021 (CC BY 4.0). Real places, dates and distances are facts; no organiser's route lines, roadbooks, names or logos are used. rally.raid Earth &middot; built for BeamNG.Earth &middot; <a href="credits.html">Credits</a></footer>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  'use strict'
+  var app = document.getElementById('app')
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] }) }
+  var fmtD = function (iso) { var d = new Date(iso + 'T12:00:00Z'); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) }
+  var hm = function (min) { min = Math.round(min || 0); return Math.floor(min / 60) + ' h ' + ('0' + min % 60).slice(-2) }
+  var q = new URLSearchParams(location.search)
+  function get(u) { return fetch(u, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(u + ': HTTP ' + r.status); return r.json() }) }
+  function calendar(cal) {
+    document.title = cal.name + ' - rally.raid Earth'
+    var h = '<h1>' + esc(cal.name) + ' <span class="exp">EXPERIMENTAL – not yet tested in game</span></h1><p class="sub">' + esc(cal.description) + '</p><div class="rounds">'
+    cal.rounds.forEach(function (r) {
+      var id = r.rally ? r.rally.replace(/^.*\//, '').replace(/\.rally\.json$/, '') : null
+      h += '<div class="round' + (r.status === 'ready' ? '' : ' ph') + '"><div class="n">' + r.n + '</div><div class="b"><div class="t">' + esc(r.name) + '</div>' +
+        '<div class="m">' + fmtD(r.start) + ' &ndash; ' + fmtD(r.end) + ' ' + r.start.slice(0, 4) + ' &middot; ' + esc(r.region) + '</div>' +
+        (r.disclaimer ? '<div class="disc" style="margin:2px 0 0">' + esc(r.disclaimer) + '</div>' : '') + (r.note ? '<div class="note">' + esc(r.note) + '</div>' : '') + '</div>' +
+        (id ? '<a class="btn go" href="calendar.html?rally=' + encodeURIComponent(id) + '">Open</a>' : '<span class="tag">placeholder</span>') + '</div>'
+    })
+    app.innerHTML = h + '</div><p class="note"><span class="exp">EXPERIMENTAL – not yet tested in game</span> Rally mode (the rally.raid Earth Rally app) and these events have not been tested in game yet.</p>'
+  }
+  function rally(r, id) {
+    document.title = r.name + ' - rally.raid Earth'
+    var base = 'rallies/'
+    var biv = {}; r.bivouacs.forEach(function (b) { biv[b.id] = b })
+    var T = r.totals
+    var h = '<p><a href="calendar.html">&larr; Calendar</a></p><h1>' + esc(r.name) + ' <span class="exp">EXPERIMENTAL – not yet tested in game</span></h1>' +
+      '<div class="disc">' + esc(r.disclaimer) + '</div><p class="sub">' + esc(r.description) + '</p>' +
+      '<div class="tot"><span>' + fmtD(r.startDate) + ' &ndash; ' + fmtD(r.endDate) + ' ' + r.startDate.slice(0, 4) + '</span><span><b>' + T.days + '</b> days</span><span><b>' + T.stages + '</b> special stages</span>' +
+      '<span>SS <b>' + Math.round(T.ssKm || 0) + ' km</b> (target ' + T.ssTargetKm + ')</span><span>liaisons <b>' + T.liaisonKm + ' km</b></span></div>' +
+      '<div id="map"></div>' +
+      '<p><a class="btn" href="' + base + esc(id) + '.rally.json" download>Rally file (.json)</a></p>' +
+      '<h2>Days</h2><table><thead><tr><th>Day</th><th>Date</th><th>Stage</th><th class="hide-s">From &rarr; to</th><th class="r">SS km</th><th class="r hide-s">Liaison km</th><th class="r hide-s">Allowance</th><th>Files</th></tr></thead><tbody>'
+    r.days.forEach(function (d) {
+      var s = d.stage, tags = ''
+      if (d.marathon) tags += '<span class="tag m">marathon</span>'
+      if (d.type === 'rest') tags += '<span class="tag r">rest day</span>'
+      if (d.type === 'transfer') tags += '<span class="tag">transfer' + (d.liaisonOut && d.liaisonOut.ferry ? ', sea crossing' : '') + '</span>'
+      if (s && s.landmarks && s.landmarks.length) tags += s.landmarks.map(function (l) { var x = r.landmarks.filter(function (y) { return y.id === l })[0]; return '<span class="tag">' + esc(x ? x.name : l) + '</span>' }).join('')
+      var lo = d.liaisonOut ? d.liaisonOut.km : 0, li = d.liaisonIn ? d.liaisonIn.km : 0
+      h += '<tr><td>' + d.n + '</td><td>' + fmtD(d.date) + '</td><td>' + esc(d.title) + tags + '</td><td class="hide-s">' + esc(biv[d.from].name) + (d.from !== d.to ? ' &rarr; ' + esc(biv[d.to].name) : '') + '</td>' +
+        '<td class="r">' + (s ? (s.km ? s.km.toFixed(0) : '&ndash;') + ' <span class="note">/ ' + s.targetKm + '</span>' : '&ndash;') + '</td>' +
+        '<td class="r hide-s">' + (lo || li ? lo + (s ? ' + ' + li : '') : '&ndash;') + '</td>' +
+        '<td class="r hide-s">' + (d.liaisonOut && d.liaisonOut.allowanceMin ? hm(d.liaisonOut.allowanceMin) + (d.liaisonIn ? ' + ' + hm(d.liaisonIn.allowanceMin) : '') : '&ndash;') + '</td>' +
+        '<td>' + (s && s.km ? '<a href="' + base + esc(s.file) + '" download>stage</a>' + (s.roadbook ? ' &middot; <a href="' + base + esc(s.roadbook) + '" download>roadbook</a>' : '') : '') + '</td></tr>'
+    })
+    h += '</tbody></table>' +
+      '<h2>How the liaisons work</h2><p>Every day has a liaison out (bivouac to the stage start) and in (stage finish to the bivouac). In the game you choose: <b>drive</b> it against the time allowance (published liaison km at ' + r.rules.liaison.kmh + ' km/h plus ' + r.rules.liaison.extraMin + ' min, rounded up to ' + r.rules.liaison.roundMin + ' min), or <b>teleport</b>, which counts the whole allowance as used. Time you do not use on a driven liaison is added to that evening&rsquo;s bivouac repair time. Arriving late costs a penalty. Marathon days end at a refuge with no assistance: a short repair budget and no engine change.</p>' +
+      '<h2>Where this comes from</h2><p class="note">' + esc(r.source && r.source.facts) + '</p><p class="note">' + esc(r.source && r.source.notUsed) + ' Places in the Saharan south carry town names only.</p>'
+    app.innerHTML = h
+    var m = L.map('map', { scrollWheelZoom: false })
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '&copy; OpenStreetMap contributors' }).addTo(m)
+    var all = [], cols = ['#ffd400', '#ff4fa3', '#00d5ff', '#b5ff3b', '#ff9f1a']
+    r.days.forEach(function (d, i) {
+      if (d.stage && d.stage.preview) {
+        var line = L.polyline(d.stage.preview, { color: cols[i % cols.length], weight: 3, opacity: 0.9 }).addTo(m).bindTooltip(d.title)
+        all = all.concat(d.stage.preview)
+      }
+    })
+    r.bivouacs.forEach(function (b) {
+      L.circleMarker([b.lat, b.lon], { radius: 6, color: '#111', weight: 2, fillColor: b.kind === 'marathon' ? '#ff9f1a' : '#fff', fillOpacity: 1 }).addTo(m).bindTooltip(b.name + (b.invented ? ' (position invented)' : ''))
+      all.push([b.lat, b.lon])
+    })
+    ;(r.landmarks || []).forEach(function (l) { L.marker([l.lat, l.lon]).addTo(m).bindTooltip(l.name + ' (OpenStreetMap)') })
+    if (all.length) m.fitBounds(all, { padding: [10, 10] })
+  }
+  var id = q.get('rally')
+  if (id && /^[a-z0-9-]+$/.test(id)) get('rallies/' + id + '.rally.json').then(function (r) { rally(r, id) }).catch(function (e) { app.innerHTML = '<p>Could not load the rally: ' + esc(e.message) + '</p><p><a href="calendar.html">Calendar</a></p>' })
+  else get('calendar.json').then(calendar).catch(function (e) { app.innerHTML = '<p>Could not load the calendar: ' + esc(e.message) + '</p>' })
+})()
+</script>
+</body>
+</html>

@@ -135,7 +135,7 @@
     const errs = [];
     if (!inp.dss || !inp.ass || !inp.dss.every(isFinite) || !inp.ass.every(isFinite)) errs.push('Place the DSS (start) and the ASS (finish).');
     if (!(inp.lengthKm >= 5)) errs.push('The target length must be at least 5 km.');
-    if (inp.lengthKm > DEFAULTS.maxRegionKm * 1.2) errs.push('Stage-Gen v1 makes stages up to ' + Math.round(DEFAULTS.maxRegionKm * 1.2) + ' km.');
+    if (inp.lengthKm > DEFAULTS.maxRegionKm * 1.2) errs.push('One Stage-Gen run makes stages up to ' + Math.round(DEFAULTS.maxRegionKm * 1.2) + ' km; longer stages are built as a chain of parts (stage-chain.js).');
     if (!errs.length) {
       const D = dist(inp.dss, inp.ass) / 1000;
       if (D > inp.lengthKm * 0.95) errs.push('The target length (' + inp.lengthKm + ' km) is shorter than the straight line from DSS to ASS (' + D.toFixed(1) + ' km). Make it at least ' + Math.ceil(D * 1.15) + ' km.');
@@ -354,6 +354,14 @@
     // 4. flags from OSM
     const FL = new Uint8Array(NC), OSMF = new Float32Array(NC).fill(1);
     if (G.outside) for (let k = 0; k < NC; k++) if (G.outside[k]) FL[k] |= F_BLOCK;
+    // no-go areas (opts.avoid: polygons [[lat, lon], ...], e.g. a border strip): impassable, and no track through them
+    G.avoidMask = null;
+    if (o.avoid && o.avoid.length) {
+      const polys = o.avoid.filter(p => p && p.length >= 3).map(p => ({ p, s: Math.min(...p.map(q => q[0])), n: Math.max(...p.map(q => q[0])), w: Math.min(...p.map(q => q[1])), e: Math.max(...p.map(q => q[1])) }))
+        .filter(b => !(b.n < G.bbox[0] || b.s > G.bbox[2] || b.e < G.bbox[1] || b.w > G.bbox[3]));
+      const inPoly = (ll, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { if ((P[i][0] > ll[0]) !== (P[j][0] > ll[0]) && ll[1] < (P[j][1] - P[i][1]) * (ll[0] - P[i][0]) / (P[j][0] - P[i][0]) + P[i][1]) c = !c; } return c; };
+      if (polys.length) { G.avoidMask = new Uint8Array(NC); for (let k = 0; k < NC; k++) { const ll = cellLL(G, k); for (const b of polys) if (ll[0] >= b.s && ll[0] <= b.n && ll[1] >= b.w && ll[1] <= b.e && inPoly(ll, b.p)) { G.avoidMask[k] = 1; FL[k] |= F_BLOCK; break; } } }
+    }
     const polyKind = t => {
       if (t.natural === 'water' || t.natural === 'wetland' || t.waterway === 'riverbank' || t.landuse === 'reservoir' || t.landuse === 'basin') return 'water';
       if (t.natural === 'wood' || t.landuse === 'forest' || t.landuse === 'orchard' || t.landuse === 'military' || t.landuse === 'cemetery' || t.landuse === 'quarry' || t.landuse === 'landfill' || t.aeroway) return 'block';
@@ -412,7 +420,7 @@
     const id2 = new Map(), nll = [], ncell = [], edges = [];
     const nodeOf = (id, ll) => {
       let n = id2.get(id); if (n !== undefined) return n;
-      const xy = G.P.xy(ll), c = cellOf(G, xy[0], xy[1]); if (c < 0) return -1;
+      const xy = G.P.xy(ll), c = cellOf(G, xy[0], xy[1]); if (c < 0 || (G.avoidMask && G.avoidMask[c])) return -1;
       n = nll.length; id2.set(id, n); nll.push(ll); ncell.push(c); return n;
     };
     const ways = [];
@@ -1218,5 +1226,5 @@
   async function matchesReceipt(stage, receipt) { return (await RB.stageHash(stage)) === receipt.stageHash; }
 
   return { VERSION, GENERATOR, PRESETS, DEFAULTS, pisteClass, normInputs, checkInputs, regionFor, osmTiles, osmTilesFor, osmQuery, compactOsm, generate, buildStage, seal, verify, matchesReceipt,
-    newSeed, canon, sha256, overlap, terrainText, stageFile, roadCrossings, cellOf, cellLL, flags: { F_TOWN, F_ROAD, F_FENCE, F_SAND, F_DUNE, F_WATER, F_BLOCK, F_FIELD } };
+    newSeed, canon, sha256, overlap, terrainText, stageFile, stageToPoints, roadCrossings, cellOf, cellLL, flags: { F_TOWN, F_ROAD, F_FENCE, F_SAND, F_DUNE, F_WATER, F_BLOCK, F_FIELD } };
 });

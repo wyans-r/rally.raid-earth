@@ -132,6 +132,20 @@ Details: [docs/REPAIR.md](docs/REPAIR.md).
 
 **Planner.** Add **rally.raid Earth Planner** and click its bar (or **MENU** > **PLANNER** in the GPS app). Start a new stage, record the line you drive (**REC**), drop waypoints (**ADD HERE**) and roadbook boxes (**+ BOX HERE**), generate a roadbook, then save and load it into the rally computer. Files are the same ones the website uses, in `rallyraid/stages/` and `rallyraid/roadbooks/`. More detail: [docs/INGAME_PLANNER.md](docs/INGAME_PLANNER.md).
 
+## 7b. Rally mode and the calendar (EXPERIMENTAL – not yet tested in game)
+
+A **rally** is a multi-day event: bivouacs, liaisons and one special stage per day ([docs/RALLY_FORMAT.md](docs/RALLY_FORMAT.md)).
+The first one is **Atlantic to Atlas 2027** (Portugal and Morocco, 9 to 23 January 2027). Inspired by the 2027 Dakar route. Unofficial, not affiliated.
+Its special stages are 22 to 490 km long. Stage-Gen builds anything over about 185 km as a chain of parts (`stage-builder/stage-chain.js`).
+
+In the game, add **rally.raid Earth Rally**. Pick a rally, then do each liaison with **DRIVE** (unused allowance goes to that evening's bivouac) or **TELEPORT** (the whole allowance counts as used).
+Drive the stage, repair at the bivouac with the Repair app, and press **NEXT DAY**. There are buttons only and no keys. **EXPERIMENTAL – not yet tested in game.** The Rally app is in the public zip. The first event (Atlantic to Atlas 2027) and the calendar page come out only after the in-game check.
+The website calendar is `calendar.html` (not live yet).
+
+Makers: `node tools/rally-batch.js rallies/specs/<id>.spec.json` (generate every stage in the background; resumable), then
+`node tools/rally-compile.js rallies/specs/<id>.spec.json` (check, write the rally file to the website and the mod). Tests: `node --test tests/rally.test.js`,
+`tests/run_tests.py rally_test.lua`, `node tests/browser/rally_test.js`.
+
 ## 8. Build a public zip (for maintainers)
 
 From this repository:
@@ -147,6 +161,8 @@ For a private build that includes the unreleased Events app:
 ```sh
 python3 scripts/build_public_zip.py --include-events --output dist/rallyraid_earth_dev.zip
 ```
+
+Rally mode (EXPERIMENTAL – not yet tested in game) goes in with `--include-rally` (the Rally app and rally.lua). Rally files (`rallyraid/rallies/`, the Atlantic to Atlas 2027 event) only go in with `--include-rally-events` too, after the in-game check.
 
 Do not include a README inside a zip you submit to BeamNG.com — their rules ask you to put the description on the listing instead.
 

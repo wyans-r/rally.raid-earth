@@ -1,0 +1,21 @@
+{
+ "format": "rallyraid-calendar",
+ "schemaVersion": 1,
+ "id": "world-tour-2027",
+ "season": "2027",
+ "name": "rally.raid Earth World Tour 2027",
+ "description": "Five rally raids on the real dates and in the real regions of the 2027 world rally-raid season, rebuilt for BeamNG.Earth: real bivouac towns and stage distances, our own stage lines on OpenStreetMap data. Unofficial fan project.",
+ "experimental": true,
+ "rounds": [
+  { "n": 1, "status": "ready", "name": "Atlantic to Atlas 2027", "region": "Portugal, Morocco and the Saharan south", "start": "2027-01-09", "end": "2027-01-23",
+    "rally": "rallies/atlantic-to-atlas-2027.rally.json", "disclaimer": "Inspired by the 2027 Dakar route. Unofficial, not affiliated." },
+  { "n": 2, "status": "placeholder", "name": "Round 2: Emirates sands (to come)", "region": "United Arab Emirates", "start": "2027-03-21", "end": "2027-03-26",
+    "note": "Route not published yet; built when it is." },
+  { "n": 3, "status": "placeholder", "name": "Round 3: Bushveld and Kalahari (to come)", "region": "South Africa and Botswana", "start": "2027-06-14", "end": "2027-06-19",
+    "note": "Only part of the route is published so far." },
+  { "n": 4, "status": "placeholder", "name": "Round 4: Iberian tracks (to come)", "region": "Portugal and Spain", "start": "2027-09-21", "end": "2027-09-26",
+    "note": "Route not published yet." },
+  { "n": 5, "status": "placeholder", "name": "Round 5: Moroccan finale (to come)", "region": "Morocco", "start": "2027-10-24", "end": "2027-10-29",
+    "note": "Route not published yet." }
+ ]
+}

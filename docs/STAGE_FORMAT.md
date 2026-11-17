@@ -25,7 +25,7 @@ The mod converts nothing: it compares the player's `beamngEarth_api.pose()` lat 
 | `waypoints` | array | yes | the GPS waypoints, in the order they must be taken, see below |
 | `roadbook` | object | no | the roadbook boxes, see below |
 | `route` | object | no | the plotted route geometry (for the builder, a roadbook tool, a map); the game does not need it |
-| `builder` | object | no | builder-only data; readers ignore it |
+| `builder` | object | no | builder-only data; readers ignore it. `builder.stagegen.chain` (B10) is on stages Stage-Gen built as a chain of parts (special stages over ~185 km, stage-builder/stage-chain.js): `{version, layout: {junctions, ratio}, seed, segments: [{k, inputs, km, option, dataHash, stats}]}`. Such a stage is an ordinary stage file: one DSS, one ASS, continuous km, each junction between parts a `WPV` waypoint named `Junction k` |
 
 ## `waypoints[]`
 

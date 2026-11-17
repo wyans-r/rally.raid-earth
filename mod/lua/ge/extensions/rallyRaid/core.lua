@@ -37,6 +37,9 @@ if not officialOk then
 end
 local keys = require('rallyRaid/keys')              -- the player's key on each action (text for the apps)
 local traceMod = require('rallyRaid/trace')           -- the stage's GPS trace (for the result package)
+-- RALLY MODE (EXPERIMENTAL, B10): multi-day rally files, liaisons, bivouac tie-in. Optional: a build without the file still runs.
+local rallyOk, rally = pcall(require, 'rallyRaid/rally')
+if not rallyOk then rally = { init = function () end, cmd = function () end, update = function () end, stageStarted = function () end, stageFinished = function () end, _reset = function () end, state = function () return { available = false } end } end
 
 local M = {}
 M.VERSION = '0.2.0'   -- 0.2.0: official event runs (rallyRaid/official.lua)
@@ -204,6 +207,7 @@ local function startClock(reason)
   repair.stageStarted()                          -- closes an open bivouac (its penalties land here), blocks free resets
   resume.stageStarted()                          -- car recovery: recovery states from now on
   gameResume.stageStarted()                      -- game-crash saves to disk from now on
+  pcall(rally.stageStarted)                      -- rally mode: a driven liaison out ends when the clock starts
   hook('onRallyRaidStageStart', { id = S.stage.id, reason = reason })
   hook('onRallyRaidWaypoint', { index = 1, n = S.stage.waypoints[1].n, type = 'DSS', status = 'ok', clock = 0,
     trip = odo.trip / 1000 })
@@ -235,6 +239,7 @@ local function finish()
   end
   if S.official then S.officialFile = official.finish(res, traceMod.export(S.trace)) end
   repair.stageFinished(res)                      -- opens the bivouac
+  pcall(rally.stageFinished, res)                -- rally mode: the day's stage time, refuge budget, liaison in
   gameResume.stageFinished()                     -- the stage is over: its game-crash save goes
   hook('onRallyRaidStageFinish', res)
 end
@@ -721,6 +726,7 @@ function M.cmd(name, arg)
   elseif name:sub(1, 6) == 'resume' then resume.cmd(name:sub(7), arg)   -- (older name of the recover commands)
   elseif name:sub(1, 7) == 'planner' then planner.cmd(name:sub(8), arg)
   elseif name == 'rallyNew' then repair.newRally()
+  elseif name:sub(1, 5) == 'rally' then rally.cmd(name:sub(6), arg)   -- RALLY MODE (rallyList, rallyLoad, rallyDrive, ...)
   elseif name == 'keys' then M.pushKeys(true)
   elseif name == 'liveFile' then M.settings.liveFile = not M.settings.liveFile; saveSettings(); M.requestState()
   else log_('W', 'unknown command ' .. tostring(name)) end
@@ -741,6 +747,7 @@ function M.onUpdate(dtReal, dtSim)
   -- puts the car back, and after it until the car moves
   if S and S.phase == 'running' and not resume.clockPaused() and not gameResume.clockPaused() then S.clock = S.clock + dtSim end
   repair.update(dtReal)
+  rally.update(dtReal, dtSim)
   official.update(dtReal)
   resume.update(dtReal, dtSim)
   gameResume.update(dtReal)
@@ -814,6 +821,7 @@ function M.gameResumeState() return gameResume.state() end
 function M.onExit() gameResume.onExit('quit') end
 function M.onClientEndMission() gameResume.onExit('level left') end
 function M.repairState() return repair.state() end
+function M.rallyState() return rally.state() end
 function M.recceVeh(wheel, throttle) recce.vehData(wheel, throttle) end
 -- the in-game planner app (rallyRaid/planner.lua): plannerCall(name, argsJson, text)
 function M.plannerCall(name, argsJson, text)
@@ -826,8 +834,10 @@ function M.onExtensionLoaded() loadSettings(); log_('I', 'rally.raid Earth ' .. 
 
 -- for tests
 function M._debug() return S, odo, nav end
-function M._reset() keys.invalidate(); recce._reset(); repair._reset(); resume._reset(); gameResume._reset(); planner._reset(); official._reset(); S = nil; odo = { trip = 0, partial = 0, total = 0, countDown = false }; lastFix = nil; tickAcc = 0 end
+function M._reset() keys.invalidate(); recce._reset(); repair._reset(); resume._reset(); gameResume._reset(); planner._reset(); official._reset(); rally._reset(); S = nil; odo = { trip = 0, partial = 0, total = 0, countDown = false }; lastFix = nil; tickAcc = 0 end
 
+rally.init({ api = api, notify = notify, ui = ui, log = log_, repair = repair, S = function() return S end, nav = function() return nav end,
+  loadStage = function(p) return M.loadStage(p) end, teleportToStart = function() return M.teleportToStart() end })
 repair.init({ S = function() return S end, nav = function() return nav end, addPenalty = addPenalty, notify = notify,
   ui = ui, hook = hook, log = log_, retireStage = function(reason) retireStage(reason) end,
   km = function() return odo.trip / 1000 end, resumeBusy = function() return resume.busy() or gameResume.busy() end })

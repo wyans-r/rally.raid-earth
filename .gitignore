@@ -47,3 +47,5 @@ deploy/stagebuilder/site/
 # Bundled Overpass extracts are generated data (~6 MB); rebuild with stage-builder/scripts/build-overpass-extracts.js
 stage-builder/overpass-extracts/*.gz
 stage-builder/overpass-extracts/index.json
+tools/.cache/
+rallies/build/
