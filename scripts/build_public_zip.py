@@ -5,6 +5,8 @@ Default (public) build:
   - Top-level folders inside the zip are lua, ui, scripts, settings, rallyraid
     (no wrapper folder named after the mod).
   - Leaves out the unreleased rally.raid Earth Event app, official.lua and sha256.lua.
+  - Leaves out RALLY MODE (B10, experimental, untested in game): the Rally app, rally.lua and
+    rallyraid/rallies/ (core.lua runs without them). --include-rally puts them in.
   - Leaves out README / LICENSE / docs (BeamNG.com asks you not to pack a readme;
     put the description on the listing instead). Credits are shown in the apps.
 
@@ -17,6 +19,7 @@ of the repair + planner + resume build is OK.
 Usage:
   python3 scripts/build_public_zip.py
   python3 scripts/build_public_zip.py --include-events --output dist/rallyraid_earth_dev.zip
+  python3 scripts/build_public_zip.py --include-events --include-rally --output /workspace/rallyraid_earth_b10_dev.zip
 """
 from __future__ import annotations
 
@@ -42,11 +45,18 @@ PUBLIC_EXCLUDE_PREFIXES = (
     "lua/ge/extensions/rallyRaid/sha256.lua",
 )
 
+# RALLY MODE (B10, EXPERIMENTAL): only with --include-rally
+RALLY_PREFIXES = (
+    "ui/modules/apps/RallyRaidRally/",
+    "lua/ge/extensions/rallyRaid/rally.lua",
+    "rallyraid/rallies/",
+)
+
 SKIP_NAMES = {".DS_Store", "Thumbs.db"}
 SKIP_SUFFIXES = (".bak", ".bak-trackfix")
 
 
-def should_skip(rel: str, include_events: bool) -> bool:
+def should_skip(rel: str, include_events: bool, include_rally: bool = False) -> bool:
     name = rel.split("/")[-1]
     if name in SKIP_NAMES or name.startswith("."):
         return True
@@ -56,6 +66,10 @@ def should_skip(rel: str, include_events: bool) -> bool:
         return True
     if not include_events:
         for p in PUBLIC_EXCLUDE_PREFIXES:
+            if rel == p.rstrip("/") or rel.startswith(p):
+                return True
+    if not include_rally:
+        for p in RALLY_PREFIXES:
             if rel == p.rstrip("/") or rel.startswith(p):
                 return True
     return False
@@ -73,14 +87,14 @@ def iter_files():
             yield path, rel
 
 
-def build(output: Path, include_events: bool) -> None:
+def build(output: Path, include_events: bool, include_rally: bool = False) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists():
         output.unlink()
 
     files = []
     for path, rel in iter_files():
-        if should_skip(rel, include_events):
+        if should_skip(rel, include_events, include_rally):
             continue
         files.append((path, rel))
 
@@ -106,7 +120,7 @@ def build(output: Path, include_events: bool) -> None:
         raise SystemExit(f"zip is missing required files: {missing}")
 
     if not include_events:
-        forbidden = [rel for rel in have if should_skip(rel, include_events=False)]
+        forbidden = [rel for rel in have if should_skip(rel, include_events=False, include_rally=include_rally)]
         if forbidden:
             raise SystemExit(f"public zip still contains excluded files: {forbidden}")
         if any("RallyRaidEvent" in rel or rel.endswith("official.lua") or rel.endswith("sha256.lua") for rel in have):
@@ -117,9 +131,16 @@ def build(output: Path, include_events: bool) -> None:
             # arcname is the path inside the zip: no wrapper folder
             zf.write(path, arcname=rel)
 
+    if not include_rally and any(rel.startswith(p) or rel == p for rel in have for p in RALLY_PREFIXES):
+        raise SystemExit("zip still contains rally mode files")
+    if include_rally:
+        for n in ("lua/ge/extensions/rallyRaid/rally.lua", "ui/modules/apps/RallyRaidRally/app.js"):
+            if n not in have:
+                raise SystemExit(f"rally build is missing {n}")
+
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     size = output.stat().st_size
-    kind = "dev (events included)" if include_events else "public (events omitted)"
+    kind = ("dev (events included)" if include_events else "public (events omitted)") + (", rally mode included" if include_rally else ", rally mode omitted")
     print(f"Wrote {output} ({kind})")
     print(f"  files: {len(files)}")
     print(f"  top-level folders: {', '.join(tops)}")
@@ -131,9 +152,10 @@ def build(output: Path, include_events: bool) -> None:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--include-events", action="store_true", help="include the unreleased Events app and official.lua")
+    ap.add_argument("--include-rally", action="store_true", help="include RALLY MODE (B10, experimental): Rally app, rally.lua, rallyraid/rallies/")
     ap.add_argument("--output", "-o", type=Path, default=DEFAULT_OUT, help="zip path (default: dist/rallyraid_earth.zip)")
     args = ap.parse_args(argv)
-    build(args.output if args.output.is_absolute() else (Path.cwd() / args.output), args.include_events)
+    build(args.output if args.output.is_absolute() else (Path.cwd() / args.output), args.include_events, args.include_rally)
     return 0
 
 

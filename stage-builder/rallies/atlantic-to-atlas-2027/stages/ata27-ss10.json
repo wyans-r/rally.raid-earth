@@ -1,0 +1,8770 @@
+{
+ "format": "rallyraid-stage",
+ "schemaVersion": 1,
+ "generator": "rallyraid-stagegen 1.2.0",
+ "id": "ata27-ss10",
+ "name": "SS10 Smara loop",
+ "region": "Smara loop",
+ "author": "",
+ "description": "SS10 Smara loop. Inspired by the 2027 Dakar route. Unofficial, not affiliated. Stage line made by rally.raid Earth Stage-Gen on OpenStreetMap data (target 470 km).",
+ "vehicleClass": "",
+ "created": "2026-11-17T00:00:00Z",
+ "modified": "2026-11-17T00:00:00Z",
+ "dataSource": "OpenStreetMap contributors (ODbL); terrain: Mapterhorn (Copernicus GLO-30 and others); land cover: ESA WorldCover 2021 (CC BY 4.0); route: rallyraid-stagegen 1.2.0",
+ "lengthKm": 459.406,
+ "rules": {
+  "preset": "FIM-2026"
+ },
+ "waypoints": [
+  {
+   "id": "dss",
+   "n": 0,
+   "type": "DSS",
+   "lat": 26.62,
+   "lon": -12,
+   "km": 0,
+   "cap": 250,
+   "box": 1
+  },
+  {
+   "id": "s1-sg25",
+   "n": 1,
+   "type": "WPS",
+   "lat": 26.622089,
+   "lon": -12.027079,
+   "km": 2.769,
+   "cap": 275,
+   "name": "road crossing",
+   "box": 2
+  },
+  {
+   "id": "s1-sg4",
+   "n": 2,
+   "type": "WPM",
+   "lat": 26.643493,
+   "lon": -12.117493,
+   "km": 12.331,
+   "cap": 299,
+   "box": 5
+  },
+  {
+   "id": "s1-sg7",
+   "n": 3,
+   "type": "WPM",
+   "lat": 26.659708,
+   "lon": -12.215256,
+   "km": 22.56,
+   "cap": 244,
+   "box": 8
+  },
+  {
+   "id": "s1-sg11",
+   "n": 4,
+   "type": "WPM",
+   "lat": 26.659708,
+   "lon": -12.341986,
+   "km": 35.792,
+   "cap": 243,
+   "box": 12
+  },
+  {
+   "id": "s1-sg15",
+   "n": 5,
+   "type": "WPM",
+   "lat": 26.586742,
+   "lon": -12.412592,
+   "km": 46.849,
+   "cap": 225,
+   "box": 16
+  },
+  {
+   "id": "s1-sg26",
+   "n": 6,
+   "type": "WPS",
+   "lat": 26.537411,
+   "lon": -12.458946,
+   "km": 54.101,
+   "cap": 213,
+   "name": "road crossing",
+   "box": 18
+  },
+  {
+   "id": "s1-sg18",
+   "n": 7,
+   "type": "WPM",
+   "lat": 26.510532,
+   "lon": -12.479578,
+   "km": 57.733,
+   "cap": 174,
+   "box": 19
+  },
+  {
+   "id": "s1-sg20",
+   "n": 8,
+   "type": "WPM",
+   "lat": 26.447463,
+   "lon": -12.43464,
+   "km": 66.099,
+   "cap": 230,
+   "box": 21
+  },
+  {
+   "id": "s1-sg23",
+   "n": 9,
+   "type": "WPV",
+   "lat": 26.287882,
+   "lon": -12.506404,
+   "km": 86.64,
+   "cap": 190,
+   "box": 24
+  },
+  {
+   "id": "s1-ass",
+   "n": 10,
+   "type": "WPV",
+   "lat": 26.2,
+   "lon": -12.55,
+   "km": 99.471,
+   "cap": 284,
+   "name": "Junction 1",
+   "box": 26
+  },
+  {
+   "id": "s2-sg3",
+   "n": 11,
+   "type": "WPM",
+   "lat": 26.29318,
+   "lon": -12.612156,
+   "km": 111.844,
+   "cap": 334,
+   "box": 29
+  },
+  {
+   "id": "s2-sg6",
+   "n": 12,
+   "type": "WPM",
+   "lat": 26.394149,
+   "lon": -12.674984,
+   "km": 124.894,
+   "cap": 324,
+   "box": 32
+  },
+  {
+   "id": "s2-sg9",
+   "n": 13,
+   "type": "WPM",
+   "lat": 26.460302,
+   "lon": -12.754005,
+   "km": 135.952,
+   "cap": 270,
+   "box": 35
+  },
+  {
+   "id": "s2-sg34",
+   "n": 14,
+   "type": "WPS",
+   "lat": 26.403001,
+   "lon": -12.866377,
+   "km": 149.189,
+   "cap": 243,
+   "name": "road crossing",
+   "box": 39
+  },
+  {
+   "id": "s2-sg13",
+   "n": 15,
+   "type": "WPM",
+   "lat": 26.397631,
+   "lon": -12.878365,
+   "km": 150.524,
+   "cap": 253,
+   "box": 40
+  },
+  {
+   "id": "s2-sg35",
+   "n": 16,
+   "type": "WPS",
+   "lat": 26.392523,
+   "lon": -12.897368,
+   "km": 152.5,
+   "cap": 270,
+   "name": "road crossing",
+   "box": 41
+  },
+  {
+   "id": "s2-sg16",
+   "n": 17,
+   "type": "WPM",
+   "lat": 26.348887,
+   "lon": -12.975521,
+   "km": 162.081,
+   "cap": 270,
+   "box": 44
+  },
+  {
+   "id": "s2-sg20",
+   "n": 18,
+   "type": "WPM",
+   "lat": 26.327997,
+   "lon": -13.084337,
+   "km": 173.619,
+   "cap": 270,
+   "box": 48
+  },
+  {
+   "id": "s2-sg25",
+   "n": 19,
+   "type": "WPM",
+   "lat": 26.374814,
+   "lon": -13.182312,
+   "km": 187.159,
+   "cap": 35,
+   "box": 52
+  },
+  {
+   "id": "s2-sg36",
+   "n": 20,
+   "type": "WPS",
+   "lat": 26.483045,
+   "lon": -13.183725,
+   "km": 200.11,
+   "cap": 322,
+   "name": "road crossing",
+   "box": 58
+  },
+  {
+   "id": "s2-sg33",
+   "n": 21,
+   "type": "WPM",
+   "lat": 26.533005,
+   "lon": -13.256291,
+   "km": 209.564,
+   "cap": 284,
+   "box": 61
+  },
+  {
+   "id": "s2-ass",
+   "n": 22,
+   "type": "WPV",
+   "lat": 26.55,
+   "lon": -13.3,
+   "km": 214.316,
+   "cap": 279,
+   "name": "Junction 2",
+   "box": 62
+  },
+  {
+   "id": "s3-sg2",
+   "n": 23,
+   "type": "WPM",
+   "lat": 26.558579,
+   "lon": -13.351489,
+   "km": 219.578,
+   "cap": 318,
+   "box": 64
+  },
+  {
+   "id": "s3-sg3",
+   "n": 24,
+   "type": "WPV",
+   "lat": 26.631996,
+   "lon": -13.308913,
+   "km": 229.258,
+   "cap": 32,
+   "box": 65
+  },
+  {
+   "id": "s3-sg35",
+   "n": 25,
+   "type": "WPS",
+   "lat": 26.718838,
+   "lon": -13.117167,
+   "km": 254.74,
+   "cap": 52,
+   "name": "road crossing",
+   "box": 78
+  },
+  {
+   "id": "s3-sg36",
+   "n": 26,
+   "type": "WPS",
+   "lat": 26.720924,
+   "lon": -13.114204,
+   "km": 255.115,
+   "cap": 52,
+   "name": "road crossing",
+   "box": 79
+  },
+  {
+   "id": "s3-sg25",
+   "n": 27,
+   "type": "WPM",
+   "lat": 26.90701,
+   "lon": -13.033521,
+   "km": 283.37,
+   "cap": 350,
+   "box": 89
+  },
+  {
+   "id": "s3-sg26",
+   "n": 28,
+   "type": "WPM",
+   "lat": 26.93846,
+   "lon": -13.027508,
+   "km": 286.941,
+   "cap": 296,
+   "box": 90
+  },
+  {
+   "id": "s3-sg31",
+   "n": 29,
+   "type": "WPM",
+   "lat": 27.012376,
+   "lon": -13.021835,
+   "km": 298.95,
+   "cap": 308,
+   "box": 95
+  },
+  {
+   "id": "s3-sg37",
+   "n": 30,
+   "type": "WPS",
+   "lat": 27.016389,
+   "lon": -13.02515,
+   "km": 299.521,
+   "cap": 24,
+   "name": "road crossing",
+   "box": 96
+  },
+  {
+   "id": "s3-ass",
+   "n": 31,
+   "type": "WPV",
+   "lat": 27.05,
+   "lon": -12.9,
+   "km": 317.427,
+   "cap": 122,
+   "name": "Junction 3",
+   "box": 100
+  },
+  {
+   "id": "s4-sg2",
+   "n": 32,
+   "type": "WPM",
+   "lat": 27.025842,
+   "lon": -12.862333,
+   "km": 322.19,
+   "cap": 93,
+   "box": 102
+  },
+  {
+   "id": "s4-sg3",
+   "n": 33,
+   "type": "WPV",
+   "lat": 27.012939,
+   "lon": -12.735008,
+   "km": 335.676,
+   "cap": 90,
+   "box": 103
+  },
+  {
+   "id": "s4-sg8",
+   "n": 34,
+   "type": "WPM",
+   "lat": 27.021549,
+   "lon": -12.589633,
+   "km": 360.874,
+   "cap": 77,
+   "box": 108
+  },
+  {
+   "id": "s4-sg9",
+   "n": 35,
+   "type": "WPV",
+   "lat": 27.034012,
+   "lon": -12.503479,
+   "km": 369.7,
+   "cap": 76,
+   "box": 109
+  },
+  {
+   "id": "s4-sg16",
+   "n": 36,
+   "type": "WPM",
+   "lat": 27.006141,
+   "lon": -12.354626,
+   "km": 395.326,
+   "cap": 39,
+   "box": 116
+  },
+  {
+   "id": "s4-sg17",
+   "n": 37,
+   "type": "WPM",
+   "lat": 27.026599,
+   "lon": -12.327695,
+   "km": 398.875,
+   "cap": 129,
+   "box": 117
+  },
+  {
+   "id": "s4-ass",
+   "n": 38,
+   "type": "WPV",
+   "lat": 27,
+   "lon": -12.15,
+   "km": 422.501,
+   "cap": 137,
+   "name": "Junction 4",
+   "box": 121
+  },
+  {
+   "id": "s5-sg7",
+   "n": 39,
+   "type": "WPM",
+   "lat": 26.883743,
+   "lon": -12.110577,
+   "km": 437.123,
+   "cap": 111,
+   "box": 127
+  },
+  {
+   "id": "ass",
+   "n": 40,
+   "type": "ASS",
+   "lat": 26.8,
+   "lon": -12,
+   "km": 459.406,
+   "cap": null,
+   "box": 134
+  }
+ ],
+ "roadbook": {
+  "boxes": [
+   {
+    "n": 1,
+    "id": "dss",
+    "km": 0,
+    "partial": 0,
+    "cap": 250,
+    "waypoint": "dss",
+    "label": "DSS",
+    "lat": 26.62,
+    "lon": -12
+   },
+   {
+    "n": 2,
+    "id": "s1-sg25",
+    "km": 2.769,
+    "partial": 2.769,
+    "cap": 275,
+    "waypoint": "s1-sg25",
+    "label": "WPS 1",
+    "lat": 26.622089,
+    "lon": -12.027079
+   },
+   {
+    "n": 3,
+    "id": "s1-sg2",
+    "km": 5.287,
+    "partial": 2.518,
+    "cap": 251,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.624035,
+    "lon": -12.052318
+   },
+   {
+    "n": 4,
+    "id": "s1-sg3",
+    "km": 8.86,
+    "partial": 3.573,
+    "cap": 292,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.633764,
+    "lon": -12.084905
+   },
+   {
+    "n": 5,
+    "id": "s1-sg4",
+    "km": 12.331,
+    "partial": 3.471,
+    "cap": 299,
+    "waypoint": "s1-sg4",
+    "label": "WPM 2",
+    "lat": 26.643493,
+    "lon": -12.117493
+   },
+   {
+    "n": 6,
+    "id": "s1-sg5",
+    "km": 15.75,
+    "partial": 3.42,
+    "cap": 287,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.645115,
+    "lon": -12.15008
+   },
+   {
+    "n": 7,
+    "id": "s1-sg6",
+    "km": 19.006,
+    "partial": 3.256,
+    "cap": 298,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.646736,
+    "lon": -12.182668
+   },
+   {
+    "n": 8,
+    "id": "s1-sg7",
+    "km": 22.56,
+    "partial": 3.553,
+    "cap": 244,
+    "waypoint": "s1-sg7",
+    "label": "WPM 3",
+    "lat": 26.659708,
+    "lon": -12.215256
+   },
+   {
+    "n": 9,
+    "id": "s1-sg8",
+    "km": 26.789,
+    "partial": 4.229,
+    "cap": 270,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.646736,
+    "lon": -12.255085
+   },
+   {
+    "n": 10,
+    "id": "s1-sg9",
+    "km": 28.588,
+    "partial": 1.799,
+    "cap": 306,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.646736,
+    "lon": -12.27319
+   },
+   {
+    "n": 11,
+    "id": "s1-sg10",
+    "km": 31.814,
+    "partial": 3.225,
+    "cap": 273,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.659708,
+    "lon": -12.302156
+   },
+   {
+    "n": 12,
+    "id": "s1-sg11",
+    "km": 35.792,
+    "partial": 3.978,
+    "cap": 243,
+    "waypoint": "s1-sg11",
+    "label": "WPM 4",
+    "lat": 26.659708,
+    "lon": -12.341986
+   },
+   {
+    "n": 13,
+    "id": "s1-sg12",
+    "km": 37.402,
+    "partial": 1.61,
+    "cap": 206,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.653222,
+    "lon": -12.356469
+   },
+   {
+    "n": 14,
+    "id": "s1-sg13",
+    "km": 40.203,
+    "partial": 2.801,
+    "cap": 212,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.632143,
+    "lon": -12.370953
+   },
+   {
+    "n": 15,
+    "id": "s1-sg14",
+    "km": 42.953,
+    "partial": 2.751,
+    "cap": 230,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.611064,
+    "lon": -12.385436
+   },
+   {
+    "n": 16,
+    "id": "s1-sg15",
+    "km": 46.849,
+    "partial": 3.895,
+    "cap": 225,
+    "waypoint": "s1-sg15",
+    "label": "WPM 5",
+    "lat": 26.586742,
+    "lon": -12.412592
+   },
+   {
+    "n": 17,
+    "id": "s1-sg16",
+    "km": 50.671,
+    "partial": 3.822,
+    "cap": 193,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.562419,
+    "lon": -12.439749
+   },
+   {
+    "n": 18,
+    "id": "s1-sg26",
+    "km": 54.101,
+    "partial": 3.43,
+    "cap": 213,
+    "waypoint": "s1-sg26",
+    "label": "WPS 6",
+    "lat": 26.537411,
+    "lon": -12.458946
+   },
+   {
+    "n": 19,
+    "id": "s1-sg18",
+    "km": 57.733,
+    "partial": 3.632,
+    "cap": 174,
+    "waypoint": "s1-sg18",
+    "label": "WPM 7",
+    "lat": 26.510532,
+    "lon": -12.479578
+   },
+   {
+    "n": 20,
+    "id": "s1-sg19",
+    "km": 61.93,
+    "partial": 4.197,
+    "cap": 159,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.478998,
+    "lon": -12.457109
+   },
+   {
+    "n": 21,
+    "id": "s1-sg20",
+    "km": 66.099,
+    "partial": 4.169,
+    "cap": 230,
+    "waypoint": "s1-sg20",
+    "label": "WPM 8",
+    "lat": 26.447463,
+    "lon": -12.43464
+   },
+   {
+    "n": 22,
+    "id": "s1-sg21",
+    "km": 76.004,
+    "partial": 9.905,
+    "cap": 186,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.38243,
+    "lon": -12.490901
+   },
+   {
+    "n": 23,
+    "id": "s1-sg22",
+    "km": 76.334,
+    "partial": 0.33,
+    "cap": 188,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.379483,
+    "lon": -12.491274
+   },
+   {
+    "n": 24,
+    "id": "s1-sg23",
+    "km": 86.64,
+    "partial": 10.306,
+    "cap": 190,
+    "waypoint": "s1-sg23",
+    "label": "WPV 9",
+    "lat": 26.287882,
+    "lon": -12.506404
+   },
+   {
+    "n": 25,
+    "id": "s1-sg24",
+    "km": 96.947,
+    "partial": 10.307,
+    "cap": 285,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.196968,
+    "lon": -12.52497
+   },
+   {
+    "n": 26,
+    "id": "s1-ass",
+    "km": 99.471,
+    "partial": 2.525,
+    "cap": 284,
+    "waypoint": "s1-ass",
+    "label": "WPV 10",
+    "lat": 26.2,
+    "lon": -12.55
+   },
+   {
+    "n": 27,
+    "id": "s2-sg1",
+    "km": 102.404,
+    "partial": 2.933,
+    "cap": 334,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.216582,
+    "lon": -12.57135
+   },
+   {
+    "n": 28,
+    "id": "s2-sg2",
+    "km": 107.124,
+    "partial": 4.72,
+    "cap": 334,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.254881,
+    "lon": -12.591753
+   },
+   {
+    "n": 29,
+    "id": "s2-sg3",
+    "km": 111.844,
+    "partial": 4.72,
+    "cap": 334,
+    "waypoint": "s2-sg3",
+    "label": "WPM 11",
+    "lat": 26.29318,
+    "lon": -12.612156
+   },
+   {
+    "n": 30,
+    "id": "s2-sg4",
+    "km": 116.563,
+    "partial": 4.719,
+    "cap": 358,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.331478,
+    "lon": -12.632559
+   },
+   {
+    "n": 31,
+    "id": "s2-sg5",
+    "km": 121.383,
+    "partial": 4.82,
+    "cap": 319,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.369777,
+    "lon": -12.652962
+   },
+   {
+    "n": 32,
+    "id": "s2-sg6",
+    "km": 124.894,
+    "partial": 3.512,
+    "cap": 324,
+    "waypoint": "s2-sg6",
+    "label": "WPM 12",
+    "lat": 26.394149,
+    "lon": -12.674984
+   },
+   {
+    "n": 33,
+    "id": "s2-sg7",
+    "km": 128.4,
+    "partial": 3.506,
+    "cap": 282,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.418522,
+    "lon": -12.697006
+   },
+   {
+    "n": 34,
+    "id": "s2-sg8",
+    "km": 131.955,
+    "partial": 3.554,
+    "cap": 284,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.442894,
+    "lon": -12.719028
+   },
+   {
+    "n": 35,
+    "id": "s2-sg9",
+    "km": 135.952,
+    "partial": 3.997,
+    "cap": 270,
+    "waypoint": "s2-sg9",
+    "label": "WPM 13",
+    "lat": 26.460302,
+    "lon": -12.754005
+   },
+   {
+    "n": 36,
+    "id": "s2-sg10",
+    "km": 137.113,
+    "partial": 1.161,
+    "cap": 225,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.460302,
+    "lon": -12.765663
+   },
+   {
+    "n": 37,
+    "id": "s2-sg11",
+    "km": 140.944,
+    "partial": 3.831,
+    "cap": 262,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.43593,
+    "lon": -12.792867
+   },
+   {
+    "n": 38,
+    "id": "s2-sg12",
+    "km": 145.757,
+    "partial": 4.813,
+    "cap": 243,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.416781,
+    "lon": -12.835616
+   },
+   {
+    "n": 39,
+    "id": "s2-sg34",
+    "km": 149.189,
+    "partial": 3.433,
+    "cap": 243,
+    "waypoint": "s2-sg34",
+    "label": "WPS 14",
+    "lat": 26.403001,
+    "lon": -12.866377
+   },
+   {
+    "n": 40,
+    "id": "s2-sg13",
+    "km": 150.524,
+    "partial": 1.335,
+    "cap": 253,
+    "waypoint": "s2-sg13",
+    "label": "WPM 15",
+    "lat": 26.397631,
+    "lon": -12.878365
+   },
+   {
+    "n": 41,
+    "id": "s2-sg35",
+    "km": 152.5,
+    "partial": 1.976,
+    "cap": 270,
+    "waypoint": "s2-sg35",
+    "label": "WPS 16",
+    "lat": 26.392523,
+    "lon": -12.897368
+   },
+   {
+    "n": 42,
+    "id": "s2-sg14",
+    "km": 154.638,
+    "partial": 2.138,
+    "cap": 232,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.387186,
+    "lon": -12.917227
+   },
+   {
+    "n": 43,
+    "id": "s2-sg15",
+    "km": 158.571,
+    "partial": 3.933,
+    "cap": 247,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.362814,
+    "lon": -12.944431
+   },
+   {
+    "n": 44,
+    "id": "s2-sg16",
+    "km": 162.081,
+    "partial": 3.51,
+    "cap": 270,
+    "waypoint": "s2-sg16",
+    "label": "WPM 17",
+    "lat": 26.348887,
+    "lon": -12.975521
+   },
+   {
+    "n": 45,
+    "id": "s2-sg17",
+    "km": 165.179,
+    "partial": 3.098,
+    "cap": 243,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.348887,
+    "lon": -13.006611
+   },
+   {
+    "n": 46,
+    "id": "s2-sg18",
+    "km": 168.308,
+    "partial": 3.129,
+    "cap": 217,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.348887,
+    "lon": -13.037702
+   },
+   {
+    "n": 47,
+    "id": "s2-sg19",
+    "km": 170.937,
+    "partial": 2.629,
+    "cap": 216,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.338442,
+    "lon": -13.061019
+   },
+   {
+    "n": 48,
+    "id": "s2-sg20",
+    "km": 173.619,
+    "partial": 2.682,
+    "cap": 270,
+    "waypoint": "s2-sg20",
+    "label": "WPM 18",
+    "lat": 26.327997,
+    "lon": -13.084337
+   },
+   {
+    "n": 49,
+    "id": "s2-sg21",
+    "km": 175.556,
+    "partial": 1.937,
+    "cap": 278,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.327997,
+    "lon": -13.103768
+   },
+   {
+    "n": 50,
+    "id": "s2-sg23",
+    "km": 179.305,
+    "partial": 3.75,
+    "cap": 323,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.317552,
+    "lon": -13.138744
+   },
+   {
+    "n": 51,
+    "id": "s2-sg24",
+    "km": 182.636,
+    "partial": 3.331,
+    "cap": 329,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.338442,
+    "lon": -13.162062
+   },
+   {
+    "n": 52,
+    "id": "s2-sg25",
+    "km": 187.159,
+    "partial": 4.523,
+    "cap": 35,
+    "waypoint": "s2-sg25",
+    "label": "WPM 19",
+    "lat": 26.374814,
+    "lon": -13.182312
+   },
+   {
+    "n": 53,
+    "id": "s2-sg26",
+    "km": 190.801,
+    "partial": 3.642,
+    "cap": 6,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.406647,
+    "lon": -13.177186
+   },
+   {
+    "n": 54,
+    "id": "s2-sg27",
+    "km": 191.13,
+    "partial": 0.33,
+    "cap": 12,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.409597,
+    "lon": -13.176835
+   },
+   {
+    "n": 55,
+    "id": "s2-sg28",
+    "km": 195.16,
+    "partial": 4.03,
+    "cap": 4,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.444648,
+    "lon": -13.174609
+   },
+   {
+    "n": 56,
+    "id": "s2-sg29",
+    "km": 195.919,
+    "partial": 0.759,
+    "cap": 13,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.451459,
+    "lon": -13.174107
+   },
+   {
+    "n": 57,
+    "id": "s2-sg30",
+    "km": 197.619,
+    "partial": 1.7,
+    "cap": 326,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.465708,
+    "lon": -13.168547
+   },
+   {
+    "n": 58,
+    "id": "s2-sg36",
+    "km": 200.11,
+    "partial": 2.491,
+    "cap": 322,
+    "waypoint": "s2-sg36",
+    "label": "WPS 20",
+    "lat": 26.483045,
+    "lon": -13.183725
+   },
+   {
+    "n": 59,
+    "id": "s2-sg31",
+    "km": 201.214,
+    "partial": 1.104,
+    "cap": 324,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.490859,
+    "lon": -13.190565
+   },
+   {
+    "n": 60,
+    "id": "s2-sg32",
+    "km": 204.796,
+    "partial": 3.582,
+    "cap": 317,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.51601,
+    "lon": -13.212583
+   },
+   {
+    "n": 61,
+    "id": "s2-sg33",
+    "km": 209.564,
+    "partial": 4.769,
+    "cap": 284,
+    "waypoint": "s2-sg33",
+    "label": "WPM 21",
+    "lat": 26.533005,
+    "lon": -13.256291
+   },
+   {
+    "n": 62,
+    "id": "s2-ass",
+    "km": 214.316,
+    "partial": 4.752,
+    "cap": 279,
+    "waypoint": "s2-ass",
+    "label": "WPV 22",
+    "lat": 26.55,
+    "lon": -13.3
+   },
+   {
+    "n": 63,
+    "id": "s3-sg1",
+    "km": 216.929,
+    "partial": 2.612,
+    "cap": 257,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.55429,
+    "lon": -13.325744
+   },
+   {
+    "n": 64,
+    "id": "s3-sg2",
+    "km": 219.578,
+    "partial": 2.649,
+    "cap": 318,
+    "waypoint": "s3-sg2",
+    "label": "WPM 23",
+    "lat": 26.558579,
+    "lon": -13.351489
+   },
+   {
+    "n": 65,
+    "id": "s3-sg3",
+    "km": 229.258,
+    "partial": 9.68,
+    "cap": 32,
+    "waypoint": "s3-sg3",
+    "label": "WPV 24",
+    "lat": 26.631996,
+    "lon": -13.308913
+   },
+   {
+    "n": 66,
+    "id": "s3-sg4",
+    "km": 238.938,
+    "partial": 9.68,
+    "cap": 69,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.692939,
+    "lon": -13.245014
+   },
+   {
+    "n": 67,
+    "id": "s3-sg5",
+    "km": 239.233,
+    "partial": 0.295,
+    "cap": 43,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.693891,
+    "lon": -13.242245
+   },
+   {
+    "n": 68,
+    "id": "s3-sg6",
+    "km": 241.463,
+    "partial": 2.23,
+    "cap": 82,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.711964,
+    "lon": -13.234486
+   },
+   {
+    "n": 69,
+    "id": "s3-sg7",
+    "km": 241.783,
+    "partial": 0.32,
+    "cap": 97,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.712381,
+    "lon": -13.231297
+   },
+   {
+    "n": 70,
+    "id": "s3-sg8",
+    "km": 246.946,
+    "partial": 5.163,
+    "cap": 137,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.706879,
+    "lon": -13.181912
+   },
+   {
+    "n": 71,
+    "id": "s3-sg9",
+    "km": 247.556,
+    "partial": 0.61,
+    "cap": 12,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.702852,
+    "lon": -13.177742
+   },
+   {
+    "n": 72,
+    "id": "s3-sg10",
+    "km": 248.11,
+    "partial": 0.554,
+    "cap": 86,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.707716,
+    "lon": -13.176537
+   },
+   {
+    "n": 73,
+    "id": "s3-sg11",
+    "km": 251.132,
+    "partial": 3.022,
+    "cap": 59,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.708067,
+    "lon": -13.148274
+   },
+   {
+    "n": 74,
+    "id": "s3-sg12",
+    "km": 251.491,
+    "partial": 0.359,
+    "cap": 49,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.709737,
+    "lon": -13.145176
+   },
+   {
+    "n": 75,
+    "id": "s3-sg13",
+    "km": 253.152,
+    "partial": 1.661,
+    "cap": 77,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.712727,
+    "lon": -13.131078
+   },
+   {
+    "n": 76,
+    "id": "s3-sg14",
+    "km": 253.483,
+    "partial": 0.331,
+    "cap": 87,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.713386,
+    "lon": -13.127827
+   },
+   {
+    "n": 77,
+    "id": "s3-sg15",
+    "km": 253.858,
+    "partial": 0.375,
+    "cap": 52,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.71393,
+    "lon": -13.124141
+   },
+   {
+    "n": 78,
+    "id": "s3-sg35",
+    "km": 254.74,
+    "partial": 0.882,
+    "cap": 52,
+    "waypoint": "s3-sg35",
+    "label": "WPS 25",
+    "lat": 26.718838,
+    "lon": -13.117167
+   },
+   {
+    "n": 79,
+    "id": "s3-sg36",
+    "km": 255.115,
+    "partial": 0.375,
+    "cap": 52,
+    "waypoint": "s3-sg36",
+    "label": "WPS 26",
+    "lat": 26.720924,
+    "lon": -13.114204
+   },
+   {
+    "n": 80,
+    "id": "s3-sg16",
+    "km": 255.15,
+    "partial": 0.035,
+    "cap": 0,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.721121,
+    "lon": -13.113924
+   },
+   {
+    "n": 81,
+    "id": "s3-sg17",
+    "km": 262.505,
+    "partial": 7.355,
+    "cap": 33,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.760124,
+    "lon": -13.070697
+   },
+   {
+    "n": 82,
+    "id": "s3-sg18",
+    "km": 263.268,
+    "partial": 0.763,
+    "cap": 52,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.765853,
+    "lon": -13.066469
+   },
+   {
+    "n": 83,
+    "id": "s3-sg19",
+    "km": 265.958,
+    "partial": 2.689,
+    "cap": 99,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.773323,
+    "lon": -13.044605
+   },
+   {
+    "n": 84,
+    "id": "s3-sg20",
+    "km": 266.293,
+    "partial": 0.336,
+    "cap": 97,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.772857,
+    "lon": -13.041265
+   },
+   {
+    "n": 85,
+    "id": "s3-sg21",
+    "km": 269.972,
+    "partial": 3.679,
+    "cap": 310,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.793915,
+    "lon": -13.018942
+   },
+   {
+    "n": 86,
+    "id": "s3-sg22",
+    "km": 272.664,
+    "partial": 2.691,
+    "cap": 336,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.814691,
+    "lon": -13.029238
+   },
+   {
+    "n": 87,
+    "id": "s3-sg23",
+    "km": 275.19,
+    "partial": 2.526,
+    "cap": 359,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.835467,
+    "lon": -13.039534
+   },
+   {
+    "n": 88,
+    "id": "s3-sg24",
+    "km": 279.651,
+    "partial": 4.461,
+    "cap": 18,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.875559,
+    "lon": -13.039534
+   },
+   {
+    "n": 89,
+    "id": "s3-sg25",
+    "km": 283.37,
+    "partial": 3.719,
+    "cap": 350,
+    "waypoint": "s3-sg25",
+    "label": "WPM 27",
+    "lat": 26.90701,
+    "lon": -13.033521
+   },
+   {
+    "n": 90,
+    "id": "s3-sg26",
+    "km": 286.941,
+    "partial": 3.571,
+    "cap": 296,
+    "waypoint": "s3-sg26",
+    "label": "WPM 28",
+    "lat": 26.93846,
+    "lon": -13.027508
+   },
+   {
+    "n": 91,
+    "id": "s3-sg27",
+    "km": 288.561,
+    "partial": 1.62,
+    "cap": 315,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.945591,
+    "lon": -13.041651
+   },
+   {
+    "n": 92,
+    "id": "s3-sg28",
+    "km": 288.922,
+    "partial": 0.361,
+    "cap": 344,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.947889,
+    "lon": -13.044218
+   },
+   {
+    "n": 93,
+    "id": "s3-sg29",
+    "km": 293.743,
+    "partial": 4.821,
+    "cap": 57,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.986041,
+    "lon": -13.064687
+   },
+   {
+    "n": 94,
+    "id": "s3-sg30",
+    "km": 296.327,
+    "partial": 2.584,
+    "cap": 79,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.999209,
+    "lon": -13.043261
+   },
+   {
+    "n": 95,
+    "id": "s3-sg31",
+    "km": 298.95,
+    "partial": 2.623,
+    "cap": 308,
+    "waypoint": "s3-sg31",
+    "label": "WPM 29",
+    "lat": 27.012376,
+    "lon": -13.021835
+   },
+   {
+    "n": 96,
+    "id": "s3-sg37",
+    "km": 299.521,
+    "partial": 0.571,
+    "cap": 24,
+    "waypoint": "s3-sg37",
+    "label": "WPS 30",
+    "lat": 27.016389,
+    "lon": -13.02515
+   },
+   {
+    "n": 97,
+    "id": "s3-sg32",
+    "km": 299.905,
+    "partial": 0.384,
+    "cap": 53,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.019628,
+    "lon": -13.023891
+   },
+   {
+    "n": 98,
+    "id": "s3-sg33",
+    "km": 300.196,
+    "partial": 0.29,
+    "cap": 93,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.021195,
+    "lon": -13.021548
+   },
+   {
+    "n": 99,
+    "id": "s3-sg34",
+    "km": 312.69,
+    "partial": 12.494,
+    "cap": 1,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.007395,
+    "lon": -12.900469
+   },
+   {
+    "n": 100,
+    "id": "s3-ass",
+    "km": 317.427,
+    "partial": 4.738,
+    "cap": 122,
+    "waypoint": "s3-ass",
+    "label": "WPV 31",
+    "lat": 27.05,
+    "lon": -12.9
+   },
+   {
+    "n": 101,
+    "id": "s4-sg1",
+    "km": 319.862,
+    "partial": 2.434,
+    "cap": 138,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.041382,
+    "lon": -12.878089
+   },
+   {
+    "n": 102,
+    "id": "s4-sg2",
+    "km": 322.19,
+    "partial": 2.328,
+    "cap": 93,
+    "waypoint": "s4-sg2",
+    "label": "WPM 32",
+    "lat": 27.025842,
+    "lon": -12.862333
+   },
+   {
+    "n": 103,
+    "id": "s4-sg3",
+    "km": 335.676,
+    "partial": 13.486,
+    "cap": 90,
+    "waypoint": "s4-sg3",
+    "label": "WPV 33",
+    "lat": 27.012939,
+    "lon": -12.735008
+   },
+   {
+    "n": 104,
+    "id": "s4-sg4",
+    "km": 349.161,
+    "partial": 13.486,
+    "cap": 331,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.017031,
+    "lon": -12.60565
+   },
+   {
+    "n": 105,
+    "id": "s4-sg5",
+    "km": 353.069,
+    "partial": 3.907,
+    "cap": 0,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.047935,
+    "lon": -12.624306
+   },
+   {
+    "n": 106,
+    "id": "s4-sg6",
+    "km": 354.89,
+    "partial": 1.822,
+    "cap": 171,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.064317,
+    "lon": -12.624306
+   },
+   {
+    "n": 107,
+    "id": "s4-sg7",
+    "km": 357.913,
+    "partial": 3.023,
+    "cap": 148,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.042933,
+    "lon": -12.606969
+   },
+   {
+    "n": 108,
+    "id": "s4-sg8",
+    "km": 360.874,
+    "partial": 2.961,
+    "cap": 77,
+    "waypoint": "s4-sg8",
+    "label": "WPM 34",
+    "lat": 27.021549,
+    "lon": -12.589633
+   },
+   {
+    "n": 109,
+    "id": "s4-sg9",
+    "km": 369.7,
+    "partial": 8.826,
+    "cap": 76,
+    "waypoint": "s4-sg9",
+    "label": "WPV 35",
+    "lat": 27.034012,
+    "lon": -12.503479
+   },
+   {
+    "n": 110,
+    "id": "s4-sg10",
+    "km": 378.526,
+    "partial": 8.826,
+    "cap": 165,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.080785,
+    "lon": -12.436137
+   },
+   {
+    "n": 111,
+    "id": "s4-sg11",
+    "km": 378.935,
+    "partial": 0.409,
+    "cap": 169,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.077239,
+    "lon": -12.43504
+   },
+   {
+    "n": 112,
+    "id": "s4-sg12",
+    "km": 383.804,
+    "partial": 4.868,
+    "cap": 141,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.055117,
+    "lon": -12.396985
+   },
+   {
+    "n": 113,
+    "id": "s4-sg13",
+    "km": 386.551,
+    "partial": 2.747,
+    "cap": 172,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.031867,
+    "lon": -12.389271
+   },
+   {
+    "n": 114,
+    "id": "s4-sg14",
+    "km": 389.265,
+    "partial": 2.714,
+    "cap": 180,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 27.008618,
+    "lon": -12.381558
+   },
+   {
+    "n": 115,
+    "id": "s4-sg15",
+    "km": 391.815,
+    "partial": 2.55,
+    "cap": 52,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.985683,
+    "lon": -12.381558
+   },
+   {
+    "n": 116,
+    "id": "s4-sg16",
+    "km": 395.326,
+    "partial": 3.511,
+    "cap": 39,
+    "waypoint": "s4-sg16",
+    "label": "WPM 36",
+    "lat": 27.006141,
+    "lon": -12.354626
+   },
+   {
+    "n": 117,
+    "id": "s4-sg17",
+    "km": 398.875,
+    "partial": 3.549,
+    "cap": 129,
+    "waypoint": "s4-sg17",
+    "label": "WPM 37",
+    "lat": 27.026599,
+    "lon": -12.327695
+   },
+   {
+    "n": 118,
+    "id": "s4-sg18",
+    "km": 411.852,
+    "partial": 12.977,
+    "cap": 64,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.946601,
+    "lon": -12.239005
+   },
+   {
+    "n": 119,
+    "id": "s4-sg19",
+    "km": 415.402,
+    "partial": 3.549,
+    "cap": 61,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.964401,
+    "lon": -12.209337
+   },
+   {
+    "n": 120,
+    "id": "s4-sg20",
+    "km": 418.955,
+    "partial": 3.553,
+    "cap": 59,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.9822,
+    "lon": -12.179668
+   },
+   {
+    "n": 121,
+    "id": "s4-ass",
+    "km": 422.501,
+    "partial": 3.546,
+    "cap": 137,
+    "waypoint": "s4-ass",
+    "label": "WPV 38",
+    "lat": 27,
+    "lon": -12.15
+   },
+   {
+    "n": 122,
+    "id": "s5-sg1",
+    "km": 424.553,
+    "partial": 2.052,
+    "cap": 149,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.986442,
+    "lon": -12.135948
+   },
+   {
+    "n": 123,
+    "id": "s5-sg3",
+    "km": 428.827,
+    "partial": 4.274,
+    "cap": 135,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.952389,
+    "lon": -12.118325
+   },
+   {
+    "n": 124,
+    "id": "s5-sg4",
+    "km": 430.68,
+    "partial": 1.853,
+    "cap": 201,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.940601,
+    "lon": -12.105107
+   },
+   {
+    "n": 125,
+    "id": "s5-sg5",
+    "km": 431.924,
+    "partial": 1.244,
+    "cap": 181,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.930124,
+    "lon": -12.109513
+   },
+   {
+    "n": 126,
+    "id": "s5-sg6",
+    "km": 434.503,
+    "partial": 2.579,
+    "cap": 155,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.906934,
+    "lon": -12.110045
+   },
+   {
+    "n": 127,
+    "id": "s5-sg7",
+    "km": 437.123,
+    "partial": 2.62,
+    "cap": 111,
+    "waypoint": "s5-sg7",
+    "label": "WPM 39",
+    "lat": 26.883743,
+    "lon": -12.110577
+   },
+   {
+    "n": 128,
+    "id": "s5-sg8",
+    "km": 444.019,
+    "partial": 6.897,
+    "cap": 184,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.871327,
+    "lon": -12.044031
+   },
+   {
+    "n": 129,
+    "id": "s5-sg9",
+    "km": 446.228,
+    "partial": 2.209,
+    "cap": 270,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.8515,
+    "lon": -12.045417
+   },
+   {
+    "n": 130,
+    "id": "s5-sg10",
+    "km": 448.718,
+    "partial": 2.49,
+    "cap": 221,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.854733,
+    "lon": -12.067767
+   },
+   {
+    "n": 131,
+    "id": "s5-sg11",
+    "km": 448.888,
+    "partial": 0.17,
+    "cap": 101,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.853581,
+    "lon": -12.068888
+   },
+   {
+    "n": 132,
+    "id": "s5-sg12",
+    "km": 454.58,
+    "partial": 5.692,
+    "cap": 182,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.83908,
+    "lon": -12.018109
+   },
+   {
+    "n": 133,
+    "id": "s5-sg13",
+    "km": 455.671,
+    "partial": 1.091,
+    "cap": 151,
+    "waypoint": null,
+    "label": "NOTE",
+    "lat": 26.829275,
+    "lon": -12.018458
+   },
+   {
+    "n": 134,
+    "id": "ass",
+    "km": 459.406,
+    "partial": 3.735,
+    "cap": null,
+    "waypoint": "ass",
+    "label": "ASS",
+    "lat": 26.8,
+    "lon": -12
+   }
+  ],
+  "file": null
+ },
+ "route": {
+  "legs": [
+   {
+    "from": "dss",
+    "to": "s1-sg25",
+    "mode": "direct",
+    "km": 2.769,
+    "points": [
+     [
+      26.62,
+      -12
+     ],
+     [
+      26.618244,
+      -12.005319
+     ],
+     [
+      26.622089,
+      -12.027079
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg25",
+    "to": "s1-sg2",
+    "mode": "direct",
+    "km": 2.518,
+    "points": [
+     [
+      26.622089,
+      -12.027079
+     ],
+     [
+      26.624035,
+      -12.052318
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg2",
+    "to": "s1-sg3",
+    "mode": "direct",
+    "km": 3.573,
+    "points": [
+     [
+      26.624035,
+      -12.052318
+     ],
+     [
+      26.622161,
+      -12.058427
+     ],
+     [
+      26.633764,
+      -12.084905
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg3",
+    "to": "s1-sg4",
+    "mode": "direct",
+    "km": 3.471,
+    "points": [
+     [
+      26.633764,
+      -12.084905
+     ],
+     [
+      26.644188,
+      -12.114105
+     ],
+     [
+      26.643493,
+      -12.117493
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg4",
+    "to": "s1-sg5",
+    "mode": "direct",
+    "km": 3.42,
+    "points": [
+     [
+      26.643493,
+      -12.117493
+     ],
+     [
+      26.648598,
+      -12.127756
+     ],
+     [
+      26.645115,
+      -12.15008
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg5",
+    "to": "s1-sg6",
+    "mode": "direct",
+    "km": 3.256,
+    "points": [
+     [
+      26.645115,
+      -12.15008
+     ],
+     [
+      26.646103,
+      -12.153646
+     ],
+     [
+      26.646736,
+      -12.182668
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg6",
+    "to": "s1-sg7",
+    "mode": "direct",
+    "km": 3.553,
+    "points": [
+     [
+      26.646736,
+      -12.182668
+     ],
+     [
+      26.654857,
+      -12.200101
+     ],
+     [
+      26.659708,
+      -12.215256
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg7",
+    "to": "s1-sg8",
+    "mode": "direct",
+    "km": 4.229,
+    "points": [
+     [
+      26.659708,
+      -12.215256
+     ],
+     [
+      26.653291,
+      -12.229668
+     ],
+     [
+      26.646736,
+      -12.255085
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg8",
+    "to": "s1-sg9",
+    "mode": "direct",
+    "km": 1.799,
+    "points": [
+     [
+      26.646736,
+      -12.255085
+     ],
+     [
+      26.646736,
+      -12.27319
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg9",
+    "to": "s1-sg10",
+    "mode": "direct",
+    "km": 3.225,
+    "points": [
+     [
+      26.646736,
+      -12.27319
+     ],
+     [
+      26.648669,
+      -12.276158
+     ],
+     [
+      26.659708,
+      -12.302156
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg10",
+    "to": "s1-sg11",
+    "mode": "direct",
+    "km": 3.978,
+    "points": [
+     [
+      26.659708,
+      -12.302156
+     ],
+     [
+      26.661057,
+      -12.335364
+     ],
+     [
+      26.659708,
+      -12.341986
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg11",
+    "to": "s1-sg12",
+    "mode": "direct",
+    "km": 1.61,
+    "points": [
+     [
+      26.659708,
+      -12.341986
+     ],
+     [
+      26.653222,
+      -12.356469
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg12",
+    "to": "s1-sg13",
+    "mode": "direct",
+    "km": 2.801,
+    "points": [
+     [
+      26.653222,
+      -12.356469
+     ],
+     [
+      26.635221,
+      -12.366358
+     ],
+     [
+      26.632143,
+      -12.370953
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg13",
+    "to": "s1-sg14",
+    "mode": "direct",
+    "km": 2.751,
+    "points": [
+     [
+      26.632143,
+      -12.370953
+     ],
+     [
+      26.611064,
+      -12.385436
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg14",
+    "to": "s1-sg15",
+    "mode": "direct",
+    "km": 3.895,
+    "points": [
+     [
+      26.611064,
+      -12.385436
+     ],
+     [
+      26.591968,
+      -12.410595
+     ],
+     [
+      26.586742,
+      -12.412592
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg15",
+    "to": "s1-sg16",
+    "mode": "direct",
+    "km": 3.822,
+    "points": [
+     [
+      26.586742,
+      -12.412592
+     ],
+     [
+      26.562419,
+      -12.439749
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg16",
+    "to": "s1-sg26",
+    "mode": "direct",
+    "km": 3.43,
+    "points": [
+     [
+      26.562419,
+      -12.439749
+     ],
+     [
+      26.556749,
+      -12.441174
+     ],
+     [
+      26.537411,
+      -12.458946
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg26",
+    "to": "s1-sg18",
+    "mode": "direct",
+    "km": 3.632,
+    "points": [
+     [
+      26.537411,
+      -12.458946
+     ],
+     [
+      26.515825,
+      -12.474418
+     ],
+     [
+      26.510532,
+      -12.479578
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg18",
+    "to": "s1-sg19",
+    "mode": "direct",
+    "km": 4.197,
+    "points": [
+     [
+      26.510532,
+      -12.479578
+     ],
+     [
+      26.507532,
+      -12.479228
+     ],
+     [
+      26.478998,
+      -12.457109
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg19",
+    "to": "s1-sg20",
+    "mode": "direct",
+    "km": 4.169,
+    "points": [
+     [
+      26.478998,
+      -12.457109
+     ],
+     [
+      26.475151,
+      -12.45544
+     ],
+     [
+      26.447463,
+      -12.43464
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg20",
+    "to": "s1-sg21",
+    "mode": "road",
+    "km": 9.905,
+    "points": [
+     [
+      26.447463,
+      -12.43464
+     ],
+     [
+      26.447094,
+      -12.435123
+     ],
+     [
+      26.446709,
+      -12.435644
+     ],
+     [
+      26.446275,
+      -12.436223
+     ],
+     [
+      26.446246,
+      -12.436257
+     ],
+     [
+      26.445756,
+      -12.437009
+     ],
+     [
+      26.4448,
+      -12.438441
+     ],
+     [
+      26.442563,
+      -12.441615
+     ],
+     [
+      26.441133,
+      -12.443582
+     ],
+     [
+      26.439569,
+      -12.44598
+     ],
+     [
+      26.43885,
+      -12.447017
+     ],
+     [
+      26.438116,
+      -12.448364
+     ],
+     [
+      26.435979,
+      -12.452017
+     ],
+     [
+      26.435277,
+      -12.453119
+     ],
+     [
+      26.433546,
+      -12.455985
+     ],
+     [
+      26.431506,
+      -12.459241
+     ],
+     [
+      26.431175,
+      -12.459814
+     ],
+     [
+      26.43072,
+      -12.460617
+     ],
+     [
+      26.429371,
+      -12.462139
+     ],
+     [
+      26.427882,
+      -12.464066
+     ],
+     [
+      26.425864,
+      -12.466619
+     ],
+     [
+      26.423737,
+      -12.469368
+     ],
+     [
+      26.422,
+      -12.471791
+     ],
+     [
+      26.419551,
+      -12.474983
+     ],
+     [
+      26.416327,
+      -12.479
+     ],
+     [
+      26.414676,
+      -12.481004
+     ],
+     [
+      26.412634,
+      -12.483799
+     ],
+     [
+      26.412038,
+      -12.484608
+     ],
+     [
+      26.411029,
+      -12.486055
+     ],
+     [
+      26.410161,
+      -12.48739
+     ],
+     [
+      26.410105,
+      -12.487574
+     ],
+     [
+      26.410022,
+      -12.487749
+     ],
+     [
+      26.409917,
+      -12.487909
+     ],
+     [
+      26.409755,
+      -12.488021
+     ],
+     [
+      26.409577,
+      -12.488105
+     ],
+     [
+      26.409147,
+      -12.488376
+     ],
+     [
+      26.407955,
+      -12.489138
+     ],
+     [
+      26.407063,
+      -12.489726
+     ],
+     [
+      26.406968,
+      -12.489806
+     ],
+     [
+      26.406877,
+      -12.489862
+     ],
+     [
+      26.406769,
+      -12.489884
+     ],
+     [
+      26.406532,
+      -12.489876
+     ],
+     [
+      26.406191,
+      -12.489845
+     ],
+     [
+      26.405694,
+      -12.489768
+     ],
+     [
+      26.404459,
+      -12.489443
+     ],
+     [
+      26.403341,
+      -12.489118
+     ],
+     [
+      26.402031,
+      -12.488891
+     ],
+     [
+      26.400809,
+      -12.488622
+     ],
+     [
+      26.400357,
+      -12.488546
+     ],
+     [
+      26.399778,
+      -12.488498
+     ],
+     [
+      26.398505,
+      -12.488601
+     ],
+     [
+      26.397649,
+      -12.488593
+     ],
+     [
+      26.394521,
+      -12.488909
+     ],
+     [
+      26.392792,
+      -12.489222
+     ],
+     [
+      26.391295,
+      -12.489552
+     ],
+     [
+      26.390887,
+      -12.489641
+     ],
+     [
+      26.390509,
+      -12.489644
+     ],
+     [
+      26.389948,
+      -12.489699
+     ],
+     [
+      26.389359,
+      -12.489786
+     ],
+     [
+      26.388831,
+      -12.489893
+     ],
+     [
+      26.38812,
+      -12.490026
+     ],
+     [
+      26.387275,
+      -12.490149
+     ],
+     [
+      26.386393,
+      -12.490218
+     ],
+     [
+      26.385175,
+      -12.490372
+     ],
+     [
+      26.383918,
+      -12.490473
+     ],
+     [
+      26.383706,
+      -12.49053
+     ],
+     [
+      26.382938,
+      -12.490823
+     ],
+     [
+      26.382759,
+      -12.49085
+     ],
+     [
+      26.38243,
+      -12.490901
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg21",
+    "to": "s1-sg22",
+    "mode": "direct",
+    "km": 0.33,
+    "points": [
+     [
+      26.38243,
+      -12.490901
+     ],
+     [
+      26.379483,
+      -12.491274
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg22",
+    "to": "s1-sg23",
+    "mode": "road",
+    "km": 10.306,
+    "points": [
+     [
+      26.379483,
+      -12.491274
+     ],
+     [
+      26.375983,
+      -12.491802
+     ],
+     [
+      26.374263,
+      -12.49201
+     ],
+     [
+      26.37232,
+      -12.492274
+     ],
+     [
+      26.370392,
+      -12.492447
+     ],
+     [
+      26.367528,
+      -12.492758
+     ],
+     [
+      26.365255,
+      -12.493106
+     ],
+     [
+      26.363077,
+      -12.493517
+     ],
+     [
+      26.36082,
+      -12.49385
+     ],
+     [
+      26.358154,
+      -12.494339
+     ],
+     [
+      26.356848,
+      -12.494508
+     ],
+     [
+      26.356292,
+      -12.494494
+     ],
+     [
+      26.354411,
+      -12.494918
+     ],
+     [
+      26.351141,
+      -12.495554
+     ],
+     [
+      26.347278,
+      -12.496282
+     ],
+     [
+      26.340584,
+      -12.497306
+     ],
+     [
+      26.337144,
+      -12.497738
+     ],
+     [
+      26.333445,
+      -12.498373
+     ],
+     [
+      26.330852,
+      -12.498786
+     ],
+     [
+      26.327736,
+      -12.499418
+     ],
+     [
+      26.324684,
+      -12.499962
+     ],
+     [
+      26.32323,
+      -12.500211
+     ],
+     [
+      26.320955,
+      -12.500761
+     ],
+     [
+      26.318791,
+      -12.501247
+     ],
+     [
+      26.316479,
+      -12.501848
+     ],
+     [
+      26.31527,
+      -12.50204
+     ],
+     [
+      26.314225,
+      -12.502205
+     ],
+     [
+      26.312136,
+      -12.502501
+     ],
+     [
+      26.310075,
+      -12.503071
+     ],
+     [
+      26.308993,
+      -12.503265
+     ],
+     [
+      26.304487,
+      -12.503579
+     ],
+     [
+      26.301039,
+      -12.504278
+     ],
+     [
+      26.296323,
+      -12.505206
+     ],
+     [
+      26.294575,
+      -12.505444
+     ],
+     [
+      26.293831,
+      -12.505618
+     ],
+     [
+      26.292876,
+      -12.505663
+     ],
+     [
+      26.29115,
+      -12.505932
+     ],
+     [
+      26.289819,
+      -12.506235
+     ],
+     [
+      26.287882,
+      -12.506404
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg23",
+    "to": "s1-sg24",
+    "mode": "road",
+    "km": 10.307,
+    "points": [
+     [
+      26.287882,
+      -12.506404
+     ],
+     [
+      26.287625,
+      -12.506426
+     ],
+     [
+      26.284401,
+      -12.507103
+     ],
+     [
+      26.283169,
+      -12.507292
+     ],
+     [
+      26.280088,
+      -12.507757
+     ],
+     [
+      26.277574,
+      -12.508093
+     ],
+     [
+      26.277198,
+      -12.508035
+     ],
+     [
+      26.275799,
+      -12.508301
+     ],
+     [
+      26.273359,
+      -12.508767
+     ],
+     [
+      26.271763,
+      -12.509129
+     ],
+     [
+      26.269613,
+      -12.509678
+     ],
+     [
+      26.267461,
+      -12.510175
+     ],
+     [
+      26.266962,
+      -12.510423
+     ],
+     [
+      26.264567,
+      -12.510972
+     ],
+     [
+      26.2629,
+      -12.511343
+     ],
+     [
+      26.261365,
+      -12.511633
+     ],
+     [
+      26.259605,
+      -12.512078
+     ],
+     [
+      26.258086,
+      -12.51249
+     ],
+     [
+      26.25673,
+      -12.512761
+     ],
+     [
+      26.255585,
+      -12.513044
+     ],
+     [
+      26.254346,
+      -12.513345
+     ],
+     [
+      26.252493,
+      -12.513756
+     ],
+     [
+      26.250272,
+      -12.514181
+     ],
+     [
+      26.247871,
+      -12.514692
+     ],
+     [
+      26.245447,
+      -12.514964
+     ],
+     [
+      26.243489,
+      -12.515173
+     ],
+     [
+      26.241424,
+      -12.515389
+     ],
+     [
+      26.239262,
+      -12.515619
+     ],
+     [
+      26.238166,
+      -12.515674
+     ],
+     [
+      26.237208,
+      -12.515793
+     ],
+     [
+      26.235962,
+      -12.516004
+     ],
+     [
+      26.235487,
+      -12.515924
+     ],
+     [
+      26.234999,
+      -12.516084
+     ],
+     [
+      26.234411,
+      -12.516199
+     ],
+     [
+      26.233678,
+      -12.516519
+     ],
+     [
+      26.23129,
+      -12.51705
+     ],
+     [
+      26.228467,
+      -12.517594
+     ],
+     [
+      26.226071,
+      -12.5182
+     ],
+     [
+      26.2248,
+      -12.518558
+     ],
+     [
+      26.22369,
+      -12.518494
+     ],
+     [
+      26.222264,
+      -12.519214
+     ],
+     [
+      26.220973,
+      -12.519655
+     ],
+     [
+      26.219228,
+      -12.520264
+     ],
+     [
+      26.217855,
+      -12.520752
+     ],
+     [
+      26.216482,
+      -12.521015
+     ],
+     [
+      26.21285,
+      -12.521786
+     ],
+     [
+      26.208544,
+      -12.522552
+     ],
+     [
+      26.206456,
+      -12.523046
+     ],
+     [
+      26.204779,
+      -12.523427
+     ],
+     [
+      26.199712,
+      -12.524462
+     ],
+     [
+      26.196968,
+      -12.52497
+     ]
+    ]
+   },
+   {
+    "from": "s1-sg24",
+    "to": "s1-ass",
+    "mode": "direct",
+    "km": 2.525,
+    "points": [
+     [
+      26.196968,
+      -12.52497
+     ],
+     [
+      26.198044,
+      -12.529359
+     ],
+     [
+      26.2,
+      -12.55
+     ]
+    ]
+   },
+   {
+    "from": "s1-ass",
+    "to": "s2-sg1",
+    "mode": "direct",
+    "km": 2.933,
+    "points": [
+     [
+      26.2,
+      -12.55
+     ],
+     [
+      26.20179,
+      -12.557818
+     ],
+     [
+      26.216582,
+      -12.57135
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg1",
+    "to": "s2-sg2",
+    "mode": "direct",
+    "km": 4.72,
+    "points": [
+     [
+      26.216582,
+      -12.57135
+     ],
+     [
+      26.254881,
+      -12.591753
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg2",
+    "to": "s2-sg3",
+    "mode": "direct",
+    "km": 4.72,
+    "points": [
+     [
+      26.254881,
+      -12.591753
+     ],
+     [
+      26.29318,
+      -12.612156
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg3",
+    "to": "s2-sg4",
+    "mode": "direct",
+    "km": 4.719,
+    "points": [
+     [
+      26.29318,
+      -12.612156
+     ],
+     [
+      26.331478,
+      -12.632559
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg4",
+    "to": "s2-sg5",
+    "mode": "direct",
+    "km": 4.82,
+    "points": [
+     [
+      26.331478,
+      -12.632559
+     ],
+     [
+      26.340294,
+      -12.632919
+     ],
+     [
+      26.369777,
+      -12.652962
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg5",
+    "to": "s2-sg6",
+    "mode": "direct",
+    "km": 3.512,
+    "points": [
+     [
+      26.369777,
+      -12.652962
+     ],
+     [
+      26.391326,
+      -12.673983
+     ],
+     [
+      26.394149,
+      -12.674984
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg6",
+    "to": "s2-sg7",
+    "mode": "direct",
+    "km": 3.506,
+    "points": [
+     [
+      26.394149,
+      -12.674984
+     ],
+     [
+      26.410557,
+      -12.68826
+     ],
+     [
+      26.411146,
+      -12.688404
+     ],
+     [
+      26.418522,
+      -12.697006
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg7",
+    "to": "s2-sg8",
+    "mode": "direct",
+    "km": 3.554,
+    "points": [
+     [
+      26.418522,
+      -12.697006
+     ],
+     [
+      26.418892,
+      -12.69889
+     ],
+     [
+      26.419481,
+      -12.699035
+     ],
+     [
+      26.438817,
+      -12.716894
+     ],
+     [
+      26.439995,
+      -12.717184
+     ],
+     [
+      26.442894,
+      -12.719028
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg8",
+    "to": "s2-sg9",
+    "mode": "direct",
+    "km": 3.997,
+    "points": [
+     [
+      26.442894,
+      -12.719028
+     ],
+     [
+      26.443628,
+      -12.722364
+     ],
+     [
+      26.460302,
+      -12.754005
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg9",
+    "to": "s2-sg10",
+    "mode": "direct",
+    "km": 1.161,
+    "points": [
+     [
+      26.460302,
+      -12.754005
+     ],
+     [
+      26.460302,
+      -12.765663
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg10",
+    "to": "s2-sg11",
+    "mode": "direct",
+    "km": 3.831,
+    "points": [
+     [
+      26.460302,
+      -12.765663
+     ],
+     [
+      26.43593,
+      -12.792867
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg11",
+    "to": "s2-sg12",
+    "mode": "direct",
+    "km": 4.813,
+    "points": [
+     [
+      26.43593,
+      -12.792867
+     ],
+     [
+      26.434843,
+      -12.801355
+     ],
+     [
+      26.416781,
+      -12.835616
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg12",
+    "to": "s2-sg34",
+    "mode": "direct",
+    "km": 3.433,
+    "points": [
+     [
+      26.416781,
+      -12.835616
+     ],
+     [
+      26.405678,
+      -12.859728
+     ],
+     [
+      26.405678,
+      -12.860402
+     ],
+     [
+      26.403001,
+      -12.866377
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg34",
+    "to": "s2-sg13",
+    "mode": "direct",
+    "km": 1.335,
+    "points": [
+     [
+      26.403001,
+      -12.866377
+     ],
+     [
+      26.397631,
+      -12.878365
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg13",
+    "to": "s2-sg35",
+    "mode": "direct",
+    "km": 1.976,
+    "points": [
+     [
+      26.397631,
+      -12.878365
+     ],
+     [
+      26.392523,
+      -12.897368
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg35",
+    "to": "s2-sg14",
+    "mode": "direct",
+    "km": 2.138,
+    "points": [
+     [
+      26.392523,
+      -12.897368
+     ],
+     [
+      26.392575,
+      -12.905561
+     ],
+     [
+      26.392678,
+      -12.906224
+     ],
+     [
+      26.387186,
+      -12.917227
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg14",
+    "to": "s2-sg15",
+    "mode": "direct",
+    "km": 3.933,
+    "points": [
+     [
+      26.387186,
+      -12.917227
+     ],
+     [
+      26.370016,
+      -12.941503
+     ],
+     [
+      26.362814,
+      -12.944431
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg15",
+    "to": "s2-sg16",
+    "mode": "direct",
+    "km": 3.51,
+    "points": [
+     [
+      26.362814,
+      -12.944431
+     ],
+     [
+      26.351836,
+      -12.972978
+     ],
+     [
+      26.348887,
+      -12.975521
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg16",
+    "to": "s2-sg17",
+    "mode": "direct",
+    "km": 3.098,
+    "points": [
+     [
+      26.348887,
+      -12.975521
+     ],
+     [
+      26.348887,
+      -13.006611
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg17",
+    "to": "s2-sg18",
+    "mode": "direct",
+    "km": 3.129,
+    "points": [
+     [
+      26.348887,
+      -13.006611
+     ],
+     [
+      26.347808,
+      -13.00902
+     ],
+     [
+      26.348887,
+      -13.037702
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg18",
+    "to": "s2-sg19",
+    "mode": "direct",
+    "km": 2.629,
+    "points": [
+     [
+      26.348887,
+      -13.037702
+     ],
+     [
+      26.346957,
+      -13.039318
+     ],
+     [
+      26.338442,
+      -13.061019
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg19",
+    "to": "s2-sg20",
+    "mode": "direct",
+    "km": 2.682,
+    "points": [
+     [
+      26.338442,
+      -13.061019
+     ],
+     [
+      26.33422,
+      -13.064385
+     ],
+     [
+      26.327997,
+      -13.084337
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg20",
+    "to": "s2-sg21",
+    "mode": "direct",
+    "km": 1.937,
+    "points": [
+     [
+      26.327997,
+      -13.084337
+     ],
+     [
+      26.327997,
+      -13.103768
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg21",
+    "to": "s2-sg23",
+    "mode": "direct",
+    "km": 3.75,
+    "points": [
+     [
+      26.327997,
+      -13.103768
+     ],
+     [
+      26.328765,
+      -13.109765
+     ],
+     [
+      26.317552,
+      -13.138744
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg23",
+    "to": "s2-sg24",
+    "mode": "direct",
+    "km": 3.331,
+    "points": [
+     [
+      26.317552,
+      -13.138744
+     ],
+     [
+      26.331476,
+      -13.150455
+     ],
+     [
+      26.338442,
+      -13.162062
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg24",
+    "to": "s2-sg25",
+    "mode": "direct",
+    "km": 4.523,
+    "points": [
+     [
+      26.338442,
+      -13.162062
+     ],
+     [
+      26.344237,
+      -13.165961
+     ],
+     [
+      26.374814,
+      -13.182312
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg25",
+    "to": "s2-sg26",
+    "mode": "road",
+    "km": 3.642,
+    "points": [
+     [
+      26.374814,
+      -13.182312
+     ],
+     [
+      26.37603,
+      -13.181368
+     ],
+     [
+      26.378054,
+      -13.180729
+     ],
+     [
+      26.378904,
+      -13.180431
+     ],
+     [
+      26.380022,
+      -13.180238
+     ],
+     [
+      26.381869,
+      -13.179536
+     ],
+     [
+      26.383347,
+      -13.179085
+     ],
+     [
+      26.384195,
+      -13.178962
+     ],
+     [
+      26.385094,
+      -13.178878
+     ],
+     [
+      26.386637,
+      -13.178774
+     ],
+     [
+      26.38767,
+      -13.178835
+     ],
+     [
+      26.388691,
+      -13.178839
+     ],
+     [
+      26.390596,
+      -13.178933
+     ],
+     [
+      26.391855,
+      -13.179056
+     ],
+     [
+      26.392773,
+      -13.179096
+     ],
+     [
+      26.393931,
+      -13.179268
+     ],
+     [
+      26.395899,
+      -13.179617
+     ],
+     [
+      26.396245,
+      -13.179608
+     ],
+     [
+      26.396788,
+      -13.179487
+     ],
+     [
+      26.397547,
+      -13.179552
+     ],
+     [
+      26.398508,
+      -13.179348
+     ],
+     [
+      26.398861,
+      -13.179305
+     ],
+     [
+      26.399791,
+      -13.179201
+     ],
+     [
+      26.400398,
+      -13.179077
+     ],
+     [
+      26.402006,
+      -13.178517
+     ],
+     [
+      26.403786,
+      -13.178074
+     ],
+     [
+      26.405028,
+      -13.177752
+     ],
+     [
+      26.405804,
+      -13.177548
+     ],
+     [
+      26.406157,
+      -13.177275
+     ],
+     [
+      26.406647,
+      -13.177186
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg26",
+    "to": "s2-sg27",
+    "mode": "direct",
+    "km": 0.33,
+    "points": [
+     [
+      26.406647,
+      -13.177186
+     ],
+     [
+      26.409597,
+      -13.176835
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg27",
+    "to": "s2-sg28",
+    "mode": "road",
+    "km": 4.03,
+    "points": [
+     [
+      26.409597,
+      -13.176835
+     ],
+     [
+      26.41278,
+      -13.176089
+     ],
+     [
+      26.414981,
+      -13.174447
+     ],
+     [
+      26.418221,
+      -13.175118
+     ],
+     [
+      26.42101,
+      -13.174973
+     ],
+     [
+      26.423196,
+      -13.175343
+     ],
+     [
+      26.424003,
+      -13.175252
+     ],
+     [
+      26.424731,
+      -13.175478
+     ],
+     [
+      26.426446,
+      -13.176207
+     ],
+     [
+      26.427714,
+      -13.176593
+     ],
+     [
+      26.429998,
+      -13.176821
+     ],
+     [
+      26.430849,
+      -13.17692
+     ],
+     [
+      26.431521,
+      -13.176741
+     ],
+     [
+      26.433351,
+      -13.176081
+     ],
+     [
+      26.43472,
+      -13.175561
+     ],
+     [
+      26.434958,
+      -13.175456
+     ],
+     [
+      26.43541,
+      -13.175437
+     ],
+     [
+      26.436865,
+      -13.175099
+     ],
+     [
+      26.437326,
+      -13.175091
+     ],
+     [
+      26.437893,
+      -13.174885
+     ],
+     [
+      26.438556,
+      -13.174829
+     ],
+     [
+      26.440657,
+      -13.174222
+     ],
+     [
+      26.441572,
+      -13.174198
+     ],
+     [
+      26.442218,
+      -13.174255
+     ],
+     [
+      26.443719,
+      -13.17463
+     ],
+     [
+      26.444416,
+      -13.174628
+     ],
+     [
+      26.444648,
+      -13.174609
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg28",
+    "to": "s2-sg29",
+    "mode": "direct",
+    "km": 0.759,
+    "points": [
+     [
+      26.444648,
+      -13.174609
+     ],
+     [
+      26.451459,
+      -13.174107
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg29",
+    "to": "s2-sg30",
+    "mode": "road",
+    "km": 1.7,
+    "points": [
+     [
+      26.451459,
+      -13.174107
+     ],
+     [
+      26.45229,
+      -13.173892
+     ],
+     [
+      26.452828,
+      -13.17363
+     ],
+     [
+      26.454773,
+      -13.1726
+     ],
+     [
+      26.455429,
+      -13.172316
+     ],
+     [
+      26.456315,
+      -13.171557
+     ],
+     [
+      26.456699,
+      -13.171329
+     ],
+     [
+      26.457592,
+      -13.171291
+     ],
+     [
+      26.45978,
+      -13.170904
+     ],
+     [
+      26.460258,
+      -13.170588
+     ],
+     [
+      26.461996,
+      -13.169985
+     ],
+     [
+      26.463936,
+      -13.168968
+     ],
+     [
+      26.465708,
+      -13.168547
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg30",
+    "to": "s2-sg36",
+    "mode": "direct",
+    "km": 2.491,
+    "points": [
+     [
+      26.465708,
+      -13.168547
+     ],
+     [
+      26.48183,
+      -13.180747
+     ],
+     [
+      26.483045,
+      -13.183725
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg36",
+    "to": "s2-sg31",
+    "mode": "direct",
+    "km": 1.104,
+    "points": [
+     [
+      26.483045,
+      -13.183725
+     ],
+     [
+      26.490859,
+      -13.190565
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg31",
+    "to": "s2-sg32",
+    "mode": "direct",
+    "km": 3.582,
+    "points": [
+     [
+      26.490859,
+      -13.190565
+     ],
+     [
+      26.514887,
+      -13.210068
+     ],
+     [
+      26.51601,
+      -13.212583
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg32",
+    "to": "s2-sg33",
+    "mode": "direct",
+    "km": 4.769,
+    "points": [
+     [
+      26.51601,
+      -13.212583
+     ],
+     [
+      26.517968,
+      -13.214591
+     ],
+     [
+      26.533005,
+      -13.256291
+     ]
+    ]
+   },
+   {
+    "from": "s2-sg33",
+    "to": "s2-ass",
+    "mode": "direct",
+    "km": 4.752,
+    "points": [
+     [
+      26.533005,
+      -13.256291
+     ],
+     [
+      26.534704,
+      -13.263686
+     ],
+     [
+      26.55,
+      -13.3
+     ]
+    ]
+   },
+   {
+    "from": "s2-ass",
+    "to": "s3-sg1",
+    "mode": "direct",
+    "km": 2.612,
+    "points": [
+     [
+      26.55,
+      -13.3
+     ],
+     [
+      26.553324,
+      -13.323238
+     ],
+     [
+      26.55429,
+      -13.325744
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg1",
+    "to": "s3-sg2",
+    "mode": "direct",
+    "km": 2.649,
+    "points": [
+     [
+      26.55429,
+      -13.325744
+     ],
+     [
+      26.55339,
+      -13.330227
+     ],
+     [
+      26.558579,
+      -13.351489
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg2",
+    "to": "s3-sg3",
+    "mode": "road",
+    "km": 9.68,
+    "points": [
+     [
+      26.558579,
+      -13.351489
+     ],
+     [
+      26.559341,
+      -13.352262
+     ],
+     [
+      26.559768,
+      -13.352675
+     ],
+     [
+      26.55998,
+      -13.352857
+     ],
+     [
+      26.560195,
+      -13.35312
+     ],
+     [
+      26.560503,
+      -13.353619
+     ],
+     [
+      26.560963,
+      -13.354096
+     ],
+     [
+      26.561093,
+      -13.354303
+     ],
+     [
+      26.561201,
+      -13.354257
+     ],
+     [
+      26.563281,
+      -13.353811
+     ],
+     [
+      26.563993,
+      -13.353701
+     ],
+     [
+      26.564664,
+      -13.35344
+     ],
+     [
+      26.565658,
+      -13.353082
+     ],
+     [
+      26.566013,
+      -13.352994
+     ],
+     [
+      26.567342,
+      -13.352687
+     ],
+     [
+      26.570451,
+      -13.351271
+     ],
+     [
+      26.575325,
+      -13.35125
+     ],
+     [
+      26.576323,
+      -13.351185
+     ],
+     [
+      26.577148,
+      -13.350735
+     ],
+     [
+      26.583846,
+      -13.34728
+     ],
+     [
+      26.592226,
+      -13.336719
+     ],
+     [
+      26.614273,
+      -13.321057
+     ],
+     [
+      26.62785,
+      -13.311773
+     ],
+     [
+      26.631996,
+      -13.308913
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg3",
+    "to": "s3-sg4",
+    "mode": "road",
+    "km": 9.68,
+    "points": [
+     [
+      26.631996,
+      -13.308913
+     ],
+     [
+      26.635849,
+      -13.306254
+     ],
+     [
+      26.64904,
+      -13.29733
+     ],
+     [
+      26.660431,
+      -13.288833
+     ],
+     [
+      26.672454,
+      -13.27952
+     ],
+     [
+      26.678992,
+      -13.266882
+     ],
+     [
+      26.687671,
+      -13.252148
+     ],
+     [
+      26.6878,
+      -13.251617
+     ],
+     [
+      26.688125,
+      -13.251117
+     ],
+     [
+      26.688491,
+      -13.250692
+     ],
+     [
+      26.68864,
+      -13.250487
+     ],
+     [
+      26.68881,
+      -13.250282
+     ],
+     [
+      26.688857,
+      -13.250237
+     ],
+     [
+      26.688999,
+      -13.249948
+     ],
+     [
+      26.688925,
+      -13.249903
+     ],
+     [
+      26.688708,
+      -13.249425
+     ],
+     [
+      26.688647,
+      -13.249197
+     ],
+     [
+      26.688416,
+      -13.248522
+     ],
+     [
+      26.68923,
+      -13.248302
+     ],
+     [
+      26.689908,
+      -13.248074
+     ],
+     [
+      26.690125,
+      -13.248074
+     ],
+     [
+      26.690633,
+      -13.247945
+     ],
+     [
+      26.691589,
+      -13.247674
+     ],
+     [
+      26.691793,
+      -13.247563
+     ],
+     [
+      26.69209,
+      -13.247156
+     ],
+     [
+      26.692244,
+      -13.246873
+     ],
+     [
+      26.693004,
+      -13.245509
+     ],
+     [
+      26.692957,
+      -13.245347
+     ],
+     [
+      26.692939,
+      -13.245014
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg4",
+    "to": "s3-sg5",
+    "mode": "direct",
+    "km": 0.295,
+    "points": [
+     [
+      26.692939,
+      -13.245014
+     ],
+     [
+      26.693891,
+      -13.242245
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg5",
+    "to": "s3-sg6",
+    "mode": "road",
+    "km": 2.23,
+    "points": [
+     [
+      26.693891,
+      -13.242245
+     ],
+     [
+      26.694572,
+      -13.241532
+     ],
+     [
+      26.694902,
+      -13.241215
+     ],
+     [
+      26.696595,
+      -13.239951
+     ],
+     [
+      26.697454,
+      -13.239734
+     ],
+     [
+      26.697934,
+      -13.239637
+     ],
+     [
+      26.698925,
+      -13.239485
+     ],
+     [
+      26.700156,
+      -13.239325
+     ],
+     [
+      26.701001,
+      -13.239327
+     ],
+     [
+      26.701663,
+      -13.239364
+     ],
+     [
+      26.70266,
+      -13.239257
+     ],
+     [
+      26.703446,
+      -13.239021
+     ],
+     [
+      26.704424,
+      -13.238677
+     ],
+     [
+      26.705075,
+      -13.238355
+     ],
+     [
+      26.705555,
+      -13.238162
+     ],
+     [
+      26.705861,
+      -13.238205
+     ],
+     [
+      26.70613,
+      -13.238205
+     ],
+     [
+      26.706398,
+      -13.238205
+     ],
+     [
+      26.706609,
+      -13.238141
+     ],
+     [
+      26.707088,
+      -13.238098
+     ],
+     [
+      26.708257,
+      -13.237347
+     ],
+     [
+      26.709657,
+      -13.23621
+     ],
+     [
+      26.710538,
+      -13.235609
+     ],
+     [
+      26.711384,
+      -13.235295
+     ],
+     [
+      26.711443,
+      -13.235221
+     ],
+     [
+      26.711502,
+      -13.235114
+     ],
+     [
+      26.71163,
+      -13.234951
+     ],
+     [
+      26.711964,
+      -13.234486
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg6",
+    "to": "s3-sg7",
+    "mode": "direct",
+    "km": 0.32,
+    "points": [
+     [
+      26.711964,
+      -13.234486
+     ],
+     [
+      26.712381,
+      -13.231297
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg7",
+    "to": "s3-sg8",
+    "mode": "road",
+    "km": 5.163,
+    "points": [
+     [
+      26.712381,
+      -13.231297
+     ],
+     [
+      26.712355,
+      -13.231133
+     ],
+     [
+      26.712313,
+      -13.230934
+     ],
+     [
+      26.712313,
+      -13.230708
+     ],
+     [
+      26.712298,
+      -13.230362
+     ],
+     [
+      26.712274,
+      -13.230072
+     ],
+     [
+      26.712227,
+      -13.229849
+     ],
+     [
+      26.712209,
+      -13.229676
+     ],
+     [
+      26.712222,
+      -13.229216
+     ],
+     [
+      26.712243,
+      -13.228821
+     ],
+     [
+      26.712264,
+      -13.228375
+     ],
+     [
+      26.712269,
+      -13.228205
+     ],
+     [
+      26.712321,
+      -13.227622
+     ],
+     [
+      26.712337,
+      -13.227244
+     ],
+     [
+      26.712321,
+      -13.22698
+     ],
+     [
+      26.712295,
+      -13.226652
+     ],
+     [
+      26.712219,
+      -13.226274
+     ],
+     [
+      26.712193,
+      -13.225837
+     ],
+     [
+      26.712177,
+      -13.225362
+     ],
+     [
+      26.712182,
+      -13.224677
+     ],
+     [
+      26.712203,
+      -13.224234
+     ],
+     [
+      26.712193,
+      -13.223835
+     ],
+     [
+      26.712214,
+      -13.223525
+     ],
+     [
+      26.712245,
+      -13.223355
+     ],
+     [
+      26.712319,
+      -13.223071
+     ],
+     [
+      26.712371,
+      -13.222849
+     ],
+     [
+      26.712874,
+      -13.221423
+     ],
+     [
+      26.713348,
+      -13.220179
+     ],
+     [
+      26.713526,
+      -13.21979
+     ],
+     [
+      26.713733,
+      -13.21916
+     ],
+     [
+      26.713852,
+      -13.218961
+     ],
+     [
+      26.713933,
+      -13.218787
+     ],
+     [
+      26.714037,
+      -13.218604
+     ],
+     [
+      26.714155,
+      -13.218339
+     ],
+     [
+      26.714066,
+      -13.218082
+     ],
+     [
+      26.71394,
+      -13.217742
+     ],
+     [
+      26.714037,
+      -13.217411
+     ],
+     [
+      26.714106,
+      -13.217003
+     ],
+     [
+      26.714161,
+      -13.216276
+     ],
+     [
+      26.714217,
+      -13.21524
+     ],
+     [
+      26.714258,
+      -13.214667
+     ],
+     [
+      26.714299,
+      -13.213801
+     ],
+     [
+      26.714369,
+      -13.212811
+     ],
+     [
+      26.714369,
+      -13.212208
+     ],
+     [
+      26.714313,
+      -13.211636
+     ],
+     [
+      26.714258,
+      -13.210707
+     ],
+     [
+      26.713995,
+      -13.208758
+     ],
+     [
+      26.713479,
+      -13.205416
+     ],
+     [
+      26.713277,
+      -13.203594
+     ],
+     [
+      26.712828,
+      -13.200906
+     ],
+     [
+      26.712469,
+      -13.198455
+     ],
+     [
+      26.712256,
+      -13.197036
+     ],
+     [
+      26.711818,
+      -13.19549
+     ],
+     [
+      26.711436,
+      -13.194548
+     ],
+     [
+      26.709977,
+      -13.191206
+     ],
+     [
+      26.709371,
+      -13.189673
+     ],
+     [
+      26.70789,
+      -13.18706
+     ],
+     [
+      26.707142,
+      -13.185825
+     ],
+     [
+      26.706722,
+      -13.185074
+     ],
+     [
+      26.706492,
+      -13.184696
+     ],
+     [
+      26.706341,
+      -13.184469
+     ],
+     [
+      26.706307,
+      -13.184396
+     ],
+     [
+      26.706288,
+      -13.184307
+     ],
+     [
+      26.706272,
+      -13.184154
+     ],
+     [
+      26.706272,
+      -13.184
+     ],
+     [
+      26.706286,
+      -13.183806
+     ],
+     [
+      26.706326,
+      -13.183689
+     ],
+     [
+      26.706352,
+      -13.183592
+     ],
+     [
+      26.70654,
+      -13.183126
+     ],
+     [
+      26.706589,
+      -13.182961
+     ],
+     [
+      26.706879,
+      -13.181912
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg8",
+    "to": "s3-sg9",
+    "mode": "direct",
+    "km": 0.61,
+    "points": [
+     [
+      26.706879,
+      -13.181912
+     ],
+     [
+      26.702852,
+      -13.177742
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg9",
+    "to": "s3-sg10",
+    "mode": "direct",
+    "km": 0.554,
+    "points": [
+     [
+      26.702852,
+      -13.177742
+     ],
+     [
+      26.707716,
+      -13.176537
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg10",
+    "to": "s3-sg11",
+    "mode": "road",
+    "km": 3.022,
+    "points": [
+     [
+      26.707716,
+      -13.176537
+     ],
+     [
+      26.70781,
+      -13.175147
+     ],
+     [
+      26.707869,
+      -13.174227
+     ],
+     [
+      26.707953,
+      -13.173417
+     ],
+     [
+      26.708018,
+      -13.172377
+     ],
+     [
+      26.708096,
+      -13.17135
+     ],
+     [
+      26.708117,
+      -13.170915
+     ],
+     [
+      26.708147,
+      -13.170581
+     ],
+     [
+      26.708198,
+      -13.170169
+     ],
+     [
+      26.708222,
+      -13.169587
+     ],
+     [
+      26.708303,
+      -13.168705
+     ],
+     [
+      26.708389,
+      -13.167653
+     ],
+     [
+      26.708495,
+      -13.166497
+     ],
+     [
+      26.708528,
+      -13.166086
+     ],
+     [
+      26.708624,
+      -13.165084
+     ],
+     [
+      26.708678,
+      -13.164482
+     ],
+     [
+      26.708804,
+      -13.163255
+     ],
+     [
+      26.708883,
+      -13.162385
+     ],
+     [
+      26.708952,
+      -13.161704
+     ],
+     [
+      26.708984,
+      -13.161503
+     ],
+     [
+      26.708986,
+      -13.161409
+     ],
+     [
+      26.70897,
+      -13.16133
+     ],
+     [
+      26.70895,
+      -13.161242
+     ],
+     [
+      26.7089,
+      -13.161164
+     ],
+     [
+      26.708737,
+      -13.160792
+     ],
+     [
+      26.708615,
+      -13.160417
+     ],
+     [
+      26.708502,
+      -13.160095
+     ],
+     [
+      26.708361,
+      -13.159707
+     ],
+     [
+      26.708255,
+      -13.159518
+     ],
+     [
+      26.708152,
+      -13.159336
+     ],
+     [
+      26.708069,
+      -13.159229
+     ],
+     [
+      26.707944,
+      -13.159121
+     ],
+     [
+      26.707879,
+      -13.159066
+     ],
+     [
+      26.707738,
+      -13.158874
+     ],
+     [
+      26.707512,
+      -13.15852
+     ],
+     [
+      26.706992,
+      -13.157935
+     ],
+     [
+      26.706737,
+      -13.157679
+     ],
+     [
+      26.706703,
+      -13.157603
+     ],
+     [
+      26.706679,
+      -13.157498
+     ],
+     [
+      26.706665,
+      -13.157394
+     ],
+     [
+      26.706629,
+      -13.157207
+     ],
+     [
+      26.706571,
+      -13.15697
+     ],
+     [
+      26.706514,
+      -13.156629
+     ],
+     [
+      26.706451,
+      -13.156351
+     ],
+     [
+      26.706427,
+      -13.156214
+     ],
+     [
+      26.706405,
+      -13.156053
+     ],
+     [
+      26.706374,
+      -13.155865
+     ],
+     [
+      26.706316,
+      -13.155739
+     ],
+     [
+      26.706264,
+      -13.155658
+     ],
+     [
+      26.706228,
+      -13.155562
+     ],
+     [
+      26.706199,
+      -13.155443
+     ],
+     [
+      26.706186,
+      -13.155374
+     ],
+     [
+      26.706184,
+      -13.155298
+     ],
+     [
+      26.706171,
+      -13.155131
+     ],
+     [
+      26.70619,
+      -13.154799
+     ],
+     [
+      26.70618,
+      -13.154635
+     ],
+     [
+      26.706172,
+      -13.154513
+     ],
+     [
+      26.706148,
+      -13.154413
+     ],
+     [
+      26.706082,
+      -13.154157
+     ],
+     [
+      26.705967,
+      -13.153861
+     ],
+     [
+      26.705883,
+      -13.153646
+     ],
+     [
+      26.705812,
+      -13.153474
+     ],
+     [
+      26.70576,
+      -13.153282
+     ],
+     [
+      26.705763,
+      -13.153046
+     ],
+     [
+      26.7058,
+      -13.152846
+     ],
+     [
+      26.7058,
+      -13.15265
+     ],
+     [
+      26.705739,
+      -13.152447
+     ],
+     [
+      26.705708,
+      -13.152314
+     ],
+     [
+      26.705723,
+      -13.152138
+     ],
+     [
+      26.705705,
+      -13.151799
+     ],
+     [
+      26.70578,
+      -13.151531
+     ],
+     [
+      26.705863,
+      -13.151453
+     ],
+     [
+      26.706237,
+      -13.151128
+     ],
+     [
+      26.706471,
+      -13.150953
+     ],
+     [
+      26.706812,
+      -13.15064
+     ],
+     [
+      26.706948,
+      -13.150513
+     ],
+     [
+      26.707166,
+      -13.150329
+     ],
+     [
+      26.707328,
+      -13.150136
+     ],
+     [
+      26.707376,
+      -13.150049
+     ],
+     [
+      26.707414,
+      -13.149948
+     ],
+     [
+      26.707571,
+      -13.149452
+     ],
+     [
+      26.707608,
+      -13.149341
+     ],
+     [
+      26.707798,
+      -13.148899
+     ],
+     [
+      26.707913,
+      -13.148639
+     ],
+     [
+      26.708067,
+      -13.148274
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg11",
+    "to": "s3-sg12",
+    "mode": "direct",
+    "km": 0.359,
+    "points": [
+     [
+      26.708067,
+      -13.148274
+     ],
+     [
+      26.709737,
+      -13.145176
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg12",
+    "to": "s3-sg13",
+    "mode": "road",
+    "km": 1.661,
+    "points": [
+     [
+      26.709737,
+      -13.145176
+     ],
+     [
+      26.709952,
+      -13.144897
+     ],
+     [
+      26.710275,
+      -13.144492
+     ],
+     [
+      26.710783,
+      -13.143937
+     ],
+     [
+      26.711147,
+      -13.143626
+     ],
+     [
+      26.71159,
+      -13.143251
+     ],
+     [
+      26.712278,
+      -13.142679
+     ],
+     [
+      26.712491,
+      -13.142497
+     ],
+     [
+      26.713102,
+      -13.142003
+     ],
+     [
+      26.714001,
+      -13.141306
+     ],
+     [
+      26.714099,
+      -13.141244
+     ],
+     [
+      26.714108,
+      -13.141232
+     ],
+     [
+      26.714104,
+      -13.141213
+     ],
+     [
+      26.714077,
+      -13.141124
+     ],
+     [
+      26.714008,
+      -13.140981
+     ],
+     [
+      26.713936,
+      -13.140778
+     ],
+     [
+      26.713874,
+      -13.140619
+     ],
+     [
+      26.713852,
+      -13.140456
+     ],
+     [
+      26.713765,
+      -13.139969
+     ],
+     [
+      26.713559,
+      -13.139241
+     ],
+     [
+      26.713465,
+      -13.138787
+     ],
+     [
+      26.713391,
+      -13.138518
+     ],
+     [
+      26.713374,
+      -13.138372
+     ],
+     [
+      26.713294,
+      -13.138243
+     ],
+     [
+      26.713171,
+      -13.137873
+     ],
+     [
+      26.713047,
+      -13.137444
+     ],
+     [
+      26.712979,
+      -13.137233
+     ],
+     [
+      26.712873,
+      -13.136782
+     ],
+     [
+      26.712836,
+      -13.136568
+     ],
+     [
+      26.712811,
+      -13.136276
+     ],
+     [
+      26.712797,
+      -13.135982
+     ],
+     [
+      26.712781,
+      -13.135777
+     ],
+     [
+      26.712776,
+      -13.135514
+     ],
+     [
+      26.712769,
+      -13.135184
+     ],
+     [
+      26.712749,
+      -13.134718
+     ],
+     [
+      26.712757,
+      -13.134381
+     ],
+     [
+      26.71277,
+      -13.13417
+     ],
+     [
+      26.712802,
+      -13.133778
+     ],
+     [
+      26.71281,
+      -13.133652
+     ],
+     [
+      26.712784,
+      -13.133499
+     ],
+     [
+      26.712711,
+      -13.13319
+     ],
+     [
+      26.712714,
+      -13.132907
+     ],
+     [
+      26.712731,
+      -13.132726
+     ],
+     [
+      26.71274,
+      -13.132388
+     ],
+     [
+      26.712726,
+      -13.132156
+     ],
+     [
+      26.712729,
+      -13.131661
+     ],
+     [
+      26.712737,
+      -13.131307
+     ],
+     [
+      26.712727,
+      -13.131078
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg13",
+    "to": "s3-sg14",
+    "mode": "direct",
+    "km": 0.331,
+    "points": [
+     [
+      26.712727,
+      -13.131078
+     ],
+     [
+      26.713386,
+      -13.127827
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg14",
+    "to": "s3-sg15",
+    "mode": "road",
+    "km": 0.375,
+    "points": [
+     [
+      26.713386,
+      -13.127827
+     ],
+     [
+      26.713389,
+      -13.127522
+     ],
+     [
+      26.713416,
+      -13.127231
+     ],
+     [
+      26.713449,
+      -13.12691
+     ],
+     [
+      26.713516,
+      -13.1266
+     ],
+     [
+      26.713552,
+      -13.126488
+     ],
+     [
+      26.713568,
+      -13.126333
+     ],
+     [
+      26.713532,
+      -13.126021
+     ],
+     [
+      26.71354,
+      -13.125866
+     ],
+     [
+      26.713554,
+      -13.125702
+     ],
+     [
+      26.713614,
+      -13.125492
+     ],
+     [
+      26.7137,
+      -13.125257
+     ],
+     [
+      26.713778,
+      -13.124965
+     ],
+     [
+      26.713797,
+      -13.124828
+     ],
+     [
+      26.713791,
+      -13.124763
+     ],
+     [
+      26.71379,
+      -13.124695
+     ],
+     [
+      26.713823,
+      -13.124507
+     ],
+     [
+      26.713856,
+      -13.124385
+     ],
+     [
+      26.713898,
+      -13.124297
+     ],
+     [
+      26.71393,
+      -13.124141
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg15",
+    "to": "s3-sg35",
+    "mode": "direct",
+    "km": 0.882,
+    "points": [
+     [
+      26.71393,
+      -13.124141
+     ],
+     [
+      26.718838,
+      -13.117167
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg35",
+    "to": "s3-sg36",
+    "mode": "direct",
+    "km": 0.375,
+    "points": [
+     [
+      26.718838,
+      -13.117167
+     ],
+     [
+      26.720924,
+      -13.114204
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg36",
+    "to": "s3-sg16",
+    "mode": "direct",
+    "km": 0.035,
+    "points": [
+     [
+      26.720924,
+      -13.114204
+     ],
+     [
+      26.721121,
+      -13.113924
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg16",
+    "to": "s3-sg17",
+    "mode": "road",
+    "km": 7.355,
+    "points": [
+     [
+      26.721121,
+      -13.113924
+     ],
+     [
+      26.724024,
+      -13.1139
+     ],
+     [
+      26.726636,
+      -13.11387
+     ],
+     [
+      26.72745,
+      -13.113848
+     ],
+     [
+      26.729768,
+      -13.113839
+     ],
+     [
+      26.730699,
+      -13.113801
+     ],
+     [
+      26.732236,
+      -13.113805
+     ],
+     [
+      26.733037,
+      -13.113763
+     ],
+     [
+      26.736652,
+      -13.113759
+     ],
+     [
+      26.741386,
+      -13.113602
+     ],
+     [
+      26.741729,
+      -13.1133
+     ],
+     [
+      26.74192,
+      -13.112929
+     ],
+     [
+      26.741996,
+      -13.112463
+     ],
+     [
+      26.742169,
+      -13.112
+     ],
+     [
+      26.742161,
+      -13.111559
+     ],
+     [
+      26.742352,
+      -13.111185
+     ],
+     [
+      26.742397,
+      -13.110759
+     ],
+     [
+      26.742854,
+      -13.109454
+     ],
+     [
+      26.74287,
+      -13.109121
+     ],
+     [
+      26.743103,
+      -13.108553
+     ],
+     [
+      26.743164,
+      -13.108105
+     ],
+     [
+      26.743474,
+      -13.107257
+     ],
+     [
+      26.743459,
+      -13.106764
+     ],
+     [
+      26.743682,
+      -13.105875
+     ],
+     [
+      26.744689,
+      -13.103668
+     ],
+     [
+      26.745075,
+      -13.102413
+     ],
+     [
+      26.745681,
+      -13.101212
+     ],
+     [
+      26.746423,
+      -13.100163
+     ],
+     [
+      26.746916,
+      -13.099598
+     ],
+     [
+      26.747524,
+      -13.09912
+     ],
+     [
+      26.747873,
+      -13.098731
+     ],
+     [
+      26.74818,
+      -13.09826
+     ],
+     [
+      26.74837,
+      -13.097739
+     ],
+     [
+      26.748601,
+      -13.097241
+     ],
+     [
+      26.748783,
+      -13.096434
+     ],
+     [
+      26.748759,
+      -13.095861
+     ],
+     [
+      26.748714,
+      -13.094593
+     ],
+     [
+      26.748716,
+      -13.09296
+     ],
+     [
+      26.748743,
+      -13.091965
+     ],
+     [
+      26.748784,
+      -13.090698
+     ],
+     [
+      26.748811,
+      -13.089868
+     ],
+     [
+      26.749047,
+      -13.088708
+     ],
+     [
+      26.749568,
+      -13.086806
+     ],
+     [
+      26.7497,
+      -13.086376
+     ],
+     [
+      26.750904,
+      -13.082345
+     ],
+     [
+      26.751319,
+      -13.080691
+     ],
+     [
+      26.751604,
+      -13.079175
+     ],
+     [
+      26.75191,
+      -13.077814
+     ],
+     [
+      26.753012,
+      -13.075403
+     ],
+     [
+      26.753464,
+      -13.074015
+     ],
+     [
+      26.753678,
+      -13.073508
+     ],
+     [
+      26.753973,
+      -13.073062
+     ],
+     [
+      26.75414,
+      -13.072839
+     ],
+     [
+      26.754311,
+      -13.072716
+     ],
+     [
+      26.754518,
+      -13.072619
+     ],
+     [
+      26.75514,
+      -13.07245
+     ],
+     [
+      26.756581,
+      -13.072165
+     ],
+     [
+      26.757349,
+      -13.071882
+     ],
+     [
+      26.758069,
+      -13.071713
+     ],
+     [
+      26.758355,
+      -13.071583
+     ],
+     [
+      26.75883,
+      -13.071312
+     ],
+     [
+      26.759297,
+      -13.071134
+     ],
+     [
+      26.75968,
+      -13.070947
+     ],
+     [
+      26.760124,
+      -13.070697
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg17",
+    "to": "s3-sg18",
+    "mode": "direct",
+    "km": 0.763,
+    "points": [
+     [
+      26.760124,
+      -13.070697
+     ],
+     [
+      26.765853,
+      -13.066469
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg18",
+    "to": "s3-sg19",
+    "mode": "road",
+    "km": 2.689,
+    "points": [
+     [
+      26.765853,
+      -13.066469
+     ],
+     [
+      26.766234,
+      -13.065919
+     ],
+     [
+      26.76637,
+      -13.065645
+     ],
+     [
+      26.766576,
+      -13.065164
+     ],
+     [
+      26.766597,
+      -13.064865
+     ],
+     [
+      26.766513,
+      -13.064618
+     ],
+     [
+      26.766453,
+      -13.064306
+     ],
+     [
+      26.766162,
+      -13.063577
+     ],
+     [
+      26.766103,
+      -13.063135
+     ],
+     [
+      26.765674,
+      -13.061945
+     ],
+     [
+      26.76565,
+      -13.061556
+     ],
+     [
+      26.765764,
+      -13.060812
+     ],
+     [
+      26.765736,
+      -13.060235
+     ],
+     [
+      26.765877,
+      -13.059833
+     ],
+     [
+      26.765999,
+      -13.059629
+     ],
+     [
+      26.766182,
+      -13.059441
+     ],
+     [
+      26.766317,
+      -13.059182
+     ],
+     [
+      26.766513,
+      -13.058746
+     ],
+     [
+      26.766721,
+      -13.058641
+     ],
+     [
+      26.766897,
+      -13.05842
+     ],
+     [
+      26.767125,
+      -13.058274
+     ],
+     [
+      26.767572,
+      -13.058027
+     ],
+     [
+      26.767806,
+      -13.057894
+     ],
+     [
+      26.768112,
+      -13.057793
+     ],
+     [
+      26.768409,
+      -13.057772
+     ],
+     [
+      26.769147,
+      -13.057457
+     ],
+     [
+      26.769381,
+      -13.057237
+     ],
+     [
+      26.769577,
+      -13.056822
+     ],
+     [
+      26.769753,
+      -13.056675
+     ],
+     [
+      26.770116,
+      -13.056483
+     ],
+     [
+      26.770394,
+      -13.056237
+     ],
+     [
+      26.770498,
+      -13.055946
+     ],
+     [
+      26.770563,
+      -13.055577
+     ],
+     [
+      26.770742,
+      -13.055291
+     ],
+     [
+      26.770817,
+      -13.054964
+     ],
+     [
+      26.770908,
+      -13.054487
+     ],
+     [
+      26.771037,
+      -13.054057
+     ],
+     [
+      26.771188,
+      -13.053669
+     ],
+     [
+      26.771286,
+      -13.053385
+     ],
+     [
+      26.771347,
+      -13.052985
+     ],
+     [
+      26.771323,
+      -13.052642
+     ],
+     [
+      26.771259,
+      -13.052106
+     ],
+     [
+      26.771247,
+      -13.051873
+     ],
+     [
+      26.771154,
+      -13.051516
+     ],
+     [
+      26.771158,
+      -13.050407
+     ],
+     [
+      26.771311,
+      -13.04955
+     ],
+     [
+      26.771364,
+      -13.048977
+     ],
+     [
+      26.771333,
+      -13.048834
+     ],
+     [
+      26.771209,
+      -13.048638
+     ],
+     [
+      26.771176,
+      -13.048303
+     ],
+     [
+      26.771051,
+      -13.047847
+     ],
+     [
+      26.771007,
+      -13.047484
+     ],
+     [
+      26.770991,
+      -13.047172
+     ],
+     [
+      26.771043,
+      -13.046925
+     ],
+     [
+      26.771219,
+      -13.046603
+     ],
+     [
+      26.771351,
+      -13.046304
+     ],
+     [
+      26.771609,
+      -13.046129
+     ],
+     [
+      26.77189,
+      -13.046034
+     ],
+     [
+      26.772325,
+      -13.045721
+     ],
+     [
+      26.772983,
+      -13.045589
+     ],
+     [
+      26.773097,
+      -13.045535
+     ],
+     [
+      26.773247,
+      -13.045343
+     ],
+     [
+      26.773331,
+      -13.045114
+     ],
+     [
+      26.773323,
+      -13.044605
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg19",
+    "to": "s3-sg20",
+    "mode": "direct",
+    "km": 0.336,
+    "points": [
+     [
+      26.773323,
+      -13.044605
+     ],
+     [
+      26.772857,
+      -13.041265
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg20",
+    "to": "s3-sg21",
+    "mode": "road",
+    "km": 3.679,
+    "points": [
+     [
+      26.772857,
+      -13.041265
+     ],
+     [
+      26.772786,
+      -13.040656
+     ],
+     [
+      26.77287,
+      -13.040373
+     ],
+     [
+      26.772934,
+      -13.040281
+     ],
+     [
+      26.773047,
+      -13.040258
+     ],
+     [
+      26.773153,
+      -13.040336
+     ],
+     [
+      26.773401,
+      -13.040363
+     ],
+     [
+      26.773475,
+      -13.040329
+     ],
+     [
+      26.773491,
+      -13.040178
+     ],
+     [
+      26.773489,
+      -13.039875
+     ],
+     [
+      26.773488,
+      -13.039772
+     ],
+     [
+      26.77348,
+      -13.03951
+     ],
+     [
+      26.773531,
+      -13.039204
+     ],
+     [
+      26.773887,
+      -13.037845
+     ],
+     [
+      26.77393,
+      -13.037457
+     ],
+     [
+      26.773767,
+      -13.035567
+     ],
+     [
+      26.780296,
+      -13.030326
+     ],
+     [
+      26.783273,
+      -13.0279
+     ],
+     [
+      26.784414,
+      -13.026969
+     ],
+     [
+      26.78478,
+      -13.026668
+     ],
+     [
+      26.787055,
+      -13.024817
+     ],
+     [
+      26.788379,
+      -13.023751
+     ],
+     [
+      26.791608,
+      -13.021181
+     ],
+     [
+      26.792049,
+      -13.02086
+     ],
+     [
+      26.792153,
+      -13.020862
+     ],
+     [
+      26.792364,
+      -13.021099
+     ],
+     [
+      26.792937,
+      -13.021302
+     ],
+     [
+      26.793102,
+      -13.021505
+     ],
+     [
+      26.793332,
+      -13.021615
+     ],
+     [
+      26.793436,
+      -13.021573
+     ],
+     [
+      26.793477,
+      -13.021503
+     ],
+     [
+      26.793364,
+      -13.021287
+     ],
+     [
+      26.792746,
+      -13.020493
+     ],
+     [
+      26.792765,
+      -13.020339
+     ],
+     [
+      26.792865,
+      -13.020159
+     ],
+     [
+      26.793085,
+      -13.020006
+     ],
+     [
+      26.793303,
+      -13.019748
+     ],
+     [
+      26.793587,
+      -13.019621
+     ],
+     [
+      26.793712,
+      -13.01916
+     ],
+     [
+      26.793915,
+      -13.018942
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg21",
+    "to": "s3-sg22",
+    "mode": "direct",
+    "km": 2.691,
+    "points": [
+     [
+      26.793915,
+      -13.018942
+     ],
+     [
+      26.799927,
+      -13.026879
+     ],
+     [
+      26.814691,
+      -13.029238
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg22",
+    "to": "s3-sg23",
+    "mode": "direct",
+    "km": 2.526,
+    "points": [
+     [
+      26.814691,
+      -13.029238
+     ],
+     [
+      26.828755,
+      -13.036208
+     ],
+     [
+      26.835467,
+      -13.039534
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg23",
+    "to": "s3-sg24",
+    "mode": "direct",
+    "km": 4.461,
+    "points": [
+     [
+      26.835467,
+      -13.039534
+     ],
+     [
+      26.868382,
+      -13.040139
+     ],
+     [
+      26.875559,
+      -13.039534
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg24",
+    "to": "s3-sg25",
+    "mode": "direct",
+    "km": 3.719,
+    "points": [
+     [
+      26.875559,
+      -13.039534
+     ],
+     [
+      26.90152,
+      -13.030275
+     ],
+     [
+      26.90701,
+      -13.033521
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg25",
+    "to": "s3-sg26",
+    "mode": "direct",
+    "km": 3.571,
+    "points": [
+     [
+      26.90701,
+      -13.033521
+     ],
+     [
+      26.910117,
+      -13.034155
+     ],
+     [
+      26.93846,
+      -13.027508
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg26",
+    "to": "s3-sg27",
+    "mode": "road",
+    "km": 1.62,
+    "points": [
+     [
+      26.93846,
+      -13.027508
+     ],
+     [
+      26.938843,
+      -13.02839
+     ],
+     [
+      26.939182,
+      -13.029035
+     ],
+     [
+      26.940792,
+      -13.033045
+     ],
+     [
+      26.940937,
+      -13.033546
+     ],
+     [
+      26.94131,
+      -13.034393
+     ],
+     [
+      26.941698,
+      -13.035041
+     ],
+     [
+      26.942923,
+      -13.036601
+     ],
+     [
+      26.943225,
+      -13.037273
+     ],
+     [
+      26.943453,
+      -13.037724
+     ],
+     [
+      26.944836,
+      -13.03994
+     ],
+     [
+      26.945041,
+      -13.040423
+     ],
+     [
+      26.94528,
+      -13.041002
+     ],
+     [
+      26.945591,
+      -13.041651
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg27",
+    "to": "s3-sg28",
+    "mode": "direct",
+    "km": 0.361,
+    "points": [
+     [
+      26.945591,
+      -13.041651
+     ],
+     [
+      26.947889,
+      -13.044218
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg28",
+    "to": "s3-sg29",
+    "mode": "road",
+    "km": 4.821,
+    "points": [
+     [
+      26.947889,
+      -13.044218
+     ],
+     [
+      26.948258,
+      -13.044336
+     ],
+     [
+      26.948594,
+      -13.044655
+     ],
+     [
+      26.949416,
+      -13.0465
+     ],
+     [
+      26.949634,
+      -13.046735
+     ],
+     [
+      26.950943,
+      -13.048664
+     ],
+     [
+      26.951676,
+      -13.049269
+     ],
+     [
+      26.952134,
+      -13.049537
+     ],
+     [
+      26.953157,
+      -13.049856
+     ],
+     [
+      26.955104,
+      -13.050527
+     ],
+     [
+      26.956429,
+      -13.051752
+     ],
+     [
+      26.956664,
+      -13.052003
+     ],
+     [
+      26.956882,
+      -13.052356
+     ],
+     [
+      26.958107,
+      -13.053043
+     ],
+     [
+      26.959986,
+      -13.053866
+     ],
+     [
+      26.96158,
+      -13.054318
+     ],
+     [
+      26.963006,
+      -13.054822
+     ],
+     [
+      26.963845,
+      -13.055308
+     ],
+     [
+      26.965673,
+      -13.056231
+     ],
+     [
+      26.966311,
+      -13.056416
+     ],
+     [
+      26.966646,
+      -13.056617
+     ],
+     [
+      26.967368,
+      -13.056802
+     ],
+     [
+      26.968626,
+      -13.057439
+     ],
+     [
+      26.970942,
+      -13.058328
+     ],
+     [
+      26.971948,
+      -13.058781
+     ],
+     [
+      26.97418,
+      -13.059838
+     ],
+     [
+      26.974877,
+      -13.060255
+     ],
+     [
+      26.975527,
+      -13.060572
+     ],
+     [
+      26.976187,
+      -13.060781
+     ],
+     [
+      26.976579,
+      -13.060912
+     ],
+     [
+      26.979112,
+      -13.061868
+     ],
+     [
+      26.98084,
+      -13.062338
+     ],
+     [
+      26.981847,
+      -13.062556
+     ],
+     [
+      26.982602,
+      -13.062858
+     ],
+     [
+      26.983911,
+      -13.063714
+     ],
+     [
+      26.984431,
+      -13.063848
+     ],
+     [
+      26.986041,
+      -13.064687
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg29",
+    "to": "s3-sg30",
+    "mode": "direct",
+    "km": 2.584,
+    "points": [
+     [
+      26.986041,
+      -13.064687
+     ],
+     [
+      26.996779,
+      -13.046148
+     ],
+     [
+      26.999209,
+      -13.043261
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg30",
+    "to": "s3-sg31",
+    "mode": "direct",
+    "km": 2.623,
+    "points": [
+     [
+      26.999209,
+      -13.043261
+     ],
+     [
+      27.000021,
+      -13.03874
+     ],
+     [
+      27.012376,
+      -13.021835
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg31",
+    "to": "s3-sg37",
+    "mode": "road",
+    "km": 0.571,
+    "points": [
+     [
+      27.012376,
+      -13.021835
+     ],
+     [
+      27.013116,
+      -13.022902
+     ],
+     [
+      27.013573,
+      -13.023506
+     ],
+     [
+      27.01381,
+      -13.023715
+     ],
+     [
+      27.014115,
+      -13.023927
+     ],
+     [
+      27.014999,
+      -13.024319
+     ],
+     [
+      27.015203,
+      -13.024461
+     ],
+     [
+      27.015477,
+      -13.024742
+     ],
+     [
+      27.015848,
+      -13.025013
+     ],
+     [
+      27.016151,
+      -13.025113
+     ],
+     [
+      27.016388,
+      -13.02515
+     ],
+     [
+      27.016389,
+      -13.02515
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg37",
+    "to": "s3-sg32",
+    "mode": "road",
+    "km": 0.384,
+    "points": [
+     [
+      27.016389,
+      -13.02515
+     ],
+     [
+      27.016735,
+      -13.024981
+     ],
+     [
+      27.017174,
+      -13.024685
+     ],
+     [
+      27.017773,
+      -13.024365
+     ],
+     [
+      27.017841,
+      -13.024342
+     ],
+     [
+      27.018579,
+      -13.024143
+     ],
+     [
+      27.019628,
+      -13.023891
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg32",
+    "to": "s3-sg33",
+    "mode": "direct",
+    "km": 0.29,
+    "points": [
+     [
+      27.019628,
+      -13.023891
+     ],
+     [
+      27.021195,
+      -13.021548
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg33",
+    "to": "s3-sg34",
+    "mode": "road",
+    "km": 12.494,
+    "points": [
+     [
+      27.021195,
+      -13.021548
+     ],
+     [
+      27.021143,
+      -13.020463
+     ],
+     [
+      27.020709,
+      -13.019811
+     ],
+     [
+      27.01905,
+      -13.016985
+     ],
+     [
+      27.018124,
+      -13.015207
+     ],
+     [
+      27.017126,
+      -13.012395
+     ],
+     [
+      27.017089,
+      -13.011368
+     ],
+     [
+      27.01681,
+      -13.009225
+     ],
+     [
+      27.016584,
+      -13.006678
+     ],
+     [
+      27.016096,
+      -13.003945
+     ],
+     [
+      27.015899,
+      -13.002559
+     ],
+     [
+      27.015896,
+      -13.000844
+     ],
+     [
+      27.016194,
+      -12.999093
+     ],
+     [
+      27.01616,
+      -12.997993
+     ],
+     [
+      27.016187,
+      -12.997359
+     ],
+     [
+      27.015896,
+      -12.996482
+     ],
+     [
+      27.015837,
+      -12.996004
+     ],
+     [
+      27.015495,
+      -12.994721
+     ],
+     [
+      27.015172,
+      -12.993672
+     ],
+     [
+      27.015108,
+      -12.992502
+     ],
+     [
+      27.014923,
+      -12.991916
+     ],
+     [
+      27.014935,
+      -12.991261
+     ],
+     [
+      27.014728,
+      -12.990041
+     ],
+     [
+      27.014706,
+      -12.989167
+     ],
+     [
+      27.014433,
+      -12.988127
+     ],
+     [
+      27.013573,
+      -12.985311
+     ],
+     [
+      27.013484,
+      -12.983751
+     ],
+     [
+      27.013294,
+      -12.983107
+     ],
+     [
+      27.013279,
+      -12.982437
+     ],
+     [
+      27.013208,
+      -12.981876
+     ],
+     [
+      27.013306,
+      -12.981284
+     ],
+     [
+      27.013223,
+      -12.980609
+     ],
+     [
+      27.013058,
+      -12.980067
+     ],
+     [
+      27.012922,
+      -12.979257
+     ],
+     [
+      27.012612,
+      -12.978217
+     ],
+     [
+      27.012444,
+      -12.976889
+     ],
+     [
+      27.012479,
+      -12.975055
+     ],
+     [
+      27.012281,
+      -12.973548
+     ],
+     [
+      27.012397,
+      -12.972973
+     ],
+     [
+      27.013223,
+      -12.971935
+     ],
+     [
+      27.013543,
+      -12.970469
+     ],
+     [
+      27.013469,
+      -12.969919
+     ],
+     [
+      27.013696,
+      -12.969172
+     ],
+     [
+      27.013708,
+      -12.968517
+     ],
+     [
+      27.013839,
+      -12.967961
+     ],
+     [
+      27.013881,
+      -12.96748
+     ],
+     [
+      27.014573,
+      -12.965903
+     ],
+     [
+      27.014797,
+      -12.962687
+     ],
+     [
+      27.012488,
+      -12.954845
+     ],
+     [
+      27.011716,
+      -12.951181
+     ],
+     [
+      27.012136,
+      -12.949761
+     ],
+     [
+      27.012199,
+      -12.947769
+     ],
+     [
+      27.011701,
+      -12.945236
+     ],
+     [
+      27.011622,
+      -12.941801
+     ],
+     [
+      27.010289,
+      -12.938796
+     ],
+     [
+      27.006749,
+      -12.928044
+     ],
+     [
+      27.006665,
+      -12.921459
+     ],
+     [
+      27.005118,
+      -12.906107
+     ],
+     [
+      27.007395,
+      -12.900469
+     ]
+    ]
+   },
+   {
+    "from": "s3-sg34",
+    "to": "s3-ass",
+    "mode": "direct",
+    "km": 4.738,
+    "points": [
+     [
+      27.007395,
+      -12.900469
+     ],
+     [
+      27.05,
+      -12.9
+     ]
+    ]
+   },
+   {
+    "from": "s3-ass",
+    "to": "s4-sg1",
+    "mode": "direct",
+    "km": 2.434,
+    "points": [
+     [
+      27.05,
+      -12.9
+     ],
+     [
+      27.041595,
+      -12.88463
+     ],
+     [
+      27.041382,
+      -12.878089
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg1",
+    "to": "s4-sg2",
+    "mode": "direct",
+    "km": 2.328,
+    "points": [
+     [
+      27.041382,
+      -12.878089
+     ],
+     [
+      27.025842,
+      -12.862333
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg2",
+    "to": "s4-sg3",
+    "mode": "road",
+    "km": 13.486,
+    "points": [
+     [
+      27.025842,
+      -12.862333
+     ],
+     [
+      27.025434,
+      -12.853838
+     ],
+     [
+      27.023154,
+      -12.845654
+     ],
+     [
+      27.02287,
+      -12.842258
+     ],
+     [
+      27.022929,
+      -12.841714
+     ],
+     [
+      27.022724,
+      -12.840418
+     ],
+     [
+      27.022638,
+      -12.839871
+     ],
+     [
+      27.022526,
+      -12.838654
+     ],
+     [
+      27.020957,
+      -12.833434
+     ],
+     [
+      27.01923,
+      -12.831213
+     ],
+     [
+      27.015714,
+      -12.828261
+     ],
+     [
+      27.011427,
+      -12.823526
+     ],
+     [
+      27.011274,
+      -12.82324
+     ],
+     [
+      27.01133,
+      -12.82255
+     ],
+     [
+      27.011599,
+      -12.822182
+     ],
+     [
+      27.011538,
+      -12.820608
+     ],
+     [
+      27.011122,
+      -12.817585
+     ],
+     [
+      27.005876,
+      -12.804409
+     ],
+     [
+      27.006954,
+      -12.800503
+     ],
+     [
+      27.005286,
+      -12.792924
+     ],
+     [
+      27.00556,
+      -12.779064
+     ],
+     [
+      27.006197,
+      -12.770898
+     ],
+     [
+      27.007263,
+      -12.764596
+     ],
+     [
+      27.008412,
+      -12.762778
+     ],
+     [
+      27.013181,
+      -12.747568
+     ],
+     [
+      27.012937,
+      -12.737998
+     ],
+     [
+      27.012939,
+      -12.735008
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg3",
+    "to": "s4-sg4",
+    "mode": "road",
+    "km": 13.486,
+    "points": [
+     [
+      27.012939,
+      -12.735008
+     ],
+     [
+      27.012943,
+      -12.727118
+     ],
+     [
+      27.013717,
+      -12.720456
+     ],
+     [
+      27.011699,
+      -12.714434
+     ],
+     [
+      27.012282,
+      -12.701821
+     ],
+     [
+      27.010931,
+      -12.684179
+     ],
+     [
+      27.011217,
+      -12.678572
+     ],
+     [
+      27.01152,
+      -12.668581
+     ],
+     [
+      27.010133,
+      -12.656752
+     ],
+     [
+      27.009472,
+      -12.649835
+     ],
+     [
+      27.008799,
+      -12.641729
+     ],
+     [
+      27.008109,
+      -12.637479
+     ],
+     [
+      27.007561,
+      -12.636309
+     ],
+     [
+      27.007841,
+      -12.634131
+     ],
+     [
+      27.007513,
+      -12.627154
+     ],
+     [
+      27.007157,
+      -12.614898
+     ],
+     [
+      27.008332,
+      -12.612336
+     ],
+     [
+      27.011122,
+      -12.609433
+     ],
+     [
+      27.013094,
+      -12.608523
+     ],
+     [
+      27.015174,
+      -12.607735
+     ],
+     [
+      27.016355,
+      -12.606825
+     ],
+     [
+      27.017031,
+      -12.60565
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg4",
+    "to": "s4-sg5",
+    "mode": "direct",
+    "km": 3.907,
+    "points": [
+     [
+      27.017031,
+      -12.60565
+     ],
+     [
+      27.044815,
+      -12.62311
+     ],
+     [
+      27.047935,
+      -12.624306
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg5",
+    "to": "s4-sg6",
+    "mode": "direct",
+    "km": 1.822,
+    "points": [
+     [
+      27.047935,
+      -12.624306
+     ],
+     [
+      27.064317,
+      -12.624306
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg6",
+    "to": "s4-sg7",
+    "mode": "direct",
+    "km": 3.023,
+    "points": [
+     [
+      27.064317,
+      -12.624306
+     ],
+     [
+      27.058363,
+      -12.623216
+     ],
+     [
+      27.042933,
+      -12.606969
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg7",
+    "to": "s4-sg8",
+    "mode": "direct",
+    "km": 2.961,
+    "points": [
+     [
+      27.042933,
+      -12.606969
+     ],
+     [
+      27.024208,
+      -12.593656
+     ],
+     [
+      27.021549,
+      -12.589633
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg8",
+    "to": "s4-sg9",
+    "mode": "road",
+    "km": 8.826,
+    "points": [
+     [
+      27.021549,
+      -12.589633
+     ],
+     [
+      27.022575,
+      -12.584599
+     ],
+     [
+      27.022291,
+      -12.578141
+     ],
+     [
+      27.024263,
+      -12.568779
+     ],
+     [
+      27.025263,
+      -12.562222
+     ],
+     [
+      27.025675,
+      -12.555354
+     ],
+     [
+      27.025364,
+      -12.550866
+     ],
+     [
+      27.025249,
+      -12.547167
+     ],
+     [
+      27.025148,
+      -12.545697
+     ],
+     [
+      27.026384,
+      -12.543362
+     ],
+     [
+      27.029767,
+      -12.538116
+     ],
+     [
+      27.03028,
+      -12.536471
+     ],
+     [
+      27.031387,
+      -12.531279
+     ],
+     [
+      27.03238,
+      -12.523425
+     ],
+     [
+      27.032697,
+      -12.521538
+     ],
+     [
+      27.032812,
+      -12.517694
+     ],
+     [
+      27.033987,
+      -12.514207
+     ],
+     [
+      27.033352,
+      -12.511729
+     ],
+     [
+      27.033204,
+      -12.507089
+     ],
+     [
+      27.034012,
+      -12.503479
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg9",
+    "to": "s4-sg10",
+    "mode": "road",
+    "km": 8.826,
+    "points": [
+     [
+      27.034012,
+      -12.503479
+     ],
+     [
+      27.036607,
+      -12.491883
+     ],
+     [
+      27.037336,
+      -12.491004
+     ],
+     [
+      27.037856,
+      -12.489798
+     ],
+     [
+      27.041137,
+      -12.487221
+     ],
+     [
+      27.041326,
+      -12.483438
+     ],
+     [
+      27.042122,
+      -12.480569
+     ],
+     [
+      27.047252,
+      -12.469873
+     ],
+     [
+      27.047821,
+      -12.468942
+     ],
+     [
+      27.050615,
+      -12.464362
+     ],
+     [
+      27.051573,
+      -12.463142
+     ],
+     [
+      27.053363,
+      -12.459954
+     ],
+     [
+      27.060737,
+      -12.453419
+     ],
+     [
+      27.066732,
+      -12.450014
+     ],
+     [
+      27.075431,
+      -12.441847
+     ],
+     [
+      27.080785,
+      -12.436137
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg10",
+    "to": "s4-sg11",
+    "mode": "direct",
+    "km": 0.409,
+    "points": [
+     [
+      27.080785,
+      -12.436137
+     ],
+     [
+      27.077239,
+      -12.43504
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg11",
+    "to": "s4-sg12",
+    "mode": "road",
+    "km": 4.868,
+    "points": [
+     [
+      27.077239,
+      -12.43504
+     ],
+     [
+      27.076145,
+      -12.434811
+     ],
+     [
+      27.07453,
+      -12.43426
+     ],
+     [
+      27.073901,
+      -12.433987
+     ],
+     [
+      27.073373,
+      -12.433498
+     ],
+     [
+      27.072859,
+      -12.433399
+     ],
+     [
+      27.070635,
+      -12.433678
+     ],
+     [
+      27.068947,
+      -12.431993
+     ],
+     [
+      27.067991,
+      -12.430271
+     ],
+     [
+      27.066854,
+      -12.429031
+     ],
+     [
+      27.066647,
+      -12.428571
+     ],
+     [
+      27.066094,
+      -12.427699
+     ],
+     [
+      27.065294,
+      -12.426393
+     ],
+     [
+      27.06401,
+      -12.423774
+     ],
+     [
+      27.062876,
+      -12.420819
+     ],
+     [
+      27.061792,
+      -12.418273
+     ],
+     [
+      27.060868,
+      -12.416474
+     ],
+     [
+      27.060635,
+      -12.415561
+     ],
+     [
+      27.06018,
+      -12.414506
+     ],
+     [
+      27.058754,
+      -12.410646
+     ],
+     [
+      27.058401,
+      -12.4097
+     ],
+     [
+      27.058129,
+      -12.409259
+     ],
+     [
+      27.057866,
+      -12.408078
+     ],
+     [
+      27.057467,
+      -12.406831
+     ],
+     [
+      27.056589,
+      -12.404656
+     ],
+     [
+      27.05652,
+      -12.403725
+     ],
+     [
+      27.056182,
+      -12.40289
+     ],
+     [
+      27.056133,
+      -12.402371
+     ],
+     [
+      27.055707,
+      -12.401231
+     ],
+     [
+      27.055386,
+      -12.400002
+     ],
+     [
+      27.05513,
+      -12.399457
+     ],
+     [
+      27.055117,
+      -12.396985
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg12",
+    "to": "s4-sg13",
+    "mode": "direct",
+    "km": 2.747,
+    "points": [
+     [
+      27.055117,
+      -12.396985
+     ],
+     [
+      27.051254,
+      -12.393492
+     ],
+     [
+      27.031867,
+      -12.389271
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg13",
+    "to": "s4-sg14",
+    "mode": "direct",
+    "km": 2.714,
+    "points": [
+     [
+      27.031867,
+      -12.389271
+     ],
+     [
+      27.022947,
+      -12.387891
+     ],
+     [
+      27.008618,
+      -12.381558
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg14",
+    "to": "s4-sg15",
+    "mode": "direct",
+    "km": 2.55,
+    "points": [
+     [
+      27.008618,
+      -12.381558
+     ],
+     [
+      26.985683,
+      -12.381558
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg15",
+    "to": "s4-sg16",
+    "mode": "direct",
+    "km": 3.511,
+    "points": [
+     [
+      26.985683,
+      -12.381558
+     ],
+     [
+      26.997144,
+      -12.36507
+     ],
+     [
+      27.006141,
+      -12.354626
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg16",
+    "to": "s4-sg17",
+    "mode": "direct",
+    "km": 3.549,
+    "points": [
+     [
+      27.006141,
+      -12.354626
+     ],
+     [
+      27.016391,
+      -12.345333
+     ],
+     [
+      27.026599,
+      -12.327695
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg17",
+    "to": "s4-sg18",
+    "mode": "road",
+    "km": 12.977,
+    "points": [
+     [
+      27.026599,
+      -12.327695
+     ],
+     [
+      27.021041,
+      -12.319868
+     ],
+     [
+      27.015264,
+      -12.312484
+     ],
+     [
+      27.014244,
+      -12.310516
+     ],
+     [
+      27.011227,
+      -12.304001
+     ],
+     [
+      27.008495,
+      -12.297013
+     ],
+     [
+      27.008032,
+      -12.294862
+     ],
+     [
+      27.007815,
+      -12.294618
+     ],
+     [
+      27.005001,
+      -12.291414
+     ],
+     [
+      26.999523,
+      -12.285326
+     ],
+     [
+      26.99626,
+      -12.281908
+     ],
+     [
+      26.993623,
+      -12.279818
+     ],
+     [
+      26.992617,
+      -12.278643
+     ],
+     [
+      26.991882,
+      -12.278079
+     ],
+     [
+      26.990197,
+      -12.276111
+     ],
+     [
+      26.98828,
+      -12.27428
+     ],
+     [
+      26.98726,
+      -12.272525
+     ],
+     [
+      26.984894,
+      -12.267811
+     ],
+     [
+      26.981427,
+      -12.261067
+     ],
+     [
+      26.980802,
+      -12.260075
+     ],
+     [
+      26.977226,
+      -12.257741
+     ],
+     [
+      26.973011,
+      -12.254552
+     ],
+     [
+      26.972263,
+      -12.254323
+     ],
+     [
+      26.971134,
+      -12.253576
+     ],
+     [
+      26.969951,
+      -12.253408
+     ],
+     [
+      26.968102,
+      -12.25292
+     ],
+     [
+      26.964811,
+      -12.252065
+     ],
+     [
+      26.964145,
+      -12.251592
+     ],
+     [
+      26.960854,
+      -12.248251
+     ],
+     [
+      26.959956,
+      -12.247412
+     ],
+     [
+      26.958364,
+      -12.246446
+     ],
+     [
+      26.957617,
+      -12.245993
+     ],
+     [
+      26.956624,
+      -12.245962
+     ],
+     [
+      26.953564,
+      -12.243994
+     ],
+     [
+      26.947444,
+      -12.240927
+     ],
+     [
+      26.947091,
+      -12.240409
+     ],
+     [
+      26.946601,
+      -12.239005
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg18",
+    "to": "s4-sg19",
+    "mode": "direct",
+    "km": 3.549,
+    "points": [
+     [
+      26.946601,
+      -12.239005
+     ],
+     [
+      26.948262,
+      -12.235152
+     ],
+     [
+      26.964401,
+      -12.209337
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg19",
+    "to": "s4-sg20",
+    "mode": "direct",
+    "km": 3.553,
+    "points": [
+     [
+      26.964401,
+      -12.209337
+     ],
+     [
+      26.969984,
+      -12.197862
+     ],
+     [
+      26.9822,
+      -12.179668
+     ]
+    ]
+   },
+   {
+    "from": "s4-sg20",
+    "to": "s4-ass",
+    "mode": "direct",
+    "km": 3.546,
+    "points": [
+     [
+      26.9822,
+      -12.179668
+     ],
+     [
+      26.988232,
+      -12.16853
+     ],
+     [
+      27,
+      -12.15
+     ]
+    ]
+   },
+   {
+    "from": "s4-ass",
+    "to": "s5-sg1",
+    "mode": "direct",
+    "km": 2.052,
+    "points": [
+     [
+      27,
+      -12.15
+     ],
+     [
+      26.986442,
+      -12.135948
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg1",
+    "to": "s5-sg3",
+    "mode": "direct",
+    "km": 4.274,
+    "points": [
+     [
+      26.986442,
+      -12.135948
+     ],
+     [
+      26.959624,
+      -12.118068
+     ],
+     [
+      26.952389,
+      -12.118325
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg3",
+    "to": "s5-sg4",
+    "mode": "direct",
+    "km": 1.853,
+    "points": [
+     [
+      26.952389,
+      -12.118325
+     ],
+     [
+      26.940601,
+      -12.105107
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg4",
+    "to": "s5-sg5",
+    "mode": "direct",
+    "km": 1.244,
+    "points": [
+     [
+      26.940601,
+      -12.105107
+     ],
+     [
+      26.930124,
+      -12.109513
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg5",
+    "to": "s5-sg6",
+    "mode": "direct",
+    "km": 2.579,
+    "points": [
+     [
+      26.930124,
+      -12.109513
+     ],
+     [
+      26.906934,
+      -12.110045
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg6",
+    "to": "s5-sg7",
+    "mode": "direct",
+    "km": 2.62,
+    "points": [
+     [
+      26.906934,
+      -12.110045
+     ],
+     [
+      26.904209,
+      -12.108594
+     ],
+     [
+      26.883743,
+      -12.110577
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg7",
+    "to": "s5-sg8",
+    "mode": "road",
+    "km": 6.897,
+    "points": [
+     [
+      26.883743,
+      -12.110577
+     ],
+     [
+      26.882898,
+      -12.108164
+     ],
+     [
+      26.882309,
+      -12.102821
+     ],
+     [
+      26.882038,
+      -12.098318
+     ],
+     [
+      26.881878,
+      -12.095513
+     ],
+     [
+      26.882532,
+      -12.092886
+     ],
+     [
+      26.883249,
+      -12.087043
+     ],
+     [
+      26.882835,
+      -12.08472
+     ],
+     [
+      26.881575,
+      -12.081181
+     ],
+     [
+      26.880651,
+      -12.078841
+     ],
+     [
+      26.880029,
+      -12.074963
+     ],
+     [
+      26.879567,
+      -12.071282
+     ],
+     [
+      26.879201,
+      -12.068244
+     ],
+     [
+      26.877894,
+      -12.064617
+     ],
+     [
+      26.87622,
+      -12.060113
+     ],
+     [
+      26.874052,
+      -12.054878
+     ],
+     [
+      26.871598,
+      -12.049553
+     ],
+     [
+      26.871263,
+      -12.047837
+     ],
+     [
+      26.871087,
+      -12.045979
+     ],
+     [
+      26.871327,
+      -12.044031
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg8",
+    "to": "s5-sg9",
+    "mode": "direct",
+    "km": 2.209,
+    "points": [
+     [
+      26.871327,
+      -12.044031
+     ],
+     [
+      26.8515,
+      -12.045417
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg9",
+    "to": "s5-sg10",
+    "mode": "road",
+    "km": 2.49,
+    "points": [
+     [
+      26.8515,
+      -12.045417
+     ],
+     [
+      26.851517,
+      -12.047817
+     ],
+     [
+      26.851567,
+      -12.04805
+     ],
+     [
+      26.851583,
+      -12.048283
+     ],
+     [
+      26.851533,
+      -12.048517
+     ],
+     [
+      26.851433,
+      -12.048783
+     ],
+     [
+      26.851267,
+      -12.050617
+     ],
+     [
+      26.8515,
+      -12.0516
+     ],
+     [
+      26.852017,
+      -12.052933
+     ],
+     [
+      26.852283,
+      -12.0559
+     ],
+     [
+      26.8526,
+      -12.056617
+     ],
+     [
+      26.85275,
+      -12.058183
+     ],
+     [
+      26.8533,
+      -12.05945
+     ],
+     [
+      26.85355,
+      -12.059833
+     ],
+     [
+      26.853617,
+      -12.06005
+     ],
+     [
+      26.854467,
+      -12.06155
+     ],
+     [
+      26.854483,
+      -12.061733
+     ],
+     [
+      26.8546,
+      -12.0622
+     ],
+     [
+      26.854683,
+      -12.062267
+     ],
+     [
+      26.854767,
+      -12.062367
+     ],
+     [
+      26.854833,
+      -12.062483
+     ],
+     [
+      26.854883,
+      -12.06275
+     ],
+     [
+      26.85495,
+      -12.062867
+     ],
+     [
+      26.855033,
+      -12.06295
+     ],
+     [
+      26.8551,
+      -12.063067
+     ],
+     [
+      26.855217,
+      -12.063733
+     ],
+     [
+      26.8552,
+      -12.063917
+     ],
+     [
+      26.855233,
+      -12.064067
+     ],
+     [
+      26.8552,
+      -12.064333
+     ],
+     [
+      26.855067,
+      -12.064583
+     ],
+     [
+      26.855083,
+      -12.064667
+     ],
+     [
+      26.855033,
+      -12.064767
+     ],
+     [
+      26.855033,
+      -12.0649
+     ],
+     [
+      26.854817,
+      -12.065983
+     ],
+     [
+      26.854867,
+      -12.06615
+     ],
+     [
+      26.85535,
+      -12.067033
+     ],
+     [
+      26.855833,
+      -12.067433
+     ],
+     [
+      26.855833,
+      -12.067567
+     ],
+     [
+      26.855817,
+      -12.067683
+     ],
+     [
+      26.854983,
+      -12.06765
+     ],
+     [
+      26.85485,
+      -12.067683
+     ],
+     [
+      26.854733,
+      -12.067767
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg10",
+    "to": "s5-sg11",
+    "mode": "direct",
+    "km": 0.17,
+    "points": [
+     [
+      26.854733,
+      -12.067767
+     ],
+     [
+      26.853581,
+      -12.068888
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg11",
+    "to": "s5-sg12",
+    "mode": "road",
+    "km": 5.692,
+    "points": [
+     [
+      26.853581,
+      -12.068888
+     ],
+     [
+      26.853417,
+      -12.067902
+     ],
+     [
+      26.853228,
+      -12.066884
+     ],
+     [
+      26.852972,
+      -12.066486
+     ],
+     [
+      26.852299,
+      -12.065893
+     ],
+     [
+      26.851543,
+      -12.065521
+     ],
+     [
+      26.850898,
+      -12.06516
+     ],
+     [
+      26.850382,
+      -12.064774
+     ],
+     [
+      26.849666,
+      -12.064296
+     ],
+     [
+      26.848697,
+      -12.063692
+     ],
+     [
+      26.847699,
+      -12.062952
+     ],
+     [
+      26.846863,
+      -12.062283
+     ],
+     [
+      26.846142,
+      -12.061724
+     ],
+     [
+      26.845588,
+      -12.061309
+     ],
+     [
+      26.844944,
+      -12.060591
+     ],
+     [
+      26.844323,
+      -12.059994
+     ],
+     [
+      26.843893,
+      -12.059366
+     ],
+     [
+      26.843501,
+      -12.058506
+     ],
+     [
+      26.843315,
+      -12.057797
+     ],
+     [
+      26.843363,
+      -12.056429
+     ],
+     [
+      26.843435,
+      -12.055441
+     ],
+     [
+      26.843492,
+      -12.054438
+     ],
+     [
+      26.843306,
+      -12.052562
+     ],
+     [
+      26.843334,
+      -12.050685
+     ],
+     [
+      26.843406,
+      -12.049539
+     ],
+     [
+      26.843621,
+      -12.04792
+     ],
+     [
+      26.843721,
+      -12.046559
+     ],
+     [
+      26.843793,
+      -12.045241
+     ],
+     [
+      26.844041,
+      -12.043932
+     ],
+     [
+      26.84428,
+      -12.042935
+     ],
+     [
+      26.844242,
+      -12.042598
+     ],
+     [
+      26.844141,
+      -12.042306
+     ],
+     [
+      26.843449,
+      -12.040743
+     ],
+     [
+      26.842819,
+      -12.039439
+     ],
+     [
+      26.842661,
+      -12.038952
+     ],
+     [
+      26.842346,
+      -12.037334
+     ],
+     [
+      26.841887,
+      -12.035486
+     ],
+     [
+      26.841687,
+      -12.034469
+     ],
+     [
+      26.841458,
+      -12.033265
+     ],
+     [
+      26.840913,
+      -12.030124
+     ],
+     [
+      26.840715,
+      -12.029042
+     ],
+     [
+      26.840507,
+      -12.027823
+     ],
+     [
+      26.840197,
+      -12.026074
+     ],
+     [
+      26.839887,
+      -12.02434
+     ],
+     [
+      26.839748,
+      -12.02346
+     ],
+     [
+      26.839338,
+      -12.021074
+     ],
+     [
+      26.83918,
+      -12.01976
+     ],
+     [
+      26.83908,
+      -12.018109
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg12",
+    "to": "s5-sg13",
+    "mode": "direct",
+    "km": 1.091,
+    "points": [
+     [
+      26.83908,
+      -12.018109
+     ],
+     [
+      26.829275,
+      -12.018458
+     ]
+    ]
+   },
+   {
+    "from": "s5-sg13",
+    "to": "ass",
+    "mode": "direct",
+    "km": 3.735,
+    "points": [
+     [
+      26.829275,
+      -12.018458
+     ],
+     [
+      26.8,
+      -12
+     ]
+    ]
+   }
+  ]
+ },
+ "builder": {
+  "notes": [
+   "s1-sg2",
+   "s1-sg3",
+   "s1-sg5",
+   "s1-sg6",
+   "s1-sg8",
+   "s1-sg9",
+   "s1-sg10",
+   "s1-sg12",
+   "s1-sg13",
+   "s1-sg14",
+   "s1-sg16",
+   "s1-sg19",
+   "s1-sg21",
+   "s1-sg22",
+   "s1-sg24",
+   "s2-sg1",
+   "s2-sg2",
+   "s2-sg4",
+   "s2-sg5",
+   "s2-sg7",
+   "s2-sg8",
+   "s2-sg10",
+   "s2-sg11",
+   "s2-sg12",
+   "s2-sg14",
+   "s2-sg15",
+   "s2-sg17",
+   "s2-sg18",
+   "s2-sg19",
+   "s2-sg21",
+   "s2-sg23",
+   "s2-sg24",
+   "s2-sg26",
+   "s2-sg27",
+   "s2-sg28",
+   "s2-sg29",
+   "s2-sg30",
+   "s2-sg31",
+   "s2-sg32",
+   "s3-sg1",
+   "s3-sg4",
+   "s3-sg5",
+   "s3-sg6",
+   "s3-sg7",
+   "s3-sg8",
+   "s3-sg9",
+   "s3-sg10",
+   "s3-sg11",
+   "s3-sg12",
+   "s3-sg13",
+   "s3-sg14",
+   "s3-sg15",
+   "s3-sg16",
+   "s3-sg17",
+   "s3-sg18",
+   "s3-sg19",
+   "s3-sg20",
+   "s3-sg21",
+   "s3-sg22",
+   "s3-sg23",
+   "s3-sg24",
+   "s3-sg27",
+   "s3-sg28",
+   "s3-sg29",
+   "s3-sg30",
+   "s3-sg32",
+   "s3-sg33",
+   "s3-sg34",
+   "s4-sg1",
+   "s4-sg4",
+   "s4-sg5",
+   "s4-sg6",
+   "s4-sg7",
+   "s4-sg10",
+   "s4-sg11",
+   "s4-sg12",
+   "s4-sg13",
+   "s4-sg14",
+   "s4-sg15",
+   "s4-sg18",
+   "s4-sg19",
+   "s4-sg20",
+   "s5-sg1",
+   "s5-sg3",
+   "s5-sg4",
+   "s5-sg5",
+   "s5-sg6",
+   "s5-sg8",
+   "s5-sg9",
+   "s5-sg10",
+   "s5-sg11",
+   "s5-sg12",
+   "s5-sg13"
+  ],
+  "stagegen": {
+   "version": "1.2.0",
+   "chain": {
+    "version": "1.0.0",
+    "layout": {
+     "loop": false,
+     "ratio": 1.443,
+     "junctions": [
+      [
+       26.62,
+       -12
+      ],
+      [
+       26.2,
+       -12.55
+      ],
+      [
+       26.55,
+       -13.3
+      ],
+      [
+       27.05,
+       -12.9
+      ],
+      [
+       27,
+       -12.15
+      ],
+      [
+       26.8,
+       -12
+      ]
+     ]
+    },
+    "seed": "ata27-v1:SS10",
+    "segments": [
+     {
+      "k": 1,
+      "inputs": {
+       "dss": [
+        26.62,
+        -12
+       ],
+       "ass": [
+        26.2,
+        -12.55
+       ],
+       "lengthKm": 103.8,
+       "preset": "mixed",
+       "region": "Smara loop part 1"
+      },
+      "km": 99.471,
+      "option": "A",
+      "dataHash": "sha256:a17d6cf10f7f8c792b8c60b525bc56202dae7a176228682bc0efe9a2a670e52e",
+      "stats": {
+       "lengthKm": 99.47,
+       "pisteKm": 30.52,
+       "offKm": 68.95,
+       "offShare": 0.693,
+       "townKm": 0,
+       "terrain": {
+        "sandDunes": 30,
+        "bare": 70,
+        "vegetation": 0,
+        "other": 0
+       },
+       "climbM": 355,
+       "minAltM": 189,
+       "maxAltM": 362,
+       "roadCrossings": 2
+      }
+     },
+     {
+      "k": 2,
+      "inputs": {
+       "dss": [
+        26.2,
+        -12.55
+       ],
+       "ass": [
+        26.55,
+        -13.3
+       ],
+       "lengthKm": 121.5,
+       "preset": "mixed",
+       "region": "Smara loop part 2"
+      },
+      "km": 114.845,
+      "option": "A",
+      "dataHash": "sha256:722ac48bfe3f4c382ff00db4e3c5eb2a29cee691d22ee180ba734242ef161346",
+      "stats": {
+       "lengthKm": 114.84,
+       "pisteKm": 9.37,
+       "offKm": 105.47,
+       "offShare": 0.918,
+       "townKm": 0,
+       "terrain": {
+        "sandDunes": 25,
+        "bare": 75,
+        "vegetation": 0,
+        "other": 0
+       },
+       "climbM": 366,
+       "minAltM": 112,
+       "maxAltM": 275,
+       "roadCrossings": 2
+      }
+     },
+     {
+      "k": 3,
+      "inputs": {
+       "dss": [
+        26.55,
+        -13.3
+       ],
+       "ass": [
+        27.05,
+        -12.9
+       ],
+       "lengthKm": 98.6,
+       "preset": "mixed",
+       "region": "Smara loop part 3"
+      },
+      "km": 103.111,
+      "option": "A",
+      "dataHash": "sha256:7910e75c79f73dfa402a2c53986fe6d505479d680e0014e1e51046d0e7b353c0",
+      "stats": {
+       "lengthKm": 103.11,
+       "pisteKm": 65.43,
+       "offKm": 37.69,
+       "offShare": 0.365,
+       "townKm": 0,
+       "terrain": {
+        "sandDunes": 41,
+        "bare": 59,
+        "vegetation": 0,
+        "other": 0
+       },
+       "climbM": 531,
+       "minAltM": 26,
+       "maxAltM": 193,
+       "roadCrossings": 3
+      }
+     },
+     {
+      "k": 4,
+      "inputs": {
+       "dss": [
+        27.05,
+        -12.9
+       ],
+       "ass": [
+        27,
+        -12.15
+       ],
+       "lengthKm": 107.5,
+       "preset": "mixed",
+       "region": "Smara loop part 4"
+      },
+      "km": 105.073,
+      "option": "A",
+      "dataHash": "sha256:30dc3edfef229e63148d42ee563939a801c0fd63a9c6fa0ae974ef776720cd07",
+      "stats": {
+       "lengthKm": 105.07,
+       "pisteKm": 62.47,
+       "offKm": 42.6,
+       "offShare": 0.405,
+       "townKm": 0,
+       "terrain": {
+        "sandDunes": 30,
+        "bare": 70,
+        "vegetation": 0,
+        "other": 0
+       },
+       "climbM": 454,
+       "minAltM": 113,
+       "maxAltM": 298,
+       "roadCrossings": 2
+      }
+     },
+     {
+      "k": 5,
+      "inputs": {
+       "dss": [
+        27,
+        -12.15
+       ],
+       "ass": [
+        26.8,
+        -12
+       ],
+       "lengthKm": 38.6,
+       "preset": "mixed",
+       "region": "Smara loop part 5"
+      },
+      "km": 36.905,
+      "option": "A",
+      "dataHash": "sha256:ce82aad883a146bdd37e19507262226c6c26e573cf5c871e26bef044b02a7c70",
+      "stats": {
+       "lengthKm": 36.91,
+       "pisteKm": 15.08,
+       "offKm": 21.83,
+       "offShare": 0.591,
+       "townKm": 0,
+       "terrain": {
+        "sandDunes": 5,
+        "bare": 95,
+        "vegetation": 0,
+        "other": 0
+       },
+       "climbM": 127,
+       "minAltM": 120,
+       "maxAltM": 326,
+       "roadCrossings": 0
+      }
+     }
+    ]
+   },
+   "avoid": "rallies/data/avoid-morocco.json"
+  }
+ }
+}

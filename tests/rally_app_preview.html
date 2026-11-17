@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>rally.raid Earth Rally preview (outside the game)</title>
+<link rel="icon" href="data:,">
+<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+<style>body{background:#6d7a63;margin:0;font-family:sans-serif} .slot{position:absolute;width:380px;height:440px} #a{left:10px;top:10px} #b{left:400px;top:10px} #c{left:790px;top:10px}</style>
+<script>
+// a stand-in for the game's UI ('beamng.apps', bngApi) and RallyRaidRally messages as rally.lua sends them
+var calls = []
+window.bngApi = { engineLua: function (cmd) { calls.push(cmd) } }
+angular.module('beamng.apps', [])
+</script>
+<script src="/ui/modules/apps/RallyRaidRally/app.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="a"><rally-raid-rally></rally-raid-rally></div>
+<div class="slot" id="b"><rally-raid-rally></rally-raid-rally></div>
+<div class="slot" id="c"><rally-raid-rally></rally-raid-rally></div>
+<script>
+var DISC = 'Inspired by the 2027 Dakar route. Unofficial, not affiliated.'
+function days() {
+  return [
+    { n: 1, date: '2027-01-09', type: 'stage', code: 'P', title: 'Prologue Loulé-Faro', from: 'Loulé-Faro', to: 'Loulé-Faro', ssKm: 30.5,
+      liaisonOut: { km: 50, allowanceMin: 80, drive: true }, liaisonIn: { km: 50, allowanceMin: 80, drive: true }, progress: { done: true, stage: { totalTime: 1234 } } },
+    { n: 2, date: '2027-01-10', type: 'stage', code: 'SS1', title: 'SS1 Loulé-Faro loop', from: 'Loulé-Faro', to: 'Loulé-Faro', ssKm: 98.2,
+      liaisonOut: { km: 60, allowanceMin: 90, drive: true }, liaisonIn: { km: 140, allowanceMin: 170, drive: true }, progress: {} },
+    { n: 3, date: '2027-01-11', type: 'transfer', code: 'T', title: 'Transfer to Bouarfa', from: 'Loulé-Faro', to: 'Bouarfa', ssKm: 0,
+      liaisonOut: { km: 590, allowanceMin: 620, drive: false, ferry: true }, progress: {} },
+    { n: 4, date: '2027-01-19', type: 'marathon', marathon: true, refuge: true, code: 'SS8', title: 'SS8 Smara - refuge', from: 'Smara', to: 'Refuge camp', ssKm: 360,
+      liaisonOut: { km: 90, allowanceMin: 120, drive: true }, liaisonIn: { km: 80, allowanceMin: 110, drive: true }, progress: {} }
+  ]
+}
+var STATES = {
+  a: { experimental: true, loaded: false, list: [{ path: '/rallyraid/rallies/atlantic-to-atlas-2027.rally.json', id: 'atlantic-to-atlas-2027', name: 'Atlantic to Atlas 2027', days: 15, startDate: '2027-01-09', disclaimer: DISC }] },
+  b: { experimental: true, loaded: true, rally: { name: 'Atlantic to Atlas 2027', disclaimer: DISC, days: days() },
+       progress: { day: 2, phase: 'start', totalS: 1294, stageS: 1234, penaltyS: 60, liaisonPenaltyS: 0 } },
+  c: { experimental: true, loaded: true, rally: { name: 'Atlantic to Atlas 2027', disclaimer: DISC, days: days() },
+       progress: { day: 2, phase: 'liaisonOut', totalS: 1294, stageS: 1234, penaltyS: 60, liaisonPenaltyS: 0 },
+       liaison: { which: 'out', mode: 'drive', km: 60, allowanceMin: 90, elapsedS: 1500, leftS: 3900, distKm: 12.4, bearing: 312, target: 'DSS SS1 Loulé-Faro loop' } }
+}
+function send(id, data) { angular.element(document.querySelector('#' + id + ' .rrl-host')).isolateScope().$broadcast('RallyRaidRally', data) }
+setTimeout(function () { Object.keys(STATES).forEach(function (k) { send(k, STATES[k]) }) }, 300)
+</script>
+</body></html>

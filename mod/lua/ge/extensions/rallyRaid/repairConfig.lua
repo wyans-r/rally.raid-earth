@@ -43,6 +43,30 @@ M.bivouac = {
 }
 
 ------------------------------------------------------------------------------------------------------------------
+-- RALLY MODE (rallyRaid/rally.lua, EXPERIMENTAL, B10): a multi-day rally file (docs/RALLY_FORMAT.md). Liaisons (bivouac ->
+-- DSS, ASS -> bivouac) are the player's choice: DRIVE them against a time allowance, or TELEPORT (the whole allowance
+-- counts as used). Allowance not used on the day's liaisons is added to that evening's bivouac budget (M.bivouac).
+-- Defaults proposed in B10 (17 Nov 2026), for Wyans to confirm.
+M.rally = {
+  liaisonKmh = 60,             -- allowance = published liaison km at this speed ...
+  liaisonExtraMin = 30,        -- ... plus this ...
+  liaisonRoundMin = 5,         -- ... rounded UP to this (the rally file already carries the result; used if it does not)
+  teleportUsesAllowance = true,-- a teleported liaison counts its full allowance as elapsed time (no leftover)
+  leftoverToBivouac = true,    -- unused allowance (driven liaisons) is added to the evening bivouac budget
+  maxLeftoverMin = 240,        -- at most this much leftover is added per day
+  latePenaltyPerMinS = 60,     -- arriving after the allowance: this many seconds per started minute late
+  arriveRadiusM = 300,         -- a driven liaison to a DSS ends inside this radius (or when the stage clock starts)
+  bivouacRadiusM = 1500,       -- ... and to a bivouac (town) inside this radius
+  driveStartMaxKm = 5,         -- DRIVE first teleports the car to the start bivouac when it is farther away than this
+  restDayBonusMin = 300,       -- a rest day adds this much service time to the open bivouac
+  marathon = {                 -- the night at a 'marathon' (refuge) bivouac: no assistance
+    budgetMin = 45,            -- the crew's own work only: a short budget instead of M.bivouac.budgetMin
+    addLeftover = false,       -- unused liaison allowance does not help (no mechanics there)
+    engineChange = false,      -- no engine change at a refuge
+  },
+}
+
+------------------------------------------------------------------------------------------------------------------
 -- the resume / reset budget: resets our app did not make (unauthorized) and RECOVER CAR share these rules and penalties
 M.resume = {
   maxPerRally = 3,

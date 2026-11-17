@@ -206,9 +206,10 @@ function M.options(mode, survey)
     out[#out + 1] = { id = 'whole', kind = 'whole', label = 'Whole-car repair (all but the engine)', minutes = m, items = items,
       enabled = not (L and L.retired) }
     local flags = arr(survey and survey.engineFlags)
+    local refuge = L and L.bivouac and L.bivouac.marathon and cfg.rally and cfg.rally.marathon and cfg.rally.marathon.engineChange == false
     out[#out + 1] = { id = 'engine', kind = 'engine', label = 'Engine change', minutes = cfg.bivouac.engineChangeMin,
       penaltyS = cfg.bivouac.engineChangePenaltyS, engineFlags = flags, damage = #flags > 0 and 1 or gdmg(survey, 'engine'),
-      enabled = not (L and L.retired) }
+      enabled = not (L and L.retired) and not refuge, why = refuge and 'no engine change at a marathon refuge' or nil }
   end
   return out
 end
@@ -476,6 +477,29 @@ function M.stageFinished(res)
 end
 
 function M.stageChanged() M.updateBlocking(); M.push() end
+
+-- RALLY MODE (rallyRaid/rally.lua): the open bivouac's budget. opts: addMin (unused liaison allowance, rest day),
+-- marathon (true: the refuge budget replaces the normal one, engine change refused), reason (logged).
+-- Returns the bivouac table or nil when none is open.
+function M.rallyBivouac(opts)
+  if not L then M.loadLedger() end
+  local b = L.bivouac
+  if not (b and b.open) then return nil end
+  opts = opts or {}
+  b.rally = b.rally or { adds = {} }
+  if opts.marathon and not b.marathon then
+    b.marathon = true
+    b.budgetMin = (cfg.rally and cfg.rally.marathon and cfg.rally.marathon.budgetMin) or b.budgetMin
+    b.rally.adds[#b.rally.adds + 1] = { min = 0, reason = 'marathon refuge: budget ' .. b.budgetMin .. ' min', at = now() }
+  end
+  local add = tonumber(opts.addMin) or 0
+  if add > 0 and not (b.marathon and cfg.rally and cfg.rally.marathon and cfg.rally.marathon.addLeftover == false and opts.kind == 'leftover') then
+    b.budgetMin = b.budgetMin + add
+    b.rally.adds[#b.rally.adds + 1] = { min = add, reason = opts.reason or 'rally', at = now() }
+  end
+  M.saveLedger(); M.push()
+  return b
+end
 
 -- what goes into the stage result
 function M.resultFields(s)
