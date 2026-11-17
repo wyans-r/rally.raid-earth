@@ -1093,6 +1093,12 @@ function boxInside(inner, outer) {
             continue;
           }
         }
+        // the bundled extracts keep way geometry but not node ids; junction finding (analyseOsm) matches ways by shared
+        // node ids, and OSM ways share a node exactly where their points coincide, so ids made from the coordinates work
+        if (el.type === 'way' && !el.nodes && Array.isArray(el.geometry)) {
+          want.push(Object.assign({}, el, { nodes: el.geometry.map(p => p ? 'g' + (+p.lat).toFixed(7) + ',' + (+p.lon).toFixed(7) : 'gnull') }));
+          continue;
+        }
         want.push(el);
       }
     }
@@ -1387,7 +1393,7 @@ function boxInside(inner, outer) {
     }
     // ---- junctions: nodes shared by two or more roads, on the route
     const nodeUse = new Map(); // node id -> [[way, pos]]
-    for (const w of roads) w.nodes.forEach((nid, k) => { if (!nodeUse.has(nid)) nodeUse.set(nid, []); nodeUse.get(nid).push([w, k]); });
+    for (const w of roads) (w.nodes || []).forEach((nid, k) => { if (!nodeUse.has(nid)) nodeUse.set(nid, []); nodeUse.get(nid).push([w, k]); });
     const branchDir = (w, k, dir) => { // bearing leaving node k of way w towards dir (+1/-1), measured ~40 m out
       const g0 = w.geometry[k]; let j = k + dir, d = 0, last = g0;
       while (j >= 0 && j < w.geometry.length) { const g = w.geometry[j]; d += dist([last.lat, last.lon], [g.lat, g.lon]); last = g; if (d >= 40) break; j += dir; }
@@ -1396,7 +1402,7 @@ function boxInside(inner, outer) {
     };
     const junctions = [];
     for (const [nid, uses] of nodeUse) {
-      const ends = uses.reduce((n, [w, k]) => n + ((k === 0 || k === w.nodes.length - 1) ? 1 : 2), 0);
+      const ends = uses.reduce((n, [w, k]) => n + ((k === 0 || k === (w.nodes || []).length - 1) ? 1 : 2), 0);
       if (ends < 3) continue;                                              // just a way split, not a junction
       const g = uses[0][0].geometry[uses[0][1]];
       const m = nearest(P.xy([g.lat, g.lon]), 18);
