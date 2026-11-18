@@ -295,7 +295,7 @@ M.game = {
   send = function(cmd) local rm = H.repair; return rm and rm.game.send(cmd) end,
   pose = function() local a = api(); if a and a.pose then local ok, p = pcall(a.pose); if ok then return p end end end,
   -- the set-down is RECOVER CAR's (rallyRaid/resume.lua): same functions, so a fix there helps both
-  place = function(t) return recovery().game.place(t) end,
+  place = function(t) return recovery().game.place(t, true) end,   -- a reset: the saved damage goes back on after it
   teleport = function(lat, lon, name) return recovery().game.teleport(lat, lon, name) end,
   canPlaceLocally = function(t) return recovery().game.canPlaceLocally(t) end,
   resetInPlace = function() local rm = H.repair; return rm and rm.game.resetInPlace() end,

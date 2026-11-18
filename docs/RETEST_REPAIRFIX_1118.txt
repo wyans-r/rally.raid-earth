@@ -1,0 +1,83 @@
+rally.raid Earth - REPAIR + RECOVER FIX retest (18 Nov 2026)
+Zip: rallyraid_earth_repairfix1118_test.zip (TEST build, not a release; built with --include-events --include-rally --include-rally-events)
+Branch three-apps-1118 (local only, not pushed). Same three apps as the last zip; only repairs and RECOVER changed.
+
+What changed (what you reported -> what was done):
+- "replacing wheels didn't work" / "the tires immediately punctured again": after the reset the old code put EVERY old
+  node position and beam length back, including the hub and the new tyre's own beams, so the new tyre was pulled onto
+  the old bent spot and torn flat. Now nothing of a changed wheel (tyre, rim, its hub nodes) is put back.
+- "fixing the suspension broke the steering": the old code also put back the steering rack's old length (a "hydro"
+  beam: the part that moves when you steer), freezing it. Now hydros and tyre-pressure beams are never touched, and
+  no old dent that pulls on a newly repaired part is put back.
+- "recovery also completely fixed my vehicle": RECOVER no longer resets the car. It lifts it, sets it upright on the
+  route and stops it (the game's own "recover upright" call). All damage stays. Penalty and limits are unchanged:
+  +15 min first, +30 min after; 3 per rally, 1 per stage, none within 1 km of the ASS.
+- New console lines around every repair and recovery (listed below), all starting with [rally.raid Earth].
+
+Where the log lines are:
+- In game: the console, key ~ (tilde). Type "rally.raid" in its filter box to see only ours.
+- On disk: <BeamNG user folder>/current/beamng.log (for example Documents\BeamNG.drive\current\beamng.log, or
+  %LOCALAPPDATA%\BeamNG.drive\<version>\beamng.log on newer versions). If anything fails, send this file.
+
+Total: about 20 min (15-30).
+
+Before you start (2 min)
+1. Close the game. Remove the older rally.raid Earth zip from mods, put rallyraid_earth_repairfix1118_test.zip in.
+   Start the game, BeamNG.Earth, spawn a car (a pickup or any car with a normal steering rack), add the GPS app.
+   Expected: no red rally.raid Earth errors in the console.
+2. Load a stage, TP TO DSS, START, drive about 1 km.
+
+A. Change a wheel (4 min)
+3. Puncture a tyre (hit a rock or kerb hard) and bend that corner a bit if you can. Stop. GPS MENU > REPAIR, tick
+   "Change wheel" for that corner, REPAIR.
+   Expected: the wheel is new and round, the tyre is inflated and STAYS inflated when you drive off (drive 500 m,
+   steer both ways). Other damage (body, other flat tyres) stays. +2 min, one spare used.
+   Console, in order:
+     repair N requested (stage mode): Change wheel FL = 2 min ...
+     car report (before repair N): broken beams .., deformed beams .., flat tyres FL ...
+     repair N ready: wheels changed FL, flat tyres before FL; kept for after the reset: ... skippedTouchesRepair=..
+     repair N: reset in place with ...            (no FAILED)
+     repair N done (...): put back ...; flat tyres now none (or only the corners you did not change)
+     car report (after repair N): ...
+     repair N, 1 s later: flat tyres ..., a changed tyre flat again: none, broken beams in the repaired parts: 0
+   If a changed tyre does go flat again you get a note on screen and a W line "... flat again: FL". Send the log.
+4. Repeat once on another corner (or the same one with the second spare).
+   Expected: same as 3.
+
+B. Suspension repair keeps the steering (4 min)
+5. Damage one front corner's suspension (a hard hit on the front wheel). Stop. REPAIR > Suspension for that corner.
+   Expected: the corner is straight again and the STEERING WORKS normally both ways (wheels turn with the steering
+   wheel, the car drives straight with the wheel centred). +18 min.
+   Console: the same lines as in 3 with "Suspension FL" (or the corner); "1 s later ... broken beams in the repaired
+   parts: 0".
+
+C. Radiator, if you have one bent (2 min, optional)
+6. REPAIR > Radiator.
+   Expected: radiator fixed, the rest of the damage kept, steering fine. +12 min. Same console lines.
+
+D. RECOVER keeps the damage (5 min)
+7. Damage the car clearly (bent body, a flat tyre) and roll it onto its side or roof, or drive 40+ m off the route.
+   Note what is broken. Stop. GPS MENU > RECOVER, then CONFIRM.
+   Expected: the car is lifted, set upright on the route facing the right way and stops. ALL the damage is still
+   there: same dents, same flat tyre, same fuel. +15 min (first of the rally), recoveries 1/3.
+   Console:
+     car recovery requested: to km ... ; penalty +15 min
+     car report (before recovery N): broken beams A, deformed beams B, flat tyres ...
+     car recovery: spawn.safeTeleport(pos ..., resetVehicle = false) ok
+     car recovery N done: ...; landed .. m from the target, .. deg off the route heading
+     car report (after recovery N): broken beams about A, deformed beams about B, same flat tyres
+   (Compare the two "car report" lines: the counts should be about the same. If "after" shows 0 broken beams, it
+   repaired: send the log.)
+8. Limits unchanged (1 min): on the same stage press RECOVER again.
+   Expected: refused (second recovery on this stage), RETIRE STAGE offered. Cancel.
+
+E. Bivouac whole-car repair (3 min, optional)
+9. Finish or retire the stage, then GPS MENU > REPAIR in the bivouac: pick the whole-car repair.
+   Expected: the car is fully fixed (that one is meant to), steering fine, tyres round. Console: "repair N requested
+   (bivouac mode)", "ready", "reset in place with", "done", "1 s later ... flat again: none".
+
+Known limits (not bugs in this build):
+- RECOVER far from the route (more than 1.5 km, or where BeamNG.Earth has not loaded the world) still goes through
+  BeamNG.Earth's teleport, which resets the car. The damage is captured when you press CONFIRM and put back after,
+  so it is close but not exact.
+- Game-crash resume must reset the car and puts the saved damage back the same approximate way. Unchanged.

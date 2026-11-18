@@ -188,11 +188,12 @@ beamngEarth_api.pose = function() local p = basePose(); p.alt = car.alt; return 
 -- the set-down: the fake car goes there and (like spawn.safeTeleport with resetVehicle) is reset
 local PLACE_RESETS, FAR, places, teleports = true, false, {}, {}
 local realPlace, realCanPlace = resume.game.place, resume.game.canPlaceLocally
-resume.game.place = function(t)
-  places[#places + 1] = { lat = t.lat, lon = t.lon, heading = t.heading, alt = t.alt }
+resume.game.place = function(t, reset)
+  places[#places + 1] = { lat = t.lat, lon = t.lon, heading = t.heading, alt = t.alt, reset = reset }
   car.lat, car.lon, car.heading, car.speed, car.ve, car.vn = t.lat, t.lon, t.heading, 0, 0, 0
-  if PLACE_RESETS then RESET_NOW() end
-  return true, nil, PLACE_RESETS
+  local r = PLACE_RESETS and reset ~= false
+  if r then RESET_NOW() end
+  return true, nil, r, 'fake'
 end
 resume.game.canPlaceLocally = function() return not FAR end
 -- (BeamNG.Earth sets the car down after its teleport with a reset of its own: that one must not count as ours)
@@ -355,6 +356,7 @@ check(math.abs(st.ask.target.backM - ccfg.backOffM) < 0.5 and st.ask.crash.offRo
 local crashD = st.ask.crash.d
 check(S.clock - clockAtAsk < 0.15, 'asking does not stop the clock by itself')
 -- confirm with the key again
+local resetsBeforeRecovery = resets
 core.cmd('resumeKey')
 check(resume.busy(), 'second press confirms: resume running')
 local clockAtStart = S.clock
@@ -370,26 +372,21 @@ check(geo.dist(car.lat, car.lon, tgt.lat, tgt.lon) < 0.5 and math.abs(geo.angleD
 local nr = resume.nearest(rt, car.lat, car.lon, crashD - 200, crashD + 200)
 check(nr.off < 1 and nr.d < crashD and crashD - nr.d > 25, string.format('on the route, %.0f m behind the crash', crashD - nr.d))
 check(math.abs(geo.angleDiff(car.heading, resume.headingAt(rt, nr.d))) < 5, 'facing the way the route goes')
--- the damage is the snapshot's, not the crash's, and not a free repair
-check(brokenIn('pickup_frame') == 0 and brokenIn('pickup_hood') == 0, 'crash damage (frame, hood) gone: the car is as it was in the resume state')
+-- 18 Nov (in game: "Recover fully repaired the vehicle"): near the car there is no reset at all; every bit of the
+-- crash damage stays, nothing older comes back
+check(places[1].reset == false and resets == resetsBeforeRecovery, 'near: set down WITHOUT a reset (spawn.safeTeleport resetVehicle = false)')
+check(brokenIn('pickup_frame') == 2 and brokenIn('pickup_hood') == 1, 'crash damage (frame, hood) kept: not repaired')
 local radDent = true
 for _, b in ipairs(beamByPart['radiator_v8']) do if not near(phys.rest[b], origLen(vdata.beams[b]) * 0.9, 1e-9) then radDent = false end end
-check(radDent, 'the older radiator dent is back (saved damage, not a free repair)')
-check(not wheelState[0].isTireDeflated, 'the tyre that went flat in the crash is not flat (it was not in the resume state)')
-check(tank.remainingVolume == 41, 'fuel as in the resume state (41 l)')
--- the dented radiator nodes turned with the car (kept in the car frame)
-local rn = nodeByPart['radiator_v8'][1]
-local p0 = snap2.nodes[rn]
-check(p0 ~= nil, 'radiator node position kept')
-local Bnow = vehRepair.basis(obj)
-local want = vehRepair.fromFrame(Bnow, p0)
-check(near(phys.pos[rn].x, want[1], 1e-9) and near(phys.pos[rn].y, want[2], 1e-9), 'its position set in the new heading')
+check(radDent, 'the radiator dent kept')
+check(wheelState[0].isTireDeflated == true, 'the tyre that went flat in the crash is still flat')
+check(tank.remainingVolume == 30, 'fuel as it was (30 l), not a full tank')
 check(math.abs(core._debug() and select(2, core._debug()).trip / 1000 - tgt.km) < 0.01, 'trip set to the roadbook km where the car is now (' .. tgt.km .. ')')
 check(not S.flags.positionJump and not S.flags.teleported and not S.flags.unauthorizedReset, 'not flagged: no position jump, no teleport, no unauthorized reset')
 check(#S.repair.resets == 0, 'the set-down reset is not logged as a reset the app did not make')
 local le = S.repair.resumesLog[1]
 check(le and le.kind == 'carRecovery' and le.penaltyS == 900 and le.outcome == 'penalty' and le.rallyCount == 1, 'logged in the stage resumes (kind carRecovery)')
-check(le.resume and le.resume.damageFrom == 'snapshot' and le.resume.snapshot and le.resume.snapshot.id == st.ask.snapshot.id, 'with the resume state used')
+check(le.resume and le.resume.damageFrom == 'kept (no reset)' and le.resume.snapshot and le.resume.snapshot.id == st.ask.snapshot.id, 'logged: damage kept (no reset), the resume state used for the place')
 check(le.resume.to.km == tgt.km and le.resume.from.offRouteM > 35 and le.resume.pausedS >= ccfg.settleS, 'where from, where to, how long the clock was stopped (' .. tostring(le.resume.pausedS) .. ' s)')
 check(lastNote():find('car recovery 1 of 3 done') and lastNote():find('%+15 min'), 'tells the driver: ' .. lastNote())
 check(ui.RallyRaidUpdate and ui.RallyRaidUpdate.paused == nil, 'HUD no longer shows the clock stopped')
@@ -443,7 +440,8 @@ core.cmd('resumeAsk')
 check(ui.RallyRaidRecover.ask.allowed and ui.RallyRaidRecover.ask.penaltyS == 30 * 60 and ui.RallyRaidRecover.ask.leftAfter == 1, 'stopped: offered, the second of the rally costs 30 min, 1 left after it')
 core.cmd('resumeCancel')
 check(ui.RallyRaidRecover.ask == nil, 'cancel closes it')
--- the car never answers: nothing charged, the clock runs again
+-- the car never answers (far: the damage must be captured first): nothing charged, the clock runs again
+FAR = true
 ANSWER = false
 core.cmd('resumeAsk'); core.cmd('resumeConfirm')
 check(resume.busy(), 'resume started')
@@ -455,6 +453,7 @@ check(S.clock - c0 < 1.15, string.format('clock stopped while waiting (ran %.1f 
 step(0.1); step(0.1)
 check(S.clock > c0, 'and runs again after')
 ANSWER = true
+FAR = false
 -- drive on to within 1 km of the ASS
 local ass = stage.waypoints[#stage.waypoints]
 while ri < #route and geo.dist(car.lat, car.lon, ass.lat, ass.lon) > 800 do ri = ri + 1; driveTo(route[ri][1], route[ri][2], 70) end
@@ -581,6 +580,13 @@ do
   check(tele and near(tele.pos.z, 1302 + ccfg.liftM, 1e-6), 'set down on the ground the ray found, ' .. ccfg.liftM .. ' m over it')
   check(rays[1] and rays[1].from.z == 1410 and rays[1].dir.z == -1, 'ground ray from 100 m over the higher of route and car, straight down')
   check(qcall and qcall.d.x > 0.99 and math.abs(qcall.d.y) < 0.01 and qcall.up.z == 1, 'faces east for heading 90 (direction from two converted points), upright')
+  local stopped_ = 0
+  fakeVeh.applyClusterVelocityScaleAdd = function(_, c, sc, x, y, z) if sc == 0 and x == 0 and y == 0 and z == 0 then stopped_ = stopped_ + 1 end end
+  tele = nil
+  local okK, whyK, resK, howK = realPlace({ lat = 38.601, lon = -109.499, alt = 1300, heading = 90 }, false)
+  check(okK == true and resK == false and howK == 'spawn.safeTeleport', 'RECOVER (near): real set-down returns no reset (' .. tostring(whyK) .. ')')
+  check(tele and tele.reset == false and tele.c == false, 'spawn.safeTeleport called with resetVehicle = false: damage kept (the game\'s own upright recovery)')
+  check(stopped_ == 1, 'and the car stopped (applyClusterVelocityScaleAdd scale 0)')
   check(realCanPlace({ lat = 38.6, lon = -109.5 }) == true, 'world loaded there: set down directly')
   beamngEarth_api.toGame = function() return nil end
   check(realCanPlace({ lat = 38.6, lon = -109.5 }) == false, 'world not loaded there: BeamNG.Earth teleport first')
@@ -676,11 +682,12 @@ local function boot()
   repair.game.send = function(cmd) if ANSWER then ge2veh[#ge2veh + 1] = cmd end return true end
   repair.game.resetInPlace = function() RESET_NOW(); return true end
   repair.game.iprLoaded = function() return IPR_LOADED == true end
-  resume.game.place = function(t)
-    places[#places + 1] = { lat = t.lat, lon = t.lon, heading = t.heading, alt = t.alt }
+  resume.game.place = function(t, reset)
+    places[#places + 1] = { lat = t.lat, lon = t.lon, heading = t.heading, alt = t.alt, reset = reset }
     car.lat, car.lon, car.heading, car.speed, car.ve, car.vn = t.lat, t.lon, t.heading, 0, 0, 0
-    if PLACE_RESETS then RESET_NOW() end
-    return true, nil, PLACE_RESETS
+    local r = PLACE_RESETS and reset ~= false
+    if r then RESET_NOW() end
+    return true, nil, r, 'fake'
   end
   resume.game.canPlaceLocally = function() return not FAR end
   resume.game.teleport = function(lat, lon, name) teleports[#teleports + 1] = { lat = lat, lon = lon, name = name }; car.lat, car.lon = lat, lon; RESET_NOW(); return true end

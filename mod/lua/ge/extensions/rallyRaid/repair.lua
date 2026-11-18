@@ -93,12 +93,13 @@ M.game = {
   resetInPlace = function()
     local v = playerVeh(); if not v then return false end
     local mode = rawget(_G, 'RESET_PHYSICS')
-    local ok = false
-    if mode ~= nil then ok = pcall(function() v:requestReset(mode) end) end
+    local ok, how, err = false, nil, nil
+    if mode ~= nil then ok, err = pcall(function() v:requestReset(mode) end); how = 'GE veh:requestReset(RESET_PHYSICS)' end
     if not ok then   -- no GE constant: ask the car to reset itself (vehicle Lua knows RESET_PHYSICS)
-      ok = pcall(function() v:queueLuaCommand('if obj.requestReset and RESET_PHYSICS then obj:requestReset(RESET_PHYSICS) end') end)
+      ok, err = pcall(function() v:queueLuaCommand('if obj.requestReset and RESET_PHYSICS then obj:requestReset(RESET_PHYSICS) end') end)
+      how = 'vehicle obj:requestReset(RESET_PHYSICS)'
     end
-    return ok
+    return ok, how, (not ok) and tostring(err) or nil
   end,
   filter = function() return rawget(_G, 'core_input_actionFilter') end,
   iprLoaded = function()
@@ -276,25 +277,68 @@ end
 function M.closeMenu() R.open = false; M.push() end
 function M.toggleMenu() if R.open then M.closeMenu() else M.openMenu() end end
 
+-- the console lines for the in-game tests (18 Nov): what was asked, which call, the car before / after
+local function kv(t)
+  if type(t) ~= 'table' then return tostring(t) end
+  local ks = {}
+  for k in pairs(t) do ks[#ks + 1] = k end
+  table.sort(ks, function(a, b) return tostring(a) < tostring(b) end)
+  local o = {}
+  for _, k in ipairs(ks) do local x = t[k]; o[#o + 1] = tostring(k) .. '=' .. (type(x) == 'table' and ('{' .. kv(x) .. '}') or tostring(x)) end
+  return table.concat(o, ' ')
+end
+local function list(t) local o = {}; for _, x in ipairs(type(t) == 'table' and t or {}) do o[#o + 1] = tostring(x) end; return #o > 0 and table.concat(o, ',') or 'none' end
+M._kv = kv
+function M.damageSummaryOf(measured)
+  local out = {}
+  for g, byC in pairs(type(measured) == 'table' and measured or {}) do
+    local w = 0
+    for _, e in pairs(byC) do w = math.max(w, tonumber(e.damage) or 0) end
+    out[g] = math.floor(w * 1000 + 0.5) / 1000
+  end
+  return out
+end
+-- ask the car for a damage report (broken / deformed beams, flat tyres, damage per group): logged when it answers
+function M.carReport(tag, reqId) return vehCall('report', "'" .. tostring(tag):gsub("'", '') .. "'", reqId or 0) end
+local function logReport(d)
+  if not d.ok then log_('W', 'car report (' .. tostring(d.tag) .. '): no answer (' .. tostring(d.why) .. ')') return end
+  log_('I', string.format('car report (%s): broken beams %s, deformed beams %s, flat tyres %s, upright %.2f, engine flags %s, damage {%s}',
+    tostring(d.tag), tostring(d.broken), tostring(d.deformed), list(d.deflated), tonumber(d.upZ) or 0, list(d.engineFlags), kv(d.damage)))
+end
+
 -- answers from the vehicle half
 function M.reply(d)
   if type(d) ~= 'table' then return end
-  if d.kind == 'survey' then
+  if d.kind == 'carReport' then logReport(d)
+  elseif d.kind == 'check' then
+    log_(#(d.flatAgain or {}) > 0 and 'W' or 'I', string.format('repair %s, 1 s later: flat tyres %s, a changed tyre flat again: %s, broken beams in the repaired parts: %s',
+      tostring(d.reqId), list(d.deflated), list(d.flatAgain), tostring(d.brokenInRepaired)))
+    if #(d.flatAgain or {}) > 0 then notify('rally.raid Earth: the new tyre (' .. list(d.flatAgain) .. ') went flat again right after the change. Please send the console log (~).', 8) end
+  elseif d.kind == 'survey' then
     if d.reqId == R.surveyReq then R.survey = d end
   elseif d.kind == 'ready' then
     if R.busy and R.busy.reqId == d.reqId then
-      if not d.ok then R.msg = 'Repair failed: ' .. tostring(d.why); R.busy = nil
+      if not d.ok then R.msg = 'Repair failed: ' .. tostring(d.why); log_('E', 'repair ' .. d.reqId .. ' failed in the car: ' .. tostring(d.why)); R.busy = nil
       else
         R.busy.phase = 'reset'
         R.expect = { reqId = d.reqId, untilT = R.t + cfg.resume.expectResetS, vehId = M.game.vehId() }
-        if not M.game.resetInPlace() then R.msg = 'Repair failed: the car could not be reset.'; R.busy, R.expect = nil, nil; M.game.send('if ' .. M.VEH_EXT .. ' then ' .. M.VEH_EXT .. '.cancel() end') end
+        log_('I', string.format('repair %s ready: wheels changed %s, flat tyres before %s; kept for after the reset: %s; damage before {%s}',
+          tostring(d.reqId), list(d.wheelsChanged), list(d.deflatedBefore), kv(d.prep), kv(d.damageBefore)))
+        local ok, how, err = M.game.resetInPlace()
+        log_(ok and 'I' or 'E', 'repair ' .. d.reqId .. ': reset in place with ' .. tostring(how or '?') .. (ok and '' or (' FAILED: ' .. tostring(err))))
+        if not ok then R.msg = 'Repair failed: the car could not be reset.'; R.busy, R.expect = nil, nil; M.game.send('if ' .. M.VEH_EXT .. ' then ' .. M.VEH_EXT .. '.cancel() end') end
       end
     end
   elseif d.kind == 'done' then
     if R.busy and R.busy.reqId == d.reqId then
       local b = R.busy
       R.busy = nil
-      if d.ok then M.commit(b, d) else R.msg = 'Repair failed: ' .. tostring(d.why) end
+      if d.ok then
+        log_('I', string.format('repair %s done (%s): put back %s; flat tyres now %s; engine flags not restored %s; damage after {%s}',
+          tostring(d.reqId), tostring(b.what), kv(d.stats), list(d.deflatedAfter), list(d.engineFlagsNotRestored), kv(M.damageSummaryOf(d.after))))
+        M.commit(b, d)
+        M.carReport('after repair ' .. d.reqId, d.reqId)
+      else R.msg = 'Repair failed: ' .. tostring(d.why); log_('E', 'repair ' .. d.reqId .. ' failed after the reset: ' .. tostring(d.why)) end
       M.requestSurvey()
     end
   end
@@ -339,6 +383,8 @@ function M.confirm(ids)
   R.busy = { reqId = R.req, mode = mode, chosen = chosen, minutes = minutes, wheels = wheels, spec = spec,
     what = table.concat(labels, ' + '), phase = 'prepare', startedT = R.t, lat = nav().lat, lon = nav().lon }
   R.msg = nil
+  log_('I', string.format('repair %d requested (%s mode): %s = %d min, %d spare wheel(s); spec {%s}', R.req, mode, R.busy.what, minutes, wheels, kv(spec)))
+  M.carReport('before repair ' .. R.req, R.req)
   vehCall('prepare', spec, R.req)
   M.push()
   return true

@@ -79,23 +79,25 @@ route for a time penalty. It is the **one reset allowed in a stage**: BeamNG's o
      penalty as a reset the app didn't make, and they share one count);
    - how many of your 3 recoveries / resets are used, how many are left after this one, and this stage's 0 of 1;
    - where the car goes: back on the route, 30 m behind where it got stuck, at the roadbook km shown;
-   - which damage comes back: the car as it was at the last saved state, and how long ago that was.
+   - that the damage stays: the car keeps every dent, broken part and flat tyre it has now.
 3. Press **CONFIRM RECOVERY** (REPAIR panel), or **CONFIRM** in the GPS app's menu within 15 seconds. **CANCEL** leaves everything as it is.
 4. The stage clock stops. The car is set down on the route, upright and facing the way the route goes, and the trip
    meter jumps to that place's roadbook km. Two seconds later the clock runs again and the penalty is added to your
    stage time.
 
-**The damage is not a free repair.** While you drive, the game keeps a *recovery state* every 30 seconds of stage
-time: where you are, which way you face, your speed, your place on the route, the waypoints you've passed, and the
-car's damage, flat tyres, fuel and engine state. A recovery brings back the damage of the latest good one that is at
-least 5 seconds old, so the crash itself is undone, but every dent, flat tyre and seized engine from before it stays.
-The fuel goes back to what you had then too.
+**Recovery does not repair anything** (changed 18 Nov, after the in-game test "Recover fully repaired the vehicle").
+Near the car, the car is only lifted, set upright and put back on the route: no reset, so every dent, broken part,
+flat tyre, the fuel and a seized engine stay exactly as they were. This is the game's own "recover upright" call
+(`spawn.safeTeleport` with `resetVehicle = false`, as in BeamNG's `core/recoveryPrompt.lua`, and as BeamNG.Earth's
+edge guard uses it), followed by stopping the car.
+
+While you drive, the game still keeps a *recovery state* every 30 seconds of stage time, but now only for **where**
+to put the car (your place on the route, the waypoints passed). Its damage is not used.
 
 - A state isn't "good" if the car was tipped over or more than 300 m from the route when it was saved.
-- After a roadside repair, the older states are dropped and a fresh one is saved straight away, so a recovery never
-  undoes a repair you paid for.
-- If there's no saved state yet (in the first seconds of a stage, after you changed car, or just after a game-crash
-  resume), the car keeps the damage it has now.
+- **Far from the route** (below) is the exception: BeamNG.Earth's teleport resets the car on its own, so the damage
+  is captured when you press CONFIRM and put back after the teleport, with the same code as the roadside repair.
+  That is close to the car you had, not exact (see Known limits).
 
 **When you can't recover.** The app tells you why, and nothing is counted:
 
@@ -207,6 +209,16 @@ The rally itself is kept in `<BeamNG user folder>/current/rallyraid/rally/curren
 `gameResumeDiscards` (written the moment they happen, so they survive even if the stage is never finished). The
 fields are listed in `docs/STAGE_FORMAT.md` under "Results file".
 
+**Console lines** (the in-game console, `~`, and `<BeamNG user folder>/current/beamng.log`), each starting with
+`[rally.raid Earth]`:
+- a repair: `repair N requested (...)`, `car report (before repair N)`, `repair N ready: wheels changed ..., flat
+  tyres before ...; kept for after the reset: ...`, `repair N: reset in place with ...`, `repair N done (...)`,
+  `car report (after repair N)`, and one second later `repair N, 1 s later: flat tyres ..., a changed tyre flat
+  again: ..., broken beams in the repaired parts: ...` (a warning, and a note on screen, if a new tyre went flat);
+- a recovery: `car recovery requested ...`, `car report (before recovery N)`, `car recovery: spawn.safeTeleport(...,
+  resetVehicle = false) ok`, `car recovery N done: ... landed ... m, ... deg`, `car report (after recovery)`;
+- any failure is logged with `FAILED` or as an error line.
+
 ## How it works (for the curious)
 
 To fix only some parts, the app does four things:
@@ -214,6 +226,11 @@ To fix only some parts, the app does four things:
    fuel, and engine damage.
 2. It resets the car to new where it stands.
 3. On the next frame, it puts the damage back on everything that wasn't picked.
+   Since 18 Nov it leaves alone: every node of a repaired part, both ends of every repaired beam, and a changed
+   wheel's hub nodes (so a new tyre is not pulled onto the old, bent spot and torn flat again); every hydro and tyre
+   pressure beam (a steering rack frozen at its old length is what broke the steering after a suspension repair);
+   and dents that pull on a renewed node. Broken parts that weren't picked are broken again. Kept node positions are
+   stored relative to the car.
 4. It hands back the fuel you had left.
 
 This is our own code, using only standard BeamNG functions. The idea comes from the Individual Part Repair mod's
@@ -231,9 +248,12 @@ by the nearest wheel.
   stored relative to the car itself so they still fit when the car faces a new way. For a game-crash save the car
   sends the same data as plain lists (`vehRepair.gameCapture`) and it goes into the save file; on resume it is sent
   back to the car (`vehRepair.gameArm`).
-- The car is set down the way BeamNG.Earth sets it down after its own teleports (`spawn.safeTeleport`, which resets
-  the car and puts it on the ground). The next frame, the saved damage, flat tyres, fuel and seized engine are put back
-  with the same code the roadside repair uses.
+- Recover car near the car: `spawn.safeTeleport(veh, pos, rot, nil, nil, false, nil, false)`: the last `false` is
+  `resetVehicle`, so the car is moved and set upright without a reset (its damage stays), then
+  `veh:applyClusterVelocityScaleAdd(-1, 0, 0, 0, 0)` stops it. Without `spawn`, `veh:setPositionRotation` (no reset).
+- Far recover and game-crash resume: the car is reset (BeamNG.Earth's teleport, or `spawn.safeTeleport` with
+  `resetVehicle = true`). The next frame, the captured damage, flat tyres, fuel and seized engine are put back with
+  the same code the roadside repair uses.
 - That reset is the app's own, so it isn't counted again as "a reset the app didn't make".
 - All the numbers are in `repairConfig.lua`: the rules in `resume`, the recovery mechanics in `carRecovery` (every
   30 s, 4 states kept, at least 5 s old, 300 m off route, 30 m back, under 10 km/h, 2 s settle, 1.5 km teleport limit,
@@ -259,8 +279,10 @@ by the nearest wheel.
   BeamNG calls that BeamNG.Earth already uses, but they have only been tested outside the game. If the car comes down
   facing the wrong way, or the damage looks twisted, tell us. The result file records `headingOffDeg` and
   `landedOffM` for this.
-- Recover car: a recovery state saved while the suspension was working hard (a jump) brings back those node
-  positions. The car may bounce for a moment after it is set down.
+- Recover car far from the route (BeamNG.Earth teleport) and game-crash resume reset the car, so their damage comes
+  back approximately (see the list below); only the near recover keeps the damage exactly.
+- Recover car near the car: an upside-down car is turned over by moving all of it at once. A badly bent car can
+  land a little off; the console line "car recovery N done" says how far and how many degrees.
 - Game-crash resume, what **can't be restored exactly**:
   - the car is set down **at rest** (no speed, no spinning wheels), on the ground under the saved spot, upright on its
     saved heading: a save taken mid-air, mid-slide or tipped over comes back standing still and upright;

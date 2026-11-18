@@ -13,6 +13,16 @@
 --   onReset / updateGFX         put the remembered damage back on everything that is not being repaired
 --                               -> GE rallyRaid_core.repairReply({kind='done', ...})
 --
+-- 18 Nov fix (in-game: a changed tyre went flat at once, a suspension repair broke the steering, a wheel change
+-- "did not work"): prepare used to put back EVERY node of the car at its pre-reset position (not in the car's own
+-- frame) and the rest length of EVERY beam, hydros (steering) and tyre pressure beams included. After the reset the
+-- new parts' nodes and the old ones no longer matched: the new tyre's beams were torn (flat again) and the steering
+-- hydros were frozen at the old length. Now (the same way as the crash-resume capture): only DAMAGED beams (broken,
+-- or rest length off by > 0.1 %) and the nodes on them come back, in the car's own frame; never a node of a part being
+-- repaired or a node a repaired beam ends on; the length only of plain beams (no hydros, pressured, bounded ...).
+--   report(cfg, tag, reqId)     broken / deformed beams, flat tyres, damage per group -> GE {kind='carReport', ...}
+--                               (the before / after lines in the console)
+--
 -- spec = { parts = { {group='wheel', corner='FL'}, {group='radiator'} } }   repair just these
 --      | { allExcept = { 'engine' } }                                       repair everything but these groups
 --      engine = true                                                        also cure the engine damage flags
@@ -131,6 +141,14 @@ local function toGE(cmd) local o = G('obj'); if o and o.queueGameEngineLua then 
 local function ser(t) local s = G('serialize'); if s then return s(t) end return 'nil' end
 local function reply(data) toGE('if rallyRaid_core then rallyRaid_core.repairReply(' .. ser(data) .. ') end') end
 
+local layCache, layFor      -- the part layout of this car (worked out once: it does not change while driving)
+local KEEP_RATIO = 0.001    -- a beam whose rest length moved more than 0.1 % is kept (an undamaged one is new after a reset)
+local function cachedLayout(vdata, cfg)
+  if layFor ~= vdata then layCache, layFor = M.layout(vdata, cfg), vdata end
+  return layCache
+end
+local check                 -- a look at the repaired parts 1 s after a repair: { reqId, frames, corners, fixed }
+
 local function deflatedWheels()
   local out = {}
   local w = G('wheels')
@@ -207,30 +225,64 @@ end
 function M.prepare(cfg, spec, reqId)
   local v, o = G('v'), G('obj')
   if not (v and v.data and o) then reply({ kind = 'ready', reqId = reqId, ok = false, why = 'no vehicle data' }) return end
-  local lay = M.layout(v.data, cfg)
+  local lay = cachedLayout(v.data, cfg)
   local fix = M.selector(spec)
+  local B = M.basis(o)
   local P = { reqId = reqId, phase = 'reset', spec = spec, cfg = cfg, nodes = {}, beams = {}, deflated = {},
-    fuel = fuelLevels(), engineFlags = engineFlags(cfg), before = M.measure(lay, cfg, o), lay = lay }
-  for cid, info in pairs(lay.nodes) do
-    if not fix(info) then
-      local p = o:getNodePosition(cid)
-      P.nodes[cid] = { p.x, p.y, p.z }
+    fuel = fuelLevels(), engineFlags = engineFlags(cfg), before = M.measure(lay, cfg, o), lay = lay, frame = true }
+  -- the nodes the repair renews: every node of a repaired part, and both ends of every repaired beam (the hub a new
+  -- tyre hangs on, the knuckle a new tie rod ends on). None of these is ever put back where the damage had it.
+  local renewed = {}
+  for cid, info in pairs(lay.nodes) do if fix(info) then renewed[cid] = true end end
+  for _, info in pairs(lay.beams) do if fix(info) then if info.n1 ~= nil then renewed[info.n1] = true end if info.n2 ~= nil then renewed[info.n2] = true end end end
+  -- a changed wheel: its two hub (axle) nodes too, whatever part they belong to
+  local wd = v.data.wheels or {}
+  for _, w in pairs(wd) do
+    if type(w) == 'table' and fix({ group = 'wheel', corner = w.name }) then
+      if w.node1 ~= nil then renewed[w.node1] = true end
+      if w.node2 ~= nil then renewed[w.node2] = true end
     end
   end
+  local st = { damagedKept = 0, brokenKept = 0, nodesKept = 0, skippedNotPlain = 0, skippedTouchesRepair = 0, repairedBeams = 0 }
   for cid, info in pairs(lay.beams) do
-    if not fix(info) then
+    if fix(info) then st.repairedBeams = st.repairedBeams + 1
+    else
       local broken = o:beamIsBroken(cid) and true or false
       local rl = tonumber(o:getBeamRestLength(cid))
       local dr = (info.normal and info.len and info.len > 0.01 and rl) and (rl / info.len - 1) or 0
-      P.beams[cid] = { rl, broken, dr }
+      if broken or math.abs(dr) > KEEP_RATIO then
+        local touches = renewed[info.n1] or renewed[info.n2]
+        if broken then
+          -- a broken beam stays broken (damage the repair does not cover); only its length is never touched
+          P.beams[cid] = { nil, true, dr }
+          st.brokenKept = st.brokenKept + 1
+        elseif touches then
+          st.skippedTouchesRepair = st.skippedTouchesRepair + 1   -- a dent pulling on a new part: left new
+        elseif not info.normal then
+          st.skippedNotPlain = st.skippedNotPlain + 1             -- hydros (steering), tyre pressure, bounded ...
+        else
+          P.beams[cid] = { rl, false, dr }
+          st.damagedKept = st.damagedKept + 1
+          for _, n in ipairs({ info.n1, info.n2 }) do
+            if n ~= nil and lay.nodes[n] and not renewed[n] and not P.nodes[n] then
+              local q = o:getNodePosition(n)
+              P.nodes[n] = M.toFrame(B, { q.x, q.y, q.z })
+              st.nodesKept = st.nodesKept + 1
+            end
+          end
+        end
+      end
     end
   end
   -- a deflated tyre stays flat unless its wheel is changed
-  local wheelFix = {}
-  for _, w in ipairs(lay.wheels) do wheelFix[w.name] = fix({ group = 'wheel', corner = w.name }) end
-  for _, d in ipairs(deflatedWheels()) do if not wheelFix[d.name] then P.deflated[#P.deflated + 1] = d.key end end
+  local wheelFix, fixedCorners = {}, {}
+  for _, w in ipairs(lay.wheels) do wheelFix[w.name] = fix({ group = 'wheel', corner = w.name }); if wheelFix[w.name] then fixedCorners[#fixedCorners + 1] = w.name end end
+  local deflBefore = {}
+  for _, d in ipairs(deflatedWheels()) do deflBefore[#deflBefore + 1] = d.name; if not wheelFix[d.name] then P.deflated[#P.deflated + 1] = d.key end end
+  P.prep, P.fixedCorners, P.fix = st, fixedCorners, fix
   pending, waitFrames = P, 0
-  reply({ kind = 'ready', reqId = reqId, ok = true })
+  reply({ kind = 'ready', reqId = reqId, ok = true, prep = st, deflatedBefore = deflBefore, wheelsChanged = fixedCorners,
+    damageBefore = M.damageSummary(P.before) })
   return P
 end
 
@@ -245,7 +297,7 @@ function M.apply(o)
   if not P then return nil end
   o = o or G('obj')
   local vec = G('vec3')
-  local stats = { nodesKept = 0, beamsKept = 0, rebroken = 0, deformedReplayed = 0, tyresDeflated = 0 }
+  local stats = { nodesKept = 0, beamsKept = 0, rebroken = 0, deformedReplayed = 0, tyresDeflated = 0, lengthsSet = 0 }
   local B = P.frame and M.basis(o)
   for cid, p in pairs(P.nodes) do
     if B then p = M.fromFrame(B, p) end          -- a resume state: kept in the car's frame (it faces a new way now)
@@ -255,7 +307,7 @@ function M.apply(o)
   local onDeformed = G('onBeamDeformed')
   local ratio = tonumber(P.cfg.beamDamagedRatio) or 0.02
   for cid, b in pairs(P.beams) do
-    if b[1] then o:setBeamLength(cid, b[1]) end
+    if b[1] and not b[2] then o:setBeamLength(cid, b[1]); stats.lengthsSet = stats.lengthsSet + 1 end
     stats.beamsKept = stats.beamsKept + 1
     if b[2] then o:breakBeam(cid); stats.rebroken = stats.rebroken + 1
     elseif math.abs(b[3] or 0) > ratio and P.lay.beams[cid] and P.lay.beams[cid].deformGroup and onDeformed then
@@ -290,13 +342,60 @@ function M.apply(o)
   end
   local after = M.measure(P.lay, P.cfg, o)
   pending = nil
+  local defl = {}
+  for _, d in ipairs(deflatedWheels()) do defl[#defl + 1] = d.name end
   local out = { kind = P.replyKind or 'done', reqId = P.reqId, ok = true, stats = stats, before = P.before, after = after,
-    engineFlagsBefore = P.engineFlags, engineFlagsNotRestored = notRestored, fuel = P.fuel }
+    engineFlagsBefore = P.engineFlags, engineFlagsNotRestored = notRestored, fuel = P.fuel, prep = P.prep, deflatedAfter = defl }
+  -- a second look 1 s later: did a changed tyre go flat again, are repaired beams broken again?
+  if P.fix then check = { reqId = P.reqId, frames = 60, corners = P.fixedCorners or {}, fix = P.fix, lay = P.lay } end
   reply(out)
   return out
 end
 
+-- broken / deformed beams, flat tyres and damage per group of the car as it is now (for the console)
+function M.report(cfg, tag, reqId)
+  local v, o = G('v'), G('obj')
+  if not (v and v.data and o) then reply({ kind = 'carReport', tag = tag, reqId = reqId, ok = false, why = 'no vehicle data' }) return nil end
+  local lay = cachedLayout(v.data, cfg)
+  local broken, deformed = 0, 0
+  local ratio = tonumber(cfg.beamDamagedRatio) or 0.02
+  for cid, info in pairs(lay.beams) do
+    if o:beamIsBroken(cid) then broken = broken + 1
+    elseif info.normal and info.len and info.len > 0.01 then
+      local rl = tonumber(o:getBeamRestLength(cid))
+      if rl and math.abs(rl / info.len - 1) > ratio then deformed = deformed + 1 end
+    end
+  end
+  local defl = {}
+  for _, d in ipairs(deflatedWheels()) do defl[#defl + 1] = d.name end
+  local ok, m = pcall(M.measure, lay, cfg, o)
+  local B = M.basis(o)
+  local out = { kind = 'carReport', tag = tag, reqId = reqId, ok = true, broken = broken, deformed = deformed, deflated = defl,
+    damage = ok and M.damageSummary(m) or nil, engineFlags = engineFlags(cfg), upZ = B.u[3] }
+  reply(out)
+  return out
+end
+local function runCheck(o)
+  local c = check
+  check = nil
+  o = o or G('obj')
+  local defl, again = {}, {}
+  local isFixed = {}
+  for _, n in ipairs(c.corners) do isFixed[n] = true end
+  for _, d in ipairs(deflatedWheels()) do defl[#defl + 1] = d.name; if isFixed[d.name] then again[#again + 1] = d.name end end
+  local brokenFixed = 0
+  for cid, info in pairs(c.lay.beams) do if c.fix(info) and o:beamIsBroken(cid) then brokenFixed = brokenFixed + 1 end end
+  local out = { kind = 'check', reqId = c.reqId, ok = true, deflated = defl, flatAgain = again, brokenInRepaired = brokenFixed }
+  reply(out)
+  return out
+end
+M._runCheck = function(o) if check then return runCheck(o) end end
+
 function M.updateGFX()
+  if check and not pending then
+    check.frames = check.frames - 1
+    if check.frames <= 0 then pcall(runCheck) end
+  end
   if pending and pending.phase == 'apply' then
     if waitFrames > 0 then waitFrames = waitFrames - 1 return end
     local ok, err = pcall(M.apply)
@@ -334,12 +433,6 @@ function M.fromFrame(B, q)
 end
 
 local saved = {}            -- resume states by id (the newest `keep`)
-local layCache, layFor      -- the part layout of this car (worked out once: it does not change while driving)
-local KEEP_RATIO = 0.001    -- a beam whose rest length moved more than 0.1 % is kept (an undamaged one is new after a reset)
-local function cachedLayout(vdata, cfg)
-  if layFor ~= vdata then layCache, layFor = M.layout(vdata, cfg), vdata end
-  return layCache
-end
 -- the car's damage as it is now: damaged / broken beams, the nodes on them (in the car's frame), flat tyres, fuel,
 -- engine damage
 function M.capture(cfg)
@@ -354,7 +447,7 @@ function M.capture(cfg)
     local rl = tonumber(o:getBeamRestLength(cid))
     local dr = (info.normal and info.len and info.len > 0.01 and rl) and (rl / info.len - 1) or 0
     if broken or math.abs(dr) > KEEP_RATIO then
-      Sn.beams[cid] = { rl, broken, dr }
+      Sn.beams[cid] = { info.normal and rl or nil, broken, dr }      -- (a hydro's length is never put back: steering)
       Sn.nBeams = Sn.nBeams + 1
       for _, n in ipairs({ info.n1, info.n2 }) do
         if n ~= nil and lay.nodes[n] and not Sn.nodes[n] then
@@ -437,7 +530,9 @@ function M.gameArm(cfg, car, reqId)
   local skipped = 0
   for _, b in ipairs(car.beams or {}) do
     local cid = tonumber(b[1])
-    if cid and lay.beams[cid] then Sn.beams[cid] = { tonumber(b[2]), (b[3] == 1 or b[3] == true), tonumber(b[4]) or 0 }
+    local rl = tonumber(b[2])
+    if rl and (rl <= 0 or not (cid and lay.beams[cid] and lay.beams[cid].normal)) then rl = nil end     -- 0 = no length saved (a hydro, a broken beam)
+    if cid and lay.beams[cid] then Sn.beams[cid] = { rl, (b[3] == 1 or b[3] == true), tonumber(b[4]) or 0 }
     else skipped = skipped + 1 end
   end
   for _, q in ipairs(car.nodes or {}) do

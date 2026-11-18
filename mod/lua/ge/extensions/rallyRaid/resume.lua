@@ -11,8 +11,14 @@
 --   * RECOVER in the GPS app (or RECOVER CAR in its MENU > REPAIR panel; the rallyRaid_recoverCar action has no key by default): the penalty and recoveries left are shown, a second press (or
 --     CONFIRM) starts it; refused with the reason when the rules don't allow it (then RETIRE STAGE is offered)
 --   * the recovery: the stage clock stops; the car is set down on the route, backOffM behind where it got stuck, facing
---     along the route, and the damage of the latest good recovery state (at least 5 s old) is put back (not a free
---     repair); the trip is set to that place's roadbook km; the penalty goes onto the stage as time
+--     along the route. 18 Nov fix (in game: "Recover fully repaired the vehicle"): the car is NOT reset any more. It
+--     is moved and turned upright with spawn.safeTeleport(..., resetVehicle = false), the call the game's own
+--     "recover upright" uses (core/recoveryPrompt.lua, as BeamNG.Earth's edgeguard.lua cites it), and its speed zeroed,
+--     so every dent, broken part, flat tyre and engine / radiator damage stays as it is. (Before, the car was set down
+--     with a reset and the damage of the last 30 s recovery state was put back: from BEFORE the crash, so it came
+--     out repaired.) Only when the place is far (BeamNG.Earth's own teleport resets the car) is the damage captured
+--     at the moment of the press and put back after it (approximate). The trip is set to that place's roadbook km;
+--     the penalty goes onto the stage as time
 --     (repair.countResume('carRecovery'): the shared resume / reset budget and log)
 --   * everything goes into the stage result (resumes.log from repair v1, plus carRecovery: attempts, snapshots, rules)
 local cfgAll = require('rallyRaid/repairConfig')
@@ -202,7 +208,8 @@ M.game = {
   end,
   -- set the car down at t = { lat, lon, alt, heading }: upright, facing heading, on the ground. Returns ok, why,
   -- resets (true: the game resets the car as part of it, as spawn.safeTeleport with resetVehicle does)
-  place = function(t)
+  place = function(t, reset)
+    reset = reset ~= false          -- (nil: with a reset, as the game-crash resume needs it)
     local a, veh = api(), playerVeh()
     local vec, qdir = rawget(_G, 'vec3'), rawget(_G, 'quatFromDir')
     if not (a and a.toGame and veh and vec and qdir) then return false, 'game functions missing' end
@@ -225,15 +232,24 @@ M.game = {
     end
     local pos, rot = vec(x, y, z + (C().liftM or 0.5)), qdir(dir, vec(0, 0, 1))
     local sp = rawget(_G, 'spawn')
+    local function stopCar()      -- no speed after the move (as BeamNG.Earth's edgeguard.lua after its no-reset safeTeleport)
+      local okV, e2 = pcall(function() veh:applyClusterVelocityScaleAdd(-1, 0, 0, 0, 0) end)
+      if not okV then log_('W', 'car recovery: applyClusterVelocityScaleAdd failed: ' .. tostring(e2)) end
+    end
     if sp and sp.safeTeleport then
-      -- as BeamNG.Earth sets the car down after its own teleports: reset, bounding box onto the ground, no speed
-      local ok, err = pcall(sp.safeTeleport, veh, pos, rot, nil, nil, false, nil, true)
-      if ok then return true, nil, true end
-      log_('W', 'car recovery: spawn.safeTeleport failed: ' .. tostring(err))
+      -- reset = false (RECOVER near the car): moved, set upright on the ground, damage kept (the game's own upright
+      -- recovery call). reset = true (after BeamNG.Earth's far teleport, which reset the car anyway): reset, then the
+      -- damage captured before is put back by the car (vehRepair.resumeArm)
+      local ok, err = pcall(sp.safeTeleport, veh, pos, rot, nil, nil, false, nil, reset)
+      log_(ok and 'I' or 'W', string.format('car recovery: spawn.safeTeleport(pos %.1f %.1f %.1f, heading %.0f, resetVehicle = %s) %s',
+        pos.x, pos.y, pos.z, t.heading or 0, tostring(reset), ok and 'ok' or ('FAILED: ' .. tostring(err))))
+      if ok then if not reset then stopCar() end return true, nil, reset, 'spawn.safeTeleport' end
     end
     local ok, err = pcall(function() veh:setPositionRotation(pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, rot.w) end)
+    log_(ok and 'I' or 'E', 'car recovery: veh:setPositionRotation (no reset) ' .. (ok and 'ok' or ('FAILED: ' .. tostring(err))))
     if not ok then return false, tostring(err) end
-    return true, nil, false
+    stopCar()
+    return true, nil, false, 'setPositionRotation'
   end,
 }
 
@@ -438,9 +454,15 @@ function M.confirm()
   R.msg = nil
   notify('rally.raid Earth: car recovery: the clock is stopped, putting the car back on the route ...', 4)
   R.busy.far = p.target.fromCarM > C().localMoveMaxM or not M.game.canPlaceLocally(p.target)
-  if sn then M.go()
+  log_('I', string.format('car recovery requested: to km %.2f (%.0f m back on the route, %.0f m from the car), %s; penalty +%s',
+    tonumber(p.target.km) or 0, tonumber(p.target.backM) or 0, tonumber(p.target.fromCarM) or 0,
+    R.busy.far and 'FAR: BeamNG.Earth teleport (resets the car), damage captured now and put back' or 'near: moved without a reset (damage kept as it is)',
+    fmtMin(p.penaltyS or 0)))
+  local rm = repairMod()
+  if rm and rm.carReport then rm.carReport('before recovery ' .. R.req, R.req) end
+  if not R.busy.far then M.go()
   else
-    -- no resume state yet: the car's damage as it is now is saved first (a teleport's own reset would wipe it)
+    -- far: the car's damage as it is NOW is saved first (the teleport's reset wipes it; never an older recovery state)
     R.snapId = R.snapId + 1
     R.busy.phase, R.busy.captureId, R.busy.capturedNow = 'capture', R.snapId, true
     vehCall('resumeSnapshot', R.snapId, C().keepSnapshots)
@@ -449,6 +471,7 @@ function M.confirm()
   return true
 end
 
+local commit     -- (below)
 -- the damage to put back is in the car: move it
 function M.go()
   local b = R.busy
@@ -459,8 +482,13 @@ function M.go()
     local ok, why = M.game.teleport(b.target.lat, b.target.lon, 'Recover car')
     if not ok then fail('the teleport was refused (' .. tostring(why) .. ').'); return false end
   else
-    b.phase = 'arm'
-    vehCall('resumeArm', b.captureId or b.snap.id, b.reqId)
+    -- near: no reset at all, so nothing to put back: move it, upright, and it is done
+    b.phase, b.noReset = 'place', true
+    local ok, why, _, how = M.game.place(b.target, false)
+    if not ok then fail('the car could not be set down (' .. tostring(why) .. ').'); return false end
+    commit({ ok = true, stats = { method = tostring(how) .. ' without a reset: damage kept' }, fromSnapshot = false })
+    b.phase, b.phaseT = 'settle', R.t
+    M.push()
   end
   return true
 end
@@ -470,7 +498,7 @@ local function place()
   local b = R.busy
   b.phase, b.phaseT = 'place', R.t
   b.resetSeen = false            -- (BeamNG.Earth's teleport before this resets the car too: that one does not count)
-  local ok, why, resets = M.game.place(b.target)
+  local ok, why, resets = M.game.place(b.target, true)
   if not ok then fail('the car could not be set down (' .. tostring(why) .. ').'); return end
   b.placeResets = resets
   if not resets and not b.resetSeen then b.needReset = true end
@@ -479,7 +507,7 @@ end
 function M.teleported()
   if R.busy and R.busy.phase == 'teleport' then
     R.busy.phase, R.busy.phaseT = 'arm', R.t
-    vehCall('resumeArm', R.busy.captureId or (R.busy.snap and R.busy.snap.id) or -1, R.busy.reqId)
+    vehCall('resumeArm', R.busy.captureId or -1, R.busy.reqId)
     M.push()
     return true
   end
@@ -487,7 +515,7 @@ function M.teleported()
 end
 
 -- the commit: charge the resume (the shared budget in repair v1), set the trip, log everything
-local function commit(d)
+function commit(d)
   local b = R.busy
   local s = S()
   local rm = repairMod()
@@ -497,7 +525,7 @@ local function commit(d)
   local e = r.entry
   e.resume = { from = p.crash, to = p.target, snapshot = b.snap and { id = b.snap.id, clock = b.snap.clock, ageS = round(s.clock - b.snap.clock, 1),
       lat = b.snap.lat, lon = b.snap.lon, progress = b.snap.progress, trip = b.snap.trip, routeD = b.snap.routeD } or nil,
-    damageFrom = (b.capturedNow or not d.fromSnapshot) and 'now' or 'snapshot', damageAfter = d.after, stats = d.stats, fuel = d.fuel,
+    damageFrom = b.noReset and 'kept (no reset)' or ((b.capturedNow or not d.fromSnapshot) and 'now' or 'snapshot'), damageAfter = d.after, stats = d.stats, fuel = d.fuel,
     engineFlagsNotRestored = d.engineFlagsNotRestored, far = b.far or false, tripKmBefore = H.tripKm and H.tripKm() or nil }
   if r.allowed then
     if H.addPenalty then H.addPenalty('carRecovery', r.penaltyS, string.format('car recovery %d/%d (+%s)', e.rallyCount, RC().maxPerRally, fmtMin(r.penaltyS))) end
@@ -553,6 +581,10 @@ local function finishResume()
       if off > C().headingWarnDeg then log_('W', string.format('car recovery: the car faces %.0f deg off the route', off)) end
     end
     if p.lat then e.resume.landedOffM = round(geo.dist(p.lat, p.lon, b.target.lat, b.target.lon), 1) end
+    log_('I', string.format('car recovery %d done: %s; landed %.1f m from the target, %.0f deg off the route heading',
+      e.rallyCount, tostring(e.resume.damageFrom), tonumber(e.resume.landedOffM) or -1, tonumber(e.resume.headingOffDeg) or -1))
+    local rm0 = repairMod()
+    if rm0 and rm0.carReport then rm0.carReport('after recovery ' .. tostring(b.reqId), b.reqId) end
     logAttempt({ kind = 'resumed', rallyCount = e.rallyCount, penaltyS = e.penaltyS, km = b.target.km, backM = b.target.backM,
       pausedS = e.resume.pausedS, damageFrom = e.resume.damageFrom, snapshotId = b.snap and b.snap.id or nil })
     notify(string.format('rally.raid Earth: car recovery %d of %d done: +%s. Back on the route at km %.2f. Go!', e.rallyCount,

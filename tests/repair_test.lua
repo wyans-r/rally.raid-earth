@@ -461,5 +461,86 @@ local rres = core.results()
 check(rres.official == false and rres.bivouac.retired and rres.rally.retired, 'result unofficial, says retired')
 IPR_LOADED = false
 
+-- 8) 18 Nov in-game fixes (the vehicle half straight, then its answers through the GE half's log) --------------
+-- "replacing wheels didn't work ... the tires immediately punctured again ... fixing the suspension broke the steering"
+local logs = {}
+log = function(l, tag, m) logs[#logs + 1] = tostring(l) .. ' ' .. tostring(m) end
+local function logHas(pat) for _, l in ipairs(logs) do if l:find(pat) then return l end end end
+-- a steering hydro (rack to the FL knuckle), a tyre pressure beam, the tyre on its hub, a frame beam ending on the hub
+local hyd = bcid; addBeam(nodeByPart['pickup_engine_v8'][1], sF[2], 'pickup_steering_rack', { beamType = 2 })
+local tyreP = bcid; addBeam(tF[1], tF[2], 'tire_F_31x10', { beamType = 3 })
+local onHub = bcid; addBeam(tF[3], sF[1], 'tire_F_31x10')
+local frameHub = bcid; addBeam(nodeByPart['pickup_frame'][1], sF[1], 'pickup_frame')
+v = { data = { nodes = vdata.nodes, beams = vdata.beams, wheels = vdata.wheels } }      -- a new car: layout again
+local lay8 = vehRepair.layout(v.data, C)
+check(lay8.beams[hyd].normal == false and lay8.beams[tyreP].normal == false and lay8.beams[frameHub].normal == true, 'hydro and tyre pressure beams are not plain beams')
+local setLen, setPos = {}, {}
+local realSetLen, realSetPos = obj.setBeamLength, obj.setNodePosition
+obj.setBeamLength = function(o, c, l) setLen[c] = true; return realSetLen(o, c, l) end
+obj.setNodePosition = function(o, c, p) setPos[c] = true; return realSetPos(o, c, p) end
+local function run8(spec, reqId, afterApply)
+  setLen, setPos, veh2ge, ge2veh = {}, {}, {}, {}
+  vehRepair.cancel()
+  local P = vehRepair.prepare(C, spec, reqId)
+  resetCar(); vehRepair.onReset()                                  -- the reset in place
+  for _ = 1, 3 do vehRepair.updateGFX() end                        -- the damage goes back on
+  if afterApply then afterApply() end
+  for _ = 1, 61 do vehRepair.updateGFX() end                       -- the second look, 1 s later
+  local got = {}
+  for _, c in ipairs(veh2ge) do
+    local d; local f = assert(load(c:gsub('^if rallyRaid_core then rallyRaid_core%.repairReply%(', 'return ('):gsub(' end$', '')))
+    d = f(); got[d.kind] = d
+    repair.reply(d)                                               -- logged by the GE half
+  end
+  veh2ge = {}
+  return P, got
+end
+local function damage8()
+  resetCar()
+  for i = 1, 2 do phys.broken[beamByPart['tire_F_31x10'][i]] = true end          -- the FL tyre torn
+  wheelState[0].isTireDeflated = true
+  wheelState[1].isTireDeflated = true                                             -- FR flat too (not changed)
+  phys.rest[tyreP] = origLen(vdata.beams[tyreP]) * 0.5
+  phys.rest[hyd] = origLen(vdata.beams[hyd]) * 0.8                                 -- the rack mid-turn
+  dentPart('pickup_frame', 0.1)                                                     -- frameHub too
+  dentPart('pickup_suspension_F', 0.15)
+  phys.broken[beamByPart['pickup_hood'][1]] = true
+  for _, n in ipairs(nodeByPart['pickup_frame']) do phys.pos[n].z = phys.pos[n].z - 0.05 end
+  phys.pos[sF[1]].z = phys.pos[sF[1]].z - 0.1; phys.pos[tF[3]].z = phys.pos[tF[3]].z - 0.1
+end
+-- a) change wheel FL
+damage8()
+local P8, got = run8({ parts = { { group = 'wheel', corner = 'FL' } } }, 901)
+local pristinePos = function(n) local q = vdata.nodes[n].pos; return near(phys.pos[n].z, q.z) and near(phys.pos[n].x, q.x + 100) end
+check(not phys.broken[beamByPart['tire_F_31x10'][1]] and not phys.broken[beamByPart['tire_F_31x10'][2]] and not phys.broken[onHub], 'wheel FL: the new tyre is whole (no torn beam put back)')
+check(not wheelState[0].isTireDeflated and wheelState[1].isTireDeflated, 'wheel FL: FL inflated, FR (not changed) still flat')
+local movedNew = false; for _, n in ipairs({ tF[1], tF[2], tF[3], sF[1], sF[2] }) do if setPos[n] then movedNew = true end end
+check(not movedNew and pristinePos(sF[1]) and pristinePos(tF[3]), 'wheel FL: no node of the new tyre or of its hub moved back to the old place')
+check(not setLen[tyreP] and near(phys.rest[tyreP], origLen(vdata.beams[tyreP])), 'wheel FL: tyre pressure beam left new')
+check(not setLen[frameHub] and near(phys.rest[frameHub], origLen(vdata.beams[frameHub])), 'wheel FL: a dent pulling on the new hub is left out')
+check(near(phys.rest[beamByPart['pickup_frame'][1]], origLen(vdata.beams[beamByPart['pickup_frame'][1]]) * 0.9), 'wheel FL: the frame dent kept')
+check(phys.broken[beamByPart['pickup_hood'][1]] and not setLen[beamByPart['pickup_hood'][1]], 'wheel FL: a broken beam stays broken, its length not set')
+check(P8.prep.skippedTouchesRepair >= 2 and P8.prep.brokenKept >= 1, 'prepare stats: ' .. repair._kv(P8.prep))
+check(got.ready and got.done and got.check and #got.check.flatAgain == 0 and got.check.brokenInRepaired == 0, 'replies: ready, done, and 1 s later no flat again')
+check(logHas('%[rally%.raid Earth%] repair 901, 1 s later: flat tyres FR, a changed tyre flat again: none'), 'logged: the 1 s look')
+-- b) a tyre that goes flat again right after the change: said, and logged as a warning
+damage8()
+local _, got2 = run8({ parts = { { group = 'wheel', corner = 'FL' } } }, 902, function() wheelState[0].isTireDeflated = true end)
+check(got2.check and got2.check.flatAgain[1] == 'FL', 'flat again: the check finds it')
+check(logHas('^W %[rally%.raid Earth%] repair 902, 1 s later.*flat again: FL') and notes[#notes]:find('went flat again'), 'flat again: W line and a note on screen')
+-- c) suspension FL: the steering keeps working
+damage8()
+run8({ parts = { { group = 'suspension', corner = 'FL' } } }, 903)
+check(not setLen[hyd] and near(phys.rest[hyd], origLen(vdata.beams[hyd])), 'suspension FL: the steering hydro is never set to its old length')
+check(not setPos[sF[1]] and not setPos[sF[2]], 'suspension FL: the knuckle / hub nodes left new')
+check(near(phys.rest[beamByPart['pickup_suspension_F'][3]], origLen(vdata.beams[beamByPart['pickup_suspension_F'][3]]) * 0.85), 'suspension FL: the FR suspension dent kept')
+-- d) the car report and its log line
+local rep = vehRepair.report(C, 'test', 0)
+check(rep and rep.broken >= 1 and rep.deformed >= 1 and type(rep.damage) == 'table', 'car report: broken / deformed counts, damage per group')
+repair.reply(rep)
+check(logHas('car report %(test%): broken beams %d+, deformed beams %d+, flat tyres'), 'car report logged')
+obj.setBeamLength, obj.setNodePosition = realSetLen, realSetPos
+log = function() end
+
 print(string.format('%d passed, %d failed', passes, fails))
 return fails
