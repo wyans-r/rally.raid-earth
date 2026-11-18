@@ -55,3 +55,4 @@ rallies/build/
 # Browser test screenshots
 tests/browser/screens/
 tests/browser/bridge_test.png
+tests/browser/recce_bridge_test.png

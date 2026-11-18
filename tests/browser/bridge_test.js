@@ -143,6 +143,7 @@ const tick = (n, dt) => post('/tick', { n, dt: dt || 0.1 })
   check(logs.some(l => /\[rally\.raid Earth\] crash save \d+ written/.test(l)), 'the save write is logged: ' + (logs.filter(l => /crash save/i.test(l)).slice(-2).join(' / ')))
 
   async function killAndResume(label, dropLedger) {
+    await page.goto('about:blank')                            // (so the old page does not take the new Lua's first log lines)
     await post('/ctl', { op: 'restart' })                     // force close: no onExit, a fresh Lua state
     if (dropLedger) await post('/ctl', { op: 'rm', path: '/rallyraid/rally/current.json' })
     if (dropLedger) await post('/ctl', { op: 'restart' })

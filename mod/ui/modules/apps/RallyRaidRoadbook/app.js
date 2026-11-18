@@ -72,21 +72,45 @@ angular.module('beamng.apps')
       '<div class="rrc" ng-if="r.recce">' +
         '<div class="rrc-top"><span class="rrc-dot" ng-class="{air: r.recce.airborne}"></span><b>RECCE</b> {{ r.recce.km.toFixed(2) }} km &middot; {{ r.recce.changes }} <span class="rrc-dim">({{ r.recce.auto }} auto)</span>' +
           '<span class="rrc-sp"></span><button class="rrb-btn" ng-click="cmd(\'recceUndo\')" title="{{ kt(\'rallyRaid_recceUndo\', \'Take the last change back\') }}">UNDO</button>' +
-          '<button class="rrb-btn" ng-click="merge()" title="Write the changes into the roadbook file (a backup is kept)">MERGE</button>' +
+          '<button class="rrb-btn" ng-click="merge()" title="First shows what a merge would do; then CONFIRM MERGE writes the changes into the roadbook file (a backup is kept)">MERGE</button>' +
           '<label class="rrc-ck" title="When merging, re-measure the box km from the driven line"><input type="checkbox" ng-model="ui.rescale"> km</label></div>' +
         '<div class="rrc-last" ng-if="r.recce.last">DETECTED: {{ r.recce.last.notes }}</div>' +
-        '<div class="rrc-near" ng-if="r.recce.nearest && !r.recce.pending"><span>NEAR <b>{{ r.recce.nearest.n }}</b> {{ r.recce.nearest.d }} m <span class="rrc-dim">{{ (r.recce.nearest.notes || \'\').substr(0, 22) }}</span></span>' +
-          '<span><button class="rrb-btn" ng-class="{on: r.recce.nearest.verified}" ng-click="cmd(\'recceConfirm\')" title="{{ kt(\'rallyRaid_recceConfirm\', \'Confirm the nearest box\') }}">&#10003;</button>' +
+        '<div class="rrc-pv" ng-if="r.recce.preview && !r.recce.pending"><span>MERGE PREVIEW: <b>{{ r.recce.preview.applied }}</b> of {{ r.recce.preview.changes }} apply, ' +
+          '<b ng-class="{warn: r.recce.preview.conflicts}">{{ r.recce.preview.conflicts }}</b> conflicts <span class="rrc-dim">{{ r.recce.preview.why.join(\'; \') }}</span></span>' +
+          '<span><button class="rrb-btn on" ng-click="mergeConfirm()">CONFIRM MERGE</button><button class="rrb-btn" ng-click="cmd(\'reccePreviewCancel\')">CANCEL</button></span></div>' +
+        // the box the buttons act on: the selected one (step with < >, or AT TRIP), else the nearest
+        '<div class="rrc-near" ng-if="r.recce.target && !r.recce.pending"><span>{{ r.recce.target.how === \'selected\' ? \'SEL\' : \'NEAR\' }} <b>{{ r.recce.target.n }}</b> {{ r.recce.target.km.toFixed(2) }} km' +
+          '<span ng-if="r.recce.target.d !== undefined && r.recce.target.d !== null"> &middot; {{ r.recce.target.d }} m</span> <span class="rrc-dim">{{ (r.recce.target.notes || \'\').substr(0, 12) }}</span></span>' +
+          '<span><button class="rrb-btn" ng-class="{on: r.recce.target.verified}" ng-click="cmd(\'recceConfirm\')" title="{{ kt(\'rallyRaid_recceConfirm\', \'Confirm this box\') }}">&#10003;</button>' +
           '<button class="rrb-btn" ng-click="cmd(\'recceMove\')" title="{{ kt(\'rallyRaid_recceMove\', \'Move it here\') }}">HERE</button>' +
           '<button class="rrb-btn" ng-click="cmd(\'recceRetag\')" title="{{ kt(\'rallyRaid_recceRetag\', \'Retag\') }}">TAG</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceDelete\')" title="{{ kt(\'rallyRaid_recceDelete\', \'Delete the nearest box\') }}">&#10005;</button></span></div>' +
-        '<div class="rrc-near" ng-if="!r.recce.pending"><button class="rrb-btn rrc-add" ng-click="cmd(\'recceDrop\')" title="{{ kt(\'rallyRaid_recceDrop\', \'A new box at the car\') }}">+ BOX HERE</button></div>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceDelete\')" title="{{ kt(\'rallyRaid_recceDelete\', \'Delete this box\') }}">&#10005;</button></span></div>' +
+        '<div class="rrc-near rrc-sel" ng-if="!r.recce.pending"><span>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceSel\', \'prev\')" title="select the box before">&#9664;</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceSel\', \'next\')" title="select the box after">&#9654;</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceSel\', \'trip\')" title="select the box the trip meter is in">AT TRIP</button>' +
+          '<button class="rrb-btn" ng-show="r.recce.target.how === \'selected\'" ng-click="cmd(\'recceSel\', \'nearest\')" title="back to the nearest box">NEAREST</button></span>' +
+          '<span ng-if="r.recce.target"><button class="rrb-btn" ng-click="cmd(\'recceKm\', \'trip\')" title="this box is at the trip meter reading now: set its km (the partials after it follow)">KM = TRIP</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceKm\', \'-10\')" title="10 m earlier">-10</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceKm\', \'+10\')" title="10 m later">+10</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceCap\')" title="the CAP out of this box := the car heading now">CAP HERE</button></span></div>' +
+        '<div class="rrc-near" ng-if="!r.recce.pending"><button class="rrb-btn rrc-add" ng-click="cmd(\'recceDrop\')" title="{{ kt(\'rallyRaid_recceDrop\', \'A new box at the car\') }}">+ BOX HERE</button>' +
+          '<span><button class="rrb-btn" ng-class="{on: ui.list}" ng-click="ui.list = !ui.list" title="every recce change not merged yet; UNDO takes any one back">CHANGES {{ r.recce.changes }}</button>' +
+          '<button class="rrb-btn" ng-click="cmd(\'recceReport\')" title="save a report of the changes (text + JSON) in the BeamNG user folder">REPORT</button></span></div>' +
+        '<div class="rrc-report rrc-dim" ng-if="r.recce.report && !r.recce.pending">REPORT: {{ r.recce.report.txt || r.recce.report.json }}</div>' +
+        '<div class="rrc-list" ng-if="ui.list && !r.recce.pending">' +
+          '<div class="rrc-dim" ng-hide="r.recce.list.length">No changes yet.</div>' +
+          '<div class="rrc-li" ng-repeat="c in r.recce.list track by c.i" ng-class="{old: c.earlier, gone: c.gone}">' +
+            '<span class="rrc-k">{{ c.kind }}</span><span class="rrc-n">{{ c.n ? (\'#\' + c.n) : \'-\' }}</span><span class="rrc-km">{{ c.km !== undefined && c.km !== null ? c.km.toFixed(2) : \'\' }}</span>' +
+            '<span class="rrc-t">{{ c.text }}{{ c.earlier ? \' (earlier)\' : \'\' }}</span>' +
+            '<button class="rrb-btn" ng-click="cmd(\'recceUndoAt\', c.i)" title="take this change back">UNDO</button></div></div>' +
         '<div class="rrc-pick" ng-if="r.recce.pending">' +
           '<div class="rrc-dim">{{ r.recce.pending.mode === \'add\' ? \'NEW BOX HERE\' : \'RETAG BOX\' }}: symbols, danger, notes</div>' +
           '<div class="rrc-row rrc-tabs"><button class="rrb-btn" ng-repeat="g in groups" ng-class="{on: ui.grp === g}" ng-click="setGrp(g)">{{ g === \'quick\' ? \'QUICK\' : g.toUpperCase() }}</button>' +
             '<input class="rrc-find" ng-model="ui.find" ng-change="findSym()" placeholder="find symbol"></div>' +
           '<div class="rrc-syms"></div>' +
           '<div class="rrc-row"><span>DANGER</span><button class="rrb-btn" ng-repeat="d in [0,1,2,3]" ng-class="{on: r.recce.pending.danger === d}" ng-click="pick({danger: d})">{{ d ? \'!!!\'.substr(0, d) : \'0\' }}</button></div>' +
+          '<div class="rrc-row rrc-presets"><button class="rrb-btn" ng-repeat="p in r.recce.presets" ng-class="{on: hasNote(p)}" ng-click="pick({preset: p})">{{ p }}</button></div>' +
           '<div class="rrc-row"><input class="rrc-notes" ng-model="ui.notes" ng-blur="pick({notes: ui.notes})" placeholder="notes (optional)" maxlength="120">' +
           '<button class="rrb-btn on" ng-click="save()">SAVE</button><button class="rrb-btn" ng-click="cmd(\'recceCancel\')">CANCEL</button></div></div>' +
       '</div>' +
@@ -156,7 +180,13 @@ angular.module('beamng.apps')
       scope.ui = { rescale: false, notes: '', grp: 'quick', find: '' }
       scope.pick = function (p) { scope.cmd('reccePick', p) }
       scope.save = function () { if (scope.ui.notes) scope.pick({ notes: scope.ui.notes }); scope.cmd('recceSave'); scope.ui.notes = '' }
-      scope.merge = function () { scope.cmd('recceMerge', scope.ui.rescale ? 'rescale' : '') }
+      // MERGE: first a preview (what would apply, conflicts), then CONFIRM MERGE writes the roadbook file
+      scope.merge = function () { if (scope.r.recce && scope.r.recce.preview) scope.mergeConfirm(); else scope.cmd('reccePreview') }
+      scope.mergeConfirm = function () { scope.cmd('recceMerge', scope.ui.rescale ? 'rescale' : '') }
+      scope.hasNote = function (p) {
+        var n = (scope.r.recce && scope.r.recce.pending && scope.r.recce.pending.notes) || ''
+        return n.split(',').map(function (x) { return x.trim() }).indexOf(p) >= 0
+      }
       // quick-pick tabs: QUICK (the recce's list) + the legend's groups; "find" searches the whole library by name
       scope.groups = ['quick'].concat(R && R.GROUPS ? Object.keys(R.GROUPS) : [])
       scope.setGrp = function (g) { scope.ui.grp = g; scope.ui.find = ''; drawPick() }
@@ -189,7 +219,7 @@ angular.module('beamng.apps')
           var wasPending = scope.r.recce && scope.r.recce.pending
           scope.r = data; draw()
           var P = data.recce && data.recce.pending
-          if (P && !wasPending) scope.ui.notes = P.notes || ''
+          if (P && (!wasPending || (P.notes || '') !== (wasPending.notes || ''))) scope.ui.notes = P.notes || ''   // a preset changed the notes
           setTimeout(drawPick, 0)
         })
       })

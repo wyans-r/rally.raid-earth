@@ -274,6 +274,18 @@ Applying (`RoadbookGen.applyChanges(rb, changes)`):
   anyone but the editor, is not applied; it goes to `conflicts[]` with a reason. Recce never overwrites desk edits
   silently; the editor shows the conflict and the user picks.
 
+### Recce edits for an existing roadbook (17 Nov 2026)
+
+- **Distance from the trip meter.** KM = TRIP and -10 / +10 write a `move` with `km` only (no `lat`/`lon`) and
+  `"kmOnly": true, "oldKm": <km before>`. Repeated edits of one box in a row are one change. The partials after it
+  follow, because boxes are re-sorted and renumbered by km.
+- **CAP from the car.** CAP HERE writes an `update` with `fields: {cap, capOut}` (degrees, from the car's heading), plus `oldCap`.
+- Both use the existing ops, so `M.applyChanges`, the merge and the stage builder's import (`RoadbookGen.applyChanges`)
+  need no change.
+- **Report.** REPORT, and every recce off, writes `/rallyraid/recce/<stage id>.report.txt` and `.report.json`
+  (`format: "rallyraid-recce-report"`) to the user folder. They hold the counts per kind, unverified automatic boxes,
+  driven km and every change not merged yet, with its box number, km and text.
+
 ## Merging a regeneration (`RoadbookGen.mergeRegenerated(old, fresh, stage)`)
 
 - **Kept** from the old file: every box that is `pinned`, `verified`, `deleted` (tombstones) or whose `source` is

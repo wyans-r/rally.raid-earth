@@ -41,6 +41,10 @@ M.T = {
 M.QUICK = { 'jump', 'crest', 'bump', 'compression', 'dip', 'ditch', 'step_down', 'hole', 'ruts', 'undulations', 'twisty',
   'soft_sand', 'dunes', 'rocks', 'danger', 'keep_left', 'keep_right', 'narrow', 'water', 'climb', 'descent', 'sideslope_l',
   'sideslope_r', 'junction', 'trees', 'vegetation', 'fence', 'gate', 'cliff', 'over_crest' }
+-- note presets for correcting a roadbook while driving it (roadbook wording: capitals, short; danger is the ! buttons)
+M.PRESETS = { 'TRACK FADES', 'KEEP LEFT', 'KEEP RIGHT', 'ROUGH', 'STONY', 'SOFT SAND', 'JUNCTION NOT VISIBLE', 'HOLE',
+  'BIG BUMP', 'NARROW', 'STAY ON TRACK', 'CAUTION' }
+M.NOTES_MAX = 120
 
 local R                       -- the running recce (nil = off)
 
@@ -131,6 +135,7 @@ function M.start(ctx, fresh)
   -- a resumed recce: its not yet merged changes show on the roadbook display again
   for _, c in ipairs(d.changes) do M.applyToDisplay(ctx.boxes, c) end
   d.started = d.started or now()
+  R.sessionFrom = #d.changes            -- changes before this index were made in an earlier recce of this stage
   return R
 end
 
@@ -191,22 +196,41 @@ local function addChange(c)
   R.doc.changes[#R.doc.changes + 1] = c
   M.applyToDisplay(R.ctx.boxes, c)
   R.dirty = true
+  R.preview = nil                       -- a merge preview is out of date after any change
   M.save()
   return c
 end
 
--- undo the last change of this recce (rebuilds the display from the roadbook file + the remaining changes)
-function M.undo(reload)
-  if not R or #R.doc.changes == 0 then return nil end
-  local c = table.remove(R.doc.changes)
-  if reload then local fresh = reload(); if fresh then
-    for k in pairs(R.ctx.boxes) do R.ctx.boxes[k] = nil end
-    for i, b in ipairs(fresh) do R.ctx.boxes[i] = b end
-    for _, x in ipairs(R.doc.changes) do M.applyToDisplay(R.ctx.boxes, x) end
-  end end
-  M.save()
-  return c
+-- rebuild the display from the roadbook file + the remaining changes (after an undo)
+local function rebuild(reload)
+  if not reload then return end
+  local fresh = reload()
+  if not fresh then return end
+  for k in pairs(R.ctx.boxes) do R.ctx.boxes[k] = nil end
+  for i, b in ipairs(fresh) do R.ctx.boxes[i] = b end
+  for _, x in ipairs(R.doc.changes) do M.applyToDisplay(R.ctx.boxes, x) end
 end
+-- undo change i of the list (default: the last one). Undoing an added box also drops the later changes to that box.
+-- Returns the change and how many later changes went with it.
+function M.undoAt(i, reload)
+  if not R then return nil end
+  local ch = R.doc.changes
+  i = tonumber(i) or #ch
+  if not ch[i] then return nil end
+  local c = table.remove(ch, i)
+  if i <= (R.sessionFrom or 0) then R.sessionFrom = R.sessionFrom - 1 end
+  local dropped = 0
+  if c.op == 'add' then
+    for j = #ch, i, -1 do
+      if ch[j].id == c.id then table.remove(ch, j); dropped = dropped + 1; if j <= (R.sessionFrom or 0) then R.sessionFrom = R.sessionFrom - 1 end end
+    end
+  end
+  rebuild(reload)
+  R.preview = nil
+  M.save()
+  return c, dropped
+end
+function M.undo(reload) return M.undoAt(nil, reload) end
 
 ------------------------------------------------------------------------------------------------------------------
 -- the driven line and positions
@@ -233,7 +257,7 @@ function M.tick(fix, dt)
     end
   end
   -- recent fixes, to place a detection at the spot it started
-  local f = { t = R.clock, lat = fix.lat, lon = fix.lon, trip = fix.trip, km = R.km / 1000 + (R.lastPt and geo.dist(R.lastPt.lat, R.lastPt.lon, fix.lat, fix.lon) / 1000 or 0) }
+  local f = { t = R.clock, lat = fix.lat, lon = fix.lon, trip = fix.trip, heading = fix.heading, km = R.km / 1000 + (R.lastPt and geo.dist(R.lastPt.lat, R.lastPt.lon, fix.lat, fix.lon) / 1000 or 0) }
   R.fixes[#R.fixes + 1] = f
   if #R.fixes > 400 then table.remove(R.fixes, 1) end
   R.here = f
@@ -475,7 +499,7 @@ end
 function M.retag(id)
   if not R then return nil end
   local b
-  if id then for _, x in ipairs(R.ctx.boxes) do if x.id == id then b = x end end else b = M.nearest() end
+  if id then for _, x in ipairs(R.ctx.boxes) do if x.id == id then b = x end end else b = M.target() end
   if not b then return nil end
   M.commitPending()
   R.pending = { mode = 'update', id = b.id, baseRev = tonumber(b.rev) or 1, symbols = copy(arr(b.symbols)), danger = tonumber(b.danger) or 0, notes = b.notes or '' }
@@ -491,7 +515,17 @@ function M.pick(p)
     if not found then P.symbols[#P.symbols + 1] = p.symbol end
   end
   if p.danger then P.danger = math.max(0, math.min(3, tonumber(p.danger) or 0)) end
-  if p.notes then P.notes = upper(p.notes):sub(1, 120) end
+  if p.notes then P.notes = upper(p.notes):sub(1, M.NOTES_MAX) end
+  if p.preset then                      -- a note preset toggles in the notes ("ROUGH, KEEP LEFT")
+    local w = upper(p.preset)
+    local parts, found = {}, false
+    for part in tostring(P.notes or ''):gmatch('[^,]+') do
+      part = part:gsub('^%s+', ''):gsub('%s+$', '')
+      if part == w then found = true elseif part ~= '' then parts[#parts + 1] = part end
+    end
+    if not found then parts[#parts + 1] = w end
+    P.notes = table.concat(parts, ', '):sub(1, M.NOTES_MAX)
+  end
   return P
 end
 function M.cancelPending() if R then R.pending = nil end end
@@ -514,7 +548,7 @@ end
 function M.boxOp(op, id)
   if not R then return nil end
   local b
-  if id then for _, x in ipairs(R.ctx.boxes) do if x.id == id then b = x end end else b = M.nearest() end
+  if id then for _, x in ipairs(R.ctx.boxes) do if x.id == id then b = x end end else b = M.target() end
   if not b then return nil end
   local base = tonumber(b.rev) or 1
   if op == 'confirm' then return addChange({ op = 'confirm', id = b.id, baseRev = base, by = 'recce-manual' })
@@ -526,6 +560,168 @@ function M.boxOp(op, id)
 end
 
 ------------------------------------------------------------------------------------------------------------------
+-- fixing an existing roadbook while driving it (17 Nov): pick any box, set its km from the trip meter, its CAP from
+-- the car, the list of changes (undo any one), a merge preview and a report file
+local function boxById(id) if not R then return nil end for _, x in ipairs(R.ctx.boxes) do if x.id == id then return x end end end
+-- the box the recce buttons act on: the selected one (R.sel), else the nearest within NEAR_M
+function M.target()
+  if not R then return nil end
+  if R.sel then local b = boxById(R.sel); if b then return b, 'selected' end; R.sel = nil end
+  local b = M.nearest()
+  if b then return b, 'nearest' end
+end
+-- how: 'next' / 'prev' (step through the boxes), 'trip' (the box the trip meter is in), 'nearest' (back to the
+-- nearest box), or a box id. Returns the box and its index.
+function M.select(how, tripKm)
+  if not R then return nil end
+  local boxes = R.ctx.boxes
+  if #boxes == 0 then return nil end
+  if how == 'nearest' or how == 'clear' then R.sel = nil; return nil end
+  local cur = M.target()
+  local idx
+  if cur then for i, b in ipairs(boxes) do if b.id == cur.id then idx = i end end end
+  if how == 'next' then idx = idx and math.min(#boxes, idx + 1) or 1
+  elseif how == 'prev' then idx = idx and math.max(1, idx - 1) or 1
+  elseif how == 'trip' then
+    local t = tonumber(tripKm) or (R.here and R.here.trip) or 0
+    idx = 1
+    for i, b in ipairs(boxes) do if (tonumber(b.km) or 0) <= t + 1e-6 then idx = i end end
+  else
+    idx = nil
+    for i, b in ipairs(boxes) do if b.id == how then idx = i end end
+  end
+  if not idx then return nil end
+  R.sel = boxes[idx].id
+  return boxes[idx], idx
+end
+-- the target box's km: how = 'trip' (the trip meter now) or a nudge in metres ('+10', '-10'). The partial distances
+-- after it follow (renumber). Repeated edits of the same box make one change (its first km is kept as oldKm).
+function M.setKm(how, id)
+  if not R then return nil, 'recce is off' end
+  local b = id and boxById(id) or M.target()
+  if not b then return nil, 'no box selected or within ' .. M.NEAR_M .. ' m' end
+  local km
+  if how == 'trip' then
+    if not (R.here and tonumber(R.here.trip)) then return nil, 'no trip meter reading yet' end
+    km = R.here.trip
+  else
+    local dm = tonumber(how)
+    if not dm then return nil, 'bad km nudge ' .. tostring(how) end
+    km = (tonumber(b.km) or 0) + dm / 1000
+  end
+  km = math.max(0, r2(km, 3))
+  local old = r2(tonumber(b.km) or 0, 3)
+  R.sel = b.id
+  local ch = R.doc.changes
+  local last = ch[#ch]
+  if last and last.op == 'move' and last.kmOnly and last.id == b.id and #ch > (R.sessionFrom or 0) then
+    last.km, last.at = km, now()
+    b.km = km; renumber(R.ctx.boxes)
+    R.dirty, R.preview = true, nil
+    M.save()
+    return last, b, old
+  end
+  return addChange({ op = 'move', id = b.id, baseRev = tonumber(b.rev) or 1, by = 'recce-manual', km = km, oldKm = old, kmOnly = true }), b, old
+end
+-- the target box's CAP (heading out of the box) := the car's heading now
+function M.setCap(id)
+  if not R then return nil, 'recce is off' end
+  local b = id and boxById(id) or M.target()
+  if not b then return nil, 'no box selected or within ' .. M.NEAR_M .. ' m' end
+  local h = R.here and tonumber(R.here.heading)
+  if not h then return nil, 'no heading from the car yet' end
+  local cap = math.floor(h % 360 + 0.5) % 360
+  R.sel = b.id
+  return addChange({ op = 'update', id = b.id, baseRev = tonumber(b.rev) or 1, by = 'recce-manual', fields = { cap = cap, capOut = cap }, oldCap = tonumber(b.cap) }), b
+end
+
+local OPNAME = { add = 'ADD', move = 'MOVE', update = 'TAG', confirm = 'OK', delete = 'DEL' }
+local function describe(c)
+  local kind = (c.by == 'recce-auto' and 'AUTO') or (c.op == 'move' and c.kmOnly and 'KM') or
+    (c.op == 'update' and c.fields and c.fields.cap ~= nil and c.fields.symbols == nil and 'CAP') or OPNAME[c.op] or upper(c.op)
+  local text = ''
+  if c.op == 'add' then local bx = c.box or {}; text = (bx.notes and bx.notes ~= '') and bx.notes or table.concat(arr(bx.symbols), ' ')
+  elseif kind == 'KM' then text = string.format('%.2f > %.2f KM', tonumber(c.oldKm) or 0, tonumber(c.km) or 0)
+  elseif kind == 'CAP' then text = 'CAP ' .. tostring(c.fields.cap) .. (c.oldCap and (' (WAS ' .. c.oldCap .. ')') or '')
+  elseif c.op == 'update' then local f = c.fields or {}; text = (f.notes and f.notes ~= '') and f.notes or table.concat(arr(f.symbols), ' ')
+  elseif c.op == 'move' then text = 'MOVED TO THE CAR' .. (c.km and string.format(' (%.2f KM)', c.km) or '') end
+  return kind, text
+end
+-- the changes, newest first (at most max): {i, kind, n, km, text, earlier}
+function M.changeList(max)
+  if not R then return {} end
+  local out, ch = {}, R.doc.changes
+  for i = #ch, math.max(1, #ch - (max or 40) + 1), -1 do
+    local c = ch[i]
+    local b = boxById(c.id)
+    local kind, text = describe(c)
+    out[#out + 1] = { i = i, kind = kind, n = b and b.n or nil, km = b and r2(tonumber(b.km) or 0, 2) or (c.box and r2(tonumber(c.box.km) or 0, 2)) or nil,
+      text = tostring(text):sub(1, 40), earlier = (i <= (R.sessionFrom or 0)) or nil, gone = (not b) or nil }
+  end
+  return out
+end
+
+-- what a merge would do, without writing anything: the changes applied to a copy of the roadbook file
+function M.preview(rbPath)
+  if not R then return nil, 'recce is off' end
+  if not rbPath then return nil, 'this stage has no roadbook file (make one in the stage builder first)' end
+  local rb = readJson(rbPath)
+  if not rb or rb.format ~= 'rallyraid-roadbook' then return nil, 'cannot read ' .. tostring(rbPath) end
+  if #R.doc.changes == 0 then return nil, 'nothing to merge' end
+  local applied, conflicts = M.applyChanges(copy(rb), copy(R.doc.changes))
+  local why = {}
+  for k = 1, math.min(3, #conflicts) do local x = conflicts[k]; why[#why + 1] = tostring(x.change and x.change.op) .. ' ' .. tostring(x.change and x.change.id) .. ': ' .. tostring(x.reason) end
+  R.preview = { applied = applied, conflicts = #conflicts, why = why, changes = #R.doc.changes, revision = rb.revision, file = rbPath }
+  return R.preview
+end
+function M.previewCancel() if R then R.preview = nil end end
+
+-- the recce report: what changed, as JSON and plain text next to the recce file (/rallyraid/recce/<stage>.report.*)
+function M.reportPaths(stageId) local b = M.DIR .. tostring(stageId) .. '.report'; return b .. '.json', b .. '.txt' end
+function M.report(reason)
+  if not R then return nil, 'recce is off' end
+  local d, boxes = R.doc, R.ctx.boxes
+  local counts, list = {}, {}
+  for i, c in ipairs(d.changes) do
+    local kind, text = describe(c)
+    counts[kind] = (counts[kind] or 0) + 1
+    local b = boxById(c.id)
+    list[#list + 1] = { i = i, kind = kind, id = c.id, n = b and b.n or nil, km = b and r2(tonumber(b.km) or 0, 3) or nil, text = text, at = c.at, by = c.by,
+      earlier = (i <= (R.sessionFrom or 0)) or nil }
+  end
+  local unverified = 0
+  for _, b in ipairs(boxes) do if b.recce == 'recce-auto' and not b.verified then unverified = unverified + 1 end end
+  local lastKm = boxes[#boxes] and r2(tonumber(boxes[#boxes].km) or 0, 3) or nil
+  local rep = { format = 'rallyraid-recce-report', schemaVersion = 1, created = now(), reason = reason, stage = d.stage,
+    roadbook = d.roadbook, recceFile = R.file, drivenKm = r2(R.km / 1000, 3), lastBoxKm = lastKm, boxes = #boxes,
+    changes = #d.changes, thisSession = #d.changes - (R.sessionFrom or 0), counts = counts, unverifiedAuto = unverified,
+    merged = d.mergedInto, list = list }
+  local L = {}
+  L[#L + 1] = 'rally.raid Earth recce report  ' .. rep.created .. (reason and ('  (' .. reason .. ')') or '')
+  L[#L + 1] = 'Stage: ' .. tostring(d.stage and d.stage.name or '?') .. ' (' .. tostring(d.stage and d.stage.id) .. ')'
+  L[#L + 1] = 'Roadbook: ' .. tostring(d.roadbook and d.roadbook.file or 'none') .. ', revision ' .. tostring(d.roadbook and d.roadbook.revision or '?')
+  L[#L + 1] = string.format('Driven: %.2f km   last box at %s km   boxes %d', rep.drivenKm, lastKm and string.format('%.2f', lastKm) or '-', #boxes)
+  local ks = {} for k in pairs(counts) do ks[#ks + 1] = k end table.sort(ks)
+  local cs = {} for _, k in ipairs(ks) do cs[#cs + 1] = k .. ' ' .. counts[k] end
+  L[#L + 1] = string.format('Changes not merged yet: %d (%d this session)%s', #d.changes, rep.thisSession, #cs > 0 and ('  [' .. table.concat(cs, ', ') .. ']') or '')
+  L[#L + 1] = 'Automatic boxes still to check: ' .. unverified
+  if d.mergedInto then L[#L + 1] = 'Last merge: revision ' .. tostring(d.mergedInto.revision) .. ', ' .. tostring(d.mergedInto.applied) .. ' applied, ' .. tostring(d.mergedInto.conflicts) .. ' conflicts' end
+  L[#L + 1] = ''
+  for _, x in ipairs(list) do
+    L[#L + 1] = string.format('%3d  %-4s box %-4s %8s km  %s%s', x.i, x.kind, x.n and tostring(x.n) or '-', x.km and string.format('%.2f', x.km) or '-', tostring(x.text), x.earlier and '  (earlier recce)' or '')
+  end
+  local text = table.concat(L, '\n') .. '\n'
+  local pj, pt = M.reportPaths(d.stage and d.stage.id)
+  local okJ = writeJson(pj, rep)
+  local wf = rawget(_G, 'writeFile')
+  local okT = false
+  if wf then local ok, r = pcall(wf, pt, text); okT = ok and r ~= false end
+  R.lastReport = { json = okJ and pj or nil, txt = okT and pt or nil, changes = #d.changes, at = now() }
+  if not (okJ or okT) then return nil, 'the report could not be written to ' .. pj end
+  return R.lastReport, rep, text
+end
+
+------------------------------------------------------------------------------------------------------------------
 -- what the roadbook app shows
 function M.state()
   if not R then return nil end
@@ -534,13 +730,17 @@ function M.state()
   local counts = { auto = 0, manual = 0 }
   for _, c in ipairs(d.changes) do if c.by == 'recce-auto' then counts.auto = counts.auto + 1 else counts.manual = counts.manual + 1 end end
   local P = R.pending
+  local tb, thow = M.target()
   return { on = true, km = r2(R.km / 1000, 2), points = #d.driven.points, changes = #d.changes, auto = counts.auto,
     manual = counts.manual, applied = #d.applied, file = R.file, unsaved = R.dirty or nil,
     airborne = R.air and true or nil,
     nearest = nb and { id = nb.id, n = nb.n, d = math.floor(nd + 0.5), notes = nb.notes, symbols = nb.symbols, danger = nb.danger, verified = nb.verified, recce = nb.recce } or nil,
     pending = P and { mode = P.mode, id = P.id, symbols = P.symbols, danger = P.danger, notes = P.notes } or nil,
     last = R.lastEvent and (R.clock - R.lastEvent.t < 8) and R.lastEvent or nil,
-    quick = M.QUICK }
+    quick = M.QUICK, presets = M.PRESETS,
+    target = tb and { id = tb.id, n = tb.n, km = r2(tonumber(tb.km) or 0, 2), how = thow, notes = tb.notes, verified = tb.verified, cap = tb.cap,
+      d = (R.here and tb.lat and tb.lon) and math.floor(geo.dist(R.here.lat, R.here.lon, tb.lat, tb.lon) + 0.5) or nil } or nil,
+    list = M.changeList(40), session = #d.changes - (R.sessionFrom or 0), preview = R.preview, report = R.lastReport }
 end
 
 ------------------------------------------------------------------------------------------------------------------
@@ -691,6 +891,7 @@ function M.merge(rbPath, opts)
   if not writeJson(rbPath, rb) then return nil, 'cannot write ' .. tostring(rbPath) end
   for _, c in ipairs(d.changes) do d.applied[#d.applied + 1] = c end
   d.changes = {}
+  R.sessionFrom, R.preview, R.sel = 0, nil, nil
   d.mergedInto = { revision = rb.revision, at = now(), applied = applied, conflicts = #conflicts, rescaled = rescaled, backup = backup }
   d.roadbook.revision = rb.revision
   M.save()

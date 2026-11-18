@@ -124,9 +124,9 @@ const KEPT = { rallyRaid_tripPlus: 'Ctrl+Shift+Up', rallyRaid_tripMinus: 'Ctrl+S
   const t2 = await r.evaluate(() => [...document.querySelectorAll('#rb .rrb-foot button')].map(b => b.title))
   check(t2.some(x => /\(F5\)$/.test(x)) && t2.some(x => /\(Alt\+R\)/.test(x)) && t2.some(x => x === 'box up'), 'the player\'s own keys: F5 on SYNC, Alt+R on RECCE, none on ▲: ' + t2.join(' | '))
   // recce panel buttons (a roadbook state with recce on and a box near)
-  await send(r, '#rb', 'RallyRaidRoadbook', { phase: 'running', stageId: 'x', trip: 1.2, boxCount: 3, view: [], recce: { km: 1.2, changes: 2, auto: 1, nearest: { n: 3, d: 12, notes: 'x', verified: false } } })
+  await send(r, '#rb', 'RallyRaidRoadbook', { phase: 'running', stageId: 'x', trip: 1.2, boxCount: 3, view: [], recce: { km: 1.2, changes: 2, auto: 1, nearest: { n: 3, d: 12, notes: 'x', verified: false }, target: { n: 3, d: 12, km: 1.2, how: 'nearest', notes: 'x', verified: false } } })
   await sleep(100)
-  const want = { UNDO: 'recceUndo', HERE: 'recceMove', TAG: 'recceRetag', '\u2713': 'recceConfirm', '\u2715': 'recceDelete', '+ BOX HERE': 'recceDrop', RECCE: 'recce' }
+  const want = { UNDO: 'recceUndo', HERE: 'recceMove', TAG: 'recceRetag', '\u2713': 'recceConfirm', '\u2715': 'recceDelete', '+ BOX HERE': 'recceDrop', RECCE: 'recce', 'AT TRIP': 'recceSel', '\u25B6': 'recceSel', '\u25C0': 'recceSel', 'KM = TRIP': 'recceKm', '+10': 'recceKm', '-10': 'recceKm', 'CAP HERE': 'recceCap', REPORT: 'recceReport', MERGE: 'reccePreview' }
   for (const [label, c] of Object.entries(want)) {
     await reset(r)
     const ok = await clickText(r, '#rb', label)

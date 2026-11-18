@@ -1,5 +1,22 @@
 # Recce mode: review (17 Nov 2026)
 
+**Update, 17 Nov 9:18 PM CT.** Wyans: "Recce should mainly fix an existing roadbook". On branch `recce-fix-1117`
+(test zip `rallyraid_earth_recce1117_test.zip`), these are built:
+- 1, changes list (with UNDO per row)
+- 2, select any box
+- 3, km from the trip meter (with ±10 m nudges)
+- 7, note presets
+- 9, report
+- the CAP half of item 4 (CAP HERE)
+- 5, merge preview
+
+Still open:
+- instruction editing (the rest of 4)
+- 6, sensitivity
+- 8, recce a new route (parked)
+
+Retest: `docs/RETEST_RECCE_1117.txt`.
+
 Wyans asked after the 17 Nov in-game test: recce looks limited ("can only add symbols?"). This note covers what recce
 does today, what is missing, and a proposal in priority order with an estimate for each item. **Nothing here is built
 yet.** Pick what to do next.

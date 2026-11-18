@@ -642,8 +642,11 @@ function M.recceCmd(sub, arg)
   local said
   if sub == '' or sub == 'New' then
     if recce.active() and sub == '' then
+      local rep = recce.report('recce off')
+      if rep then log_('I', 'recce report written: ' .. tostring(rep.txt or rep.json) .. (rep.txt and rep.json and (' and ' .. rep.json) or '')) end
       local d = recce.stop()
-      said = string.format('rally.raid Earth: recce off. %d changes, %.1f km driven, saved to %s', #(d.changes or {}), d.driven.km or 0, recce.path(d.stage.id))
+      said = string.format('rally.raid Earth: recce off. %d changes, %.1f km driven, saved to %s', #(d.changes or {}), d.driven.km or 0, recce.path(d.stage.id)) ..
+        (rep and ('. Report: ' .. tostring(rep.txt or rep.json) .. ' (BeamNG user folder)') or '')
     elseif not S then said = 'rally.raid Earth: load a stage first, then start the recce.'
     else
       if recce.active() then recce.stop() end
@@ -663,11 +666,46 @@ function M.recceCmd(sub, arg)
   elseif sub == 'Confirm' or sub == 'Move' or sub == 'Delete' then
     local c = recce.boxOp(sub:lower(), arg)
     if not c then said = 'rally.raid Earth: no roadbook box within ' .. recce.NEAR_M .. ' m.' end
-  elseif sub == 'Undo' then
-    local c = recce.undo(reloadBoxes)
-    said = c and ('rally.raid Earth: undone (' .. c.op .. ').') or 'rally.raid Earth: nothing to undo.'
+  elseif sub == 'Undo' or sub == 'UndoAt' then
+    local i = sub == 'UndoAt' and tonumber(arg) or nil
+    if sub == 'UndoAt' and not i then said = 'rally.raid Earth: which change to undo?' else
+      local c, dropped = recce.undoAt(i, reloadBoxes)
+      if c then log_('I', 'recce undo: change ' .. tostring(i or 'last') .. ' (' .. tostring(c.op) .. ' ' .. tostring(c.id) .. ')' .. ((dropped or 0) > 0 and (', and ' .. dropped .. ' later change(s) to that box') or '')) end
+      said = c and ('rally.raid Earth: undone (' .. c.op .. ((dropped or 0) > 0 and (', and ' .. dropped .. ' later change(s) to that box') or '') .. ').') or 'rally.raid Earth: nothing to undo.'
+    end
+  elseif sub == 'Sel' then
+    local b, idx = recce.select(arg or 'next', odo.trip / 1000)
+    if b then
+      if S then S.rbView = idx end                       -- the roadbook display scrolls to the selected box
+      log_('I', string.format('recce: box %s selected (%s, %.2f km)', tostring(b.n), tostring(arg), tonumber(b.km) or 0))
+    else
+      if S then S.rbView = nil end
+      if arg ~= 'nearest' then said = 'rally.raid Earth: no roadbook box to select.' end
+    end
+  elseif sub == 'Km' then
+    local c, b, old = recce.setKm(arg or 'trip')
+    if c then
+      log_('I', string.format('recce: box %s km %.3f -> %.3f (%s)', tostring(b.n), old or c.oldKm or 0, c.km, tostring(arg)))
+      if arg == 'trip' then said = string.format('rally.raid Earth: box %s now at %.2f km (the trip meter).', tostring(b.n), c.km) end
+    else said = 'rally.raid Earth: km not changed: ' .. tostring(b) .. '.' end
+  elseif sub == 'Cap' then
+    local c, b = recce.setCap()
+    if c then log_('I', 'recce: box ' .. tostring(b.n) .. ' CAP ' .. tostring(c.fields.cap)); said = 'rally.raid Earth: box ' .. tostring(b.n) .. ' CAP ' .. tostring(c.fields.cap) .. '.'
+    else said = 'rally.raid Earth: CAP not changed: ' .. tostring(b) .. '.' end
+  elseif sub == 'Report' then
+    local rep, why = recce.report('button')
+    if rep then
+      log_('I', 'recce report written: ' .. tostring(rep.txt or rep.json) .. (rep.txt and rep.json and (' and ' .. rep.json) or ''))
+      said = 'rally.raid Earth: recce report saved: ' .. tostring(rep.txt or rep.json) .. ' (BeamNG user folder).'
+    else log_('W', 'recce report NOT written: ' .. tostring(why)); said = 'rally.raid Earth: report not written: ' .. tostring(why) .. '.' end
+  elseif sub == 'Preview' then
+    local pv, why = recce.preview(S and S.stage.roadbook.source and S.stage.roadbook.source.path)
+    if pv then log_('I', string.format('recce merge preview: %d of %d changes apply, %d conflicts%s', pv.applied, pv.changes, pv.conflicts, #pv.why > 0 and (' (' .. table.concat(pv.why, '; ') .. ')') or ''))
+    else said = 'rally.raid Earth: nothing to preview: ' .. tostring(why) .. '.' end
+  elseif sub == 'PreviewCancel' then recce.previewCancel()
   elseif sub == 'Merge' then
     local res, why = recce.merge(S and S.stage.roadbook.source and S.stage.roadbook.source.path, { rescale = arg == 'rescale' or arg == true })
+    log_(res and 'I' or 'W', res and string.format('recce merged: rev %s, %d applied, %d conflicts, backup %s', tostring(res.revision), res.applied, #res.conflicts, tostring(res.backup)) or ('recce not merged: ' .. tostring(why)))
     if res then
       local boxes, info = stagesMod.loadRoadbook(S.stage)
       if boxes then S.stage.roadbook.boxes, S.stage.roadbook.source = boxes, info; stagesMod.applyRoadbookKm(S.stage, boxes); recce.get().ctx.boxes = boxes; recce.get().ctx.rbInfo = info end
@@ -891,7 +929,7 @@ function M.onUpdate(dtReal, dtSim)
   local moved = computerTick(p, dt)
   if not holdNav then stageTick(moved, dt) end
   if S and S.phase == 'running' and not holdNav then tracePoint(false) end
-  if recce.active() then recce.tick({ lat = p.lat, lon = p.lon, trip = odo.trip / 1000, speed = p.speed }, dt) end
+  if recce.active() then recce.tick({ lat = p.lat, lon = p.lon, trip = odo.trip / 1000, speed = p.speed, heading = nav.heading or p.heading }, dt) end
   local snap = snapshot()
   ui('RallyRaidUpdate', snap)
   local rb = M.roadbookState()

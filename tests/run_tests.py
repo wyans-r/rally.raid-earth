@@ -70,7 +70,7 @@ def mkdir(p):
 # repair_test.lua (repairs, bivouac, resets), planner_test.lua (the in-game planner's game side), resume_test.lua (recover
 # car, and the game-crash resume: saves on disk in a temp folder, a kill, a fresh start, corrupt-save fallback)
 total = 0
-for name in (sys.argv[1:] or ['sim_test.lua', 'recce_test.lua', 'repair_test.lua', 'planner_test.lua', 'resume_test.lua', 'official_test.lua', 'keys_test.lua', 'rally_test.lua', 'ingame1117_test.lua']):
+for name in (sys.argv[1:] or ['sim_test.lua', 'recce_test.lua', 'repair_test.lua', 'planner_test.lua', 'resume_test.lua', 'official_test.lua', 'keys_test.lua', 'rally_test.lua', 'ingame1117_test.lua', 'recce1117_test.lua']):
     lua = L.LuaRuntime(unpack_returned_tuples=True)
     g = lua.globals()
     g.MOD_ROOT = MOD

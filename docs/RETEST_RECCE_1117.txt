@@ -1,0 +1,62 @@
+rally.raid Earth - RECCE retest (17 Nov batch)
+Zip: rallyraid_earth_recce1117_test.zip (TEST build, not a release)
+
+This zip ALSO has every fix from rallyraid_earth_fix1117_test.zip. Do the fix retest first
+(RETEST_1117.txt), with either zip. Then do the steps below with the recce zip.
+
+Before you start
+- Put only ONE rally.raid Earth zip in mods/.
+- Open the console (~) and filter on: rallyRaid
+  Every line from the mod starts with [rally.raid Earth].
+- If a step fails: take 1 screenshot of the Roadbook app, and 1 of the console
+  (the last 20 [rally.raid Earth] lines plus any red lines).
+- All of these are buttons in the Roadbook app recce panel. There are no new keys.
+
+1. Recce on (1 min)
+   Load a stage that has a roadbook (e.g. SS1 Moab Sand Flats), TP TO DSS, then press RECCE
+   in the Roadbook app.
+   Expect: the panel shows "NEAR <n>", a < > AT TRIP row, KM = TRIP / -10 / +10 / CAP HERE,
+   + BOX HERE, CHANGES 0 and REPORT.
+
+2. Select any box (2 min)
+   Press > twice, then < once.
+   Expect: "SEL <n>" changes and the roadbook list scrolls to that box.
+   Press AT TRIP: it selects the box the trip meter is in. NEAREST goes back to the nearest box.
+   Console: cmd recceSel "next" (roadbook), recce: box N selected (...)
+
+3. Distance from the trip (3 min)
+   Drive to a box and stop where it really is. Select it (AT TRIP or < >), then press KM = TRIP.
+   Expect: the box's km = the trip meter now, and the next box's partial changes to match.
+   Press +10 and -10: the km moves by 0.01.
+   Console: recce: box N km A -> B (trip)
+   CAP HERE: point the car along the track out of the box and press it. The box shows that CAP.
+
+4. Note presets (2 min)
+   Press + BOX HERE. Under DANGER there are preset buttons (TRACK FADES, KEEP LEFT, KEEP RIGHT,
+   ROUGH, STONY, SOFT SAND, JUNCTION NOT VISIBLE, HOLE, BIG BUMP, NARROW, STAY ON TRACK, CAUTION).
+   Press two of them: the notes field shows "A, B". Press one again: it comes out. Then SAVE.
+   (TAG on an existing box shows the same presets.)
+
+5. Changes list and undo (2 min)
+   Press CHANGES n. Expect a row for each change: KM / CAP / ADD / TAG / OK / DEL / AUTO, the box
+   number, km and text. Rows from an earlier recce of this stage say "(earlier)".
+   Press UNDO on a middle row: only that change goes, and the box goes back.
+   Undoing an ADD also removes later changes to that box (the notice says so).
+   Console: recce undo: change N (...)
+
+6. Merge preview (1 min)
+   Press MERGE. Expect "MERGE PREVIEW: x of y apply, z conflicts". Nothing is written yet.
+   CANCEL closes it. MERGE, then CONFIRM MERGE, writes the roadbook (a backup is kept), and
+   CHANGES goes to 0.
+   Console: recce merge preview: ...   then   recce merged: rev ...
+
+7. Report (1 min)
+   Press REPORT. Expect "REPORT: /rallyraid/recce/<stage>.report.txt" in the panel and a notice.
+   Open it in the BeamNG user folder: current/rallyraid/recce/<stage>.report.txt (a .json is
+   next to it). Turning RECCE off also writes the report.
+   Console: recce report written: /rallyraid/recce/<stage>.report.txt and ....json
+
+Send back: OK / not OK for each of 1-7, with the screenshots of anything not OK. Attach the
+report .txt if you made one.
+Not in this build: editing the junction instruction text, detection sensitivity, recce of a
+new route (parked).

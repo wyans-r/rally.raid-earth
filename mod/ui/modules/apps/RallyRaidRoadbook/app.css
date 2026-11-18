@@ -73,3 +73,19 @@
 .rr-credits summary { cursor:pointer; color:#c8ccd0; font-weight:700; letter-spacing:.02em; }
 .rr-credits p { margin:4px 0 0; }
 .rr-credits a { color:#ffd400; }
+/* recce: select any box, km / CAP, changes list, presets, merge preview, report (17 Nov) */
+.rrc-sel { flex-wrap: wrap; }
+.rrc-pv { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px; padding: 2px 0; color: #ffd400; font-size: 12px; }
+.rrc-pv .warn { color: #ff6a4d; }
+.rrc-report { padding: 1px 0; word-break: break-all; }
+.rrc-list { max-height: 140px; overflow-y: auto; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 2px; }
+.rrc-li { display: flex; align-items: center; gap: 4px; font-size: 11px; min-height: 20px; }
+.rrc-li.old { opacity: 0.6; }
+.rrc-li.gone .rrc-n { text-decoration: line-through; }
+.rrc-k { width: 34px; font-weight: bold; }
+.rrc-n { width: 30px; }
+.rrc-km { width: 40px; text-align: right; }
+.rrc-t { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rrc-presets { flex-wrap: wrap; }
+.rrc-presets .rrb-btn { font-size: 10px; padding: 1px 4px; }
+.rrc-near .rrc-add { width: auto; flex: 1; }
