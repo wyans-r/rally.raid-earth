@@ -16,16 +16,16 @@ Browser checks (headless Chrome through puppeteer-core; paths inside assume the 
                                    # A5 + roll PDF. Screenshots roadbook_editor*.png, PDFs in roadbook/preview/
     node roadbook_builder_test.js  # builder -> editor hand-off (Roadbook button, same stage hash), no notes fields
                                    # in the waypoint editor, an older stage file's notes kept for migration
-    node preview_roadbook_app.js   # in-game Roadbook reader (+ recce panel and quick-pick) + GPS BOX line outside the game
+    node preview_roadbook_app.js   # in-game Roadbook reader + GPS BOX line outside the game (stale since 18 Nov: its recce part is planner_recce_test.js)
                                    # (tests/roadbook_app_preview.html), screenshot roadbook_app.png
 
     node recce_import_test.js      # editor: import an in-game recce file (tests/fixtures/recce, written by
                                    # tests/recce_test.lua), review, apply, conflicts, undo, km from the driven line.
                                    # Screenshot roadbook_editor_recce.png
 
-    node repair_app_test.js        # in-game Rally Raid Repair app outside the game (tests/repair_app_preview.html):
+    node repair_app_test.js        # the GPS app's REPAIR panel (the Repair app until 18 Nov; shown alone with tests/panel_shim.js) outside the game (tests/repair_app_preview.html):
                                    # stage menu, spare limit, REPAIR ids, bivouac budget warnings. Screenshot repair_app.png
-    node resume_app_test.js        # RECOVER CAR + game-crash resume in the Rally Raid Repair app (tests/resume_app_preview.html):
+    node resume_app_test.js        # RECOVER CAR + game-crash resume in the GPS app's REPAIR panel (tests/resume_app_preview.html):
                                    # recover: the confirm (penalty, recoveries left, where to, which damage), CONFIRM /
                                    # CANCEL, refusal + RETIRE (asks first), CLOCK STOPPED, the outcome, the menu button
                                    # (and switched off); game crash: the offer, RESUME / DISCARD (asks first), older-save
@@ -42,3 +42,8 @@ Run with NODE_PATH=/workspace/rr-tools/node_modules.
 - `render_legend.js`: renders the roadbook symbol legend to `roadbook/fim_symbol_legend.png` and checks every symbol (and alias) parses as a standalone SVG and draws something.
 
 - `bridge_test.js`: all apps with AngularJS 1.5.8 (the game version), with every `bngApi.engineLua` call running the real mod Lua in LuaJIT (`tests/bridge/bridge_server.py`, needs `.venv` with lupa). Covers the 17 Nov in-game bugs: GPS MENU buttons, the Repair app, the Planner start panel, layouts, crash save > kill > RESUME, and the `[rally.raid Earth]` log lines. Run: `NODE_PATH=<puppeteer-core dir> node tests/browser/bridge_test.js`.
+
+18 Nov 2026 (three HUD apps): `planner_recce_test.js` checks the Planner app's RECCE panel outside the game
+(tests/recce_panel_preview.html: no stage, quick-pick, tabs, search, the command strings); `recce_bridge_test.js` runs
+the same panel on the real Lua (no stage, RECCE ON, every recce button, OFF, edits live in the Roadbook app).
+`tests/panel_shim.js` (test only, not in the zip) shows one GPS / Planner panel on its own as a directive.

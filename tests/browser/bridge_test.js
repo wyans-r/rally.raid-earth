@@ -1,7 +1,8 @@
 // The 17 Nov in-game failures, end to end: every app in Chrome with AngularJS 1.5.8 (the game's version), and every
 // bngApi.engineLua call running the REAL mod Lua in LuaJIT (tests/bridge/bridge_server.py, env.lua fakes the game).
 // So the Lua strings the buttons send, the commands they reach and the guihooks that come back are what is tested.
-//   C  GPS MENU > REPAIR / PLANNER open those apps; the Repair app is not blank; layout buttons ask for our layouts
+//   C  GPS MENU > REPAIR opens the GPS REPAIR panel (18 Nov: the Repair app is in the GPS); PLANNER opens that app;
+//      layout buttons ask for our layouts; three HUD apps only
 //   D  the Planner with no stage: NEW STAGE HERE, EDIT LOADED STAGE; the GPS PLANNER button opens it
 //   F  a crash save is written while driving, found after a game kill (fresh Lua), shown in the GPS MENU, RESUME offered
 //      on load and resumes the clock; also when the rally ledger was lost (a new rally id after the relaunch)
@@ -55,26 +56,47 @@ const tick = (n, dt) => post('/tick', { n, dt: dt || 0.1 })
   await open()
   check(await page.evaluate(() => angular.version.full) === '1.5.8', 'AngularJS 1.5.8, as in the game')
   let logs = await allLogs()
-  for (const a of ['gps', 'roadbook', 'repair', 'planner', 'rally'])
+  for (const a of ['gps', 'roadbook', 'planner'])
     check(logs.some(l => l.includes('[rally.raid Earth] UI ' + a + ': app init')), a + ' app: init logged in the console')
-  check(await lua("return rallyRaid_core.appOn('repair') and rallyRaid_core.appOn('planner') and rallyRaid_core.appOn('gps')") === true, 'Lua knows the apps are on screen (hello)')
+  check(!logs.some(l => /UI (repair|rally): app init/.test(l)), 'no Repair / Rally app any more (they are panels in the GPS)')
+  check(logs.some(l => l.includes('repair panel ready (in the GPS app)')), 'the REPAIR panel is up inside the GPS app')
+  check(await lua("return rallyRaid_core.appOn('roadbook') and rallyRaid_core.appOn('planner') and rallyRaid_core.appOn('gps')") === true, 'Lua knows the apps are on screen (hello)')
+  const apps = await lua('local o = {} for k, v in pairs(rallyRaid_core.apps()) do o[#o + 1] = k end table.sort(o) return table.concat(o, ",")')
+  check(apps === 'gps,planner,roadbook', 'Lua tracks the three HUD apps: ' + apps)
 
-  // ---- C: the Repair app is not blank, and the GPS MENU buttons work
-  const rep = await text('#repair')
-  check(/REPAIR/.test(rep) && /No repairs now|repair/i.test(rep) && rep.length > 40, 'Repair app (closed) shows its button and a hint: ' + rep.slice(0, 120))
+  // ---- C: the REPAIR panel in the GPS app, and the GPS MENU buttons work
+  const RP = '#gps .rrg-phost-repair'
+  check(!(await visible(RP + ' .rrr-panel')), 'GPS: the REPAIR panel is closed at start')
   await menuOpen()
   check(await visible('#gps .rrg-menu') || /REPAIR/.test(await text('#gps')), 'GPS MENU opens')
+  check(/Repairs, spares, bivouac time/.test(await text('#gps')), 'GPS MENU has the repairs row: ' + ((await text('#gps')).match(/Repairs, spares, bivouac time.{0,40}/) || [''])[0])
   await click('#gps', 'REPAIR')
-  check(await visible('#repair .rrr-panel'), 'GPS MENU > REPAIR opens the Repair app panel')
+  check(await visible(RP + ' .rrr-panel'), 'GPS MENU > REPAIR opens the REPAIR panel in the GPS app')
+  check(!(await visible('#gps .rrg-menu')), 'the MENU closes under it')
   logs = await allLogs()
   check(logs.some(l => /\[rally\.raid Earth\] cmd repairOpen .*\(gps\)/.test(l)), 'the press is logged: cmd repairOpen (gps)')
-  check(logs.some(l => /repair menu opened/.test(l)), 'Lua logs "repair menu opened"')
-  check(/No repairs|not in a stage|stage/i.test(await text('#repair .rrr-panel')), 'the Repair panel says why there is nothing to repair: ' + (await text('#repair .rrr-panel')).slice(0, 100))
-  await click('#repair', 'CLOSE')
-  check(!(await visible('#repair .rrr-panel')), 'the Repair app CLOSE button closes it')
-  await click('#repair', 'REPAIR')
-  check(await visible('#repair .rrr-panel'), 'the Repair app own button opens it')
-  await click('#repair', 'CLOSE')
+  check(logs.some(l => /repair menu opened \(.*GPS app on screen\)/.test(l)), 'Lua logs "repair menu opened (..., GPS app on screen)"')
+  check(/No repairs|not in a stage|stage/i.test(await text(RP + ' .rrr-panel')), 'the REPAIR panel says why there is nothing to repair: ' + (await text(RP + ' .rrr-panel')).slice(0, 100))
+  const rbar = await text(RP + ' .rrr-bar')
+  check(/RESETS/.test(rbar) && /CLOSE/.test(rbar), 'the REPAIR status bar (resets; spares mid-stage) is in the panel: ' + rbar.slice(0, 100))
+  await click(RP, 'CLOSE')
+  check(!(await visible(RP + ' .rrr-panel')) && !(await visible('#gps .rrg-panel')), 'the panel CLOSE button closes it (and the GPS overlay)')
+  await lua("rallyRaid_core.cmd('repairMenu', nil, 'key')"); await sleep(600)
+  check(await visible(RP + ' .rrr-panel'), 'the repair menu opened from Lua (a bound rallyRaid_repairMenu key) shows in the GPS')
+  await page.evaluate(() => { const b = [...document.querySelectorAll('#gps .rrg-panel button')].find(x => x.innerText.trim() === '✕' && x.offsetWidth); if (b) b.click() }); await sleep(500)
+  check(!(await visible(RP + ' .rrr-panel')), 'the GPS panel ✕ closes the repair menu')
+  logs = await allLogs()
+  check(logs.some(l => /cmd repairClose .*\(gps\)/.test(l)), 'and tells Lua (cmd repairClose (gps))')
+  // RALLY (EXPERIMENTAL, 18 Nov: the Rally app is in the GPS too)
+  check(!(await visible('#gps .rrg-phost-rally .rrl')), 'no RALLY panel open at start')
+  await menuOpen()
+  check(/Rally mode/.test(await text('#gps')), 'GPS MENU has the rally mode row (rally.lua is in this build)')
+  await click('#gps', 'RALLY')
+  check(await visible('#gps .rrg-phost-rally .rrl'), 'GPS MENU > RALLY opens the RALLY panel in the GPS app')
+  logs = await allLogs()
+  check(logs.some(l => /cmd rallyList .*\(gps\)/.test(l)), 'and asks Lua for the rally list: cmd rallyList (gps)')
+  await page.evaluate(() => { const b = [...document.querySelectorAll('#gps .rrg-panel button')].find(x => x.innerText.trim() === '✕' && x.offsetWidth); if (b) b.click() }); await sleep(400)
+  check(!(await visible('#gps .rrg-phost-rally .rrl')), 'the ✕ closes the RALLY panel')
 
   await menuOpen()
   await click('#gps', 'PLANNER')
@@ -86,17 +108,17 @@ const tick = (n, dt) => post('/tick', { n, dt: dt || 0.1 })
   await click('#gps', 'PLANNER LAYOUT'); await click('#gps', 'MY LAYOUT')
   gs = await lua('return GS_CALLS')
   check(gs.length === 3 && gs[1][1] === 'rallyRaidEarthPlanner' && gs[2][1] === 'freeroam', 'PLANNER LAYOUT, then MY LAYOUT goes back to freeroam: ' + JSON.stringify(gs.map(g => g[1])))
-  // an app that is NOT on screen: the GPS says so instead of doing nothing
-  // (the Repair app's heartbeat is muted here, as if the app was never added)
-  await page.evaluate(() => { const f = bngApi.engineLua; window.unmute = () => { bngApi.engineLua = f }; bngApi.engineLua = (c, cb) => { if (!/appHello\('repair'/.test(c)) f(c, cb) } })
-  await lua("rallyRaid_core.appHello('repair', false)"); await sleep(500)
-  await menuOpen(); await click('#gps', 'REPAIR')
-  const gtx = await text('#gps')
-  check(/Repair app is not on your screen/.test(gtx) && /RALLY LAYOUT/.test(gtx), 'REPAIR with no Repair app on screen: a hint in the GPS: ' + (gtx.match(/The Repair app[^.]*\./) || [''])[0])
-  await click('#gps', 'OK'); await page.evaluate(() => { const b = [...document.querySelectorAll('#gps button')].find(x => x.innerText.trim() === '✕' && x.offsetWidth); if (b) b.click() })
+  // the GPS app NOT on screen: a repair menu opened from a key tells the player to add the GPS app
+  await page.evaluate(() => { const f = bngApi.engineLua; window.unmute = () => { bngApi.engineLua = f }; bngApi.engineLua = (c, cb) => { if (!/appHello\('gps'/.test(c)) f(c, cb) } })
+  await lua("rallyRaid_core.appHello('gps', false)"); await sleep(500)
+  await lua("rallyRaid_core.cmd('repairMenu', nil, 'key')"); await sleep(500)
+  const notes = await page.evaluate(() => NOTES.map(n => typeof n === 'string' ? n : JSON.stringify(n)))
+  check(notes.some(n => /"rally\.raid Earth GPS" app is not on your screen/.test(n) && /RALLY LAYOUT/.test(n)), 'repair menu with no GPS app on screen: a hint to add the GPS app: ' + (notes.filter(n => /GPS/.test(n)).pop() || '').slice(0, 160))
+  await lua("rallyRaid_core.cmd('repairClose', nil, 'test')")
   await page.evaluate(() => unmute())
   await sleep(3500)   // the heartbeat brings it back
-  check(await lua("return rallyRaid_core.appOn('repair')") === true, 'the 3 s heartbeat re-registers the Repair app')
+  check(await lua("return rallyRaid_core.appOn('gps')") === true, 'the 3 s heartbeat re-registers the GPS app')
+  await page.evaluate(() => { const b = [...document.querySelectorAll('#gps .rrg-panel button')].find(x => x.innerText.trim() === '✕' && x.offsetWidth); if (b) b.click() }); await sleep(300)
 
   // ---- D: the Planner with no stage loaded
   await page.evaluate(() => { const b = [...document.querySelectorAll('#planner button')].find(x => x.innerText.trim() === 'CLOSE'); if (b) b.click() }); await sleep(300)

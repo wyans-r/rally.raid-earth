@@ -6,7 +6,7 @@
 //    on its own when a save is offered
 //  * no app shows a hardcoded Ctrl+Shift key; the keys come from 'RallyRaidKeys' (the player's bindings), so a kept key
 //    shows on its button and a key the player bound to an unbound action shows up too; each app asks for them (cmd 'keys')
-//  * the Roadbook recce panel buttons send the recce commands
+//  * the RECCE panel buttons (18 Nov: in the Planner app; the Roadbook app has no recce buttons) send the recce commands
 // Screenshot screens/gps_menu.png. Prints PASS / FAIL lines; exit code 1 on a failure.
 const puppeteer = require('puppeteer-core'), fs = require('fs'), http = require('http'), path = require('path')
 const ROOT = path.resolve(__dirname, '..', '..')
@@ -52,6 +52,10 @@ const KEPT = { rallyRaid_tripPlus: 'Ctrl+Shift+Up', rallyRaid_tripMinus: 'Ctrl+S
   check(await g.$eval('#a .rrg-menu', e => getComputedStyle(e).display !== 'none'), 'MENU opens the rally menu')
   check(await clickText(g, '#a .rrg-menu', 'REPAIR'), 'REPAIR button there')
   check((await calls(g)).some(c => c.includes("cmd('repairOpen'")), 'REPAIR sends repairOpen: ' + JSON.stringify(await calls(g)))
+  check(await g.$eval('#a .rrg-phost-repair', e => e.offsetParent !== null) && await g.$eval('#a .rrg-menu', e => getComputedStyle(e).display === 'none'), 'REPAIR opens the REPAIR panel in the GPS app (18 Nov: no Repair app), the menu closes')
+  await reset(g)
+  check(await clickText(g, '#a .rrg-panel', '\u2715'), 'the REPAIR panel has a close button')
+  check(await g.$eval('#a .rrg-phost-repair', e => e.offsetParent === null), 'and it closes')
   await click(g, '#a .rrg-menubtn'); await reset(g)
   check(await clickText(g, '#a .rrg-menu', 'PLANNER'), 'PLANNER button there')
   check((await calls(g)).some(c => c.includes("cmd('plannerOpen'")), 'PLANNER sends plannerOpen')
@@ -119,20 +123,13 @@ const KEPT = { rallyRaid_tripPlus: 'Ctrl+Shift+Up', rallyRaid_tripMinus: 'Ctrl+S
   await send(r, '#rb', 'RallyRaidKeys', { keys: KEPT })
   const titles = await r.evaluate(() => [...document.querySelectorAll('#rb .rrb-foot button')].map(b => b.title))
   check(titles.some(x => x === 'box up (Ctrl+Shift+PgUp)') && titles.some(x => x === 'box down (Ctrl+Shift+PgDn)') && titles.some(x => /trip to its km \(Ctrl\+Shift\+End\)$/.test(x)), 'kept keys on ▲ ▼ SYNC: ' + titles.join(' | '))
-  check(titles.some(x => /^Recce mode on \/ off: record/.test(x)), 'RECCE: no key (unbound)')
+  check(!titles.some(x => /Recce/i.test(x)) && !(await r.evaluate(() => [...document.querySelectorAll('#rb button')].some(b => /RECCE/.test(b.textContent)))), 'Roadbook: no RECCE button (reader only; recce is in the Planner)')
   await send(r, '#rb', 'RallyRaidKeys', { keys: { rallyRaid_boxSync: 'F5', rallyRaid_recce: 'Alt+R' } })
   const t2 = await r.evaluate(() => [...document.querySelectorAll('#rb .rrb-foot button')].map(b => b.title))
-  check(t2.some(x => /\(F5\)$/.test(x)) && t2.some(x => /\(Alt\+R\)/.test(x)) && t2.some(x => x === 'box up'), 'the player\'s own keys: F5 on SYNC, Alt+R on RECCE, none on ▲: ' + t2.join(' | '))
-  // recce panel buttons (a roadbook state with recce on and a box near)
-  await send(r, '#rb', 'RallyRaidRoadbook', { phase: 'running', stageId: 'x', trip: 1.2, boxCount: 3, view: [], recce: { km: 1.2, changes: 2, auto: 1, nearest: { n: 3, d: 12, notes: 'x', verified: false }, target: { n: 3, d: 12, km: 1.2, how: 'nearest', notes: 'x', verified: false } } })
+  check(t2.some(x => /\(F5\)$/.test(x)) && t2.some(x => x === 'box up'), 'the player\'s own keys: F5 on SYNC, none on ▲: ' + t2.join(' | '))
+  await send(r, '#rb', 'RallyRaidRoadbook', { phase: 'running', stageId: 'x', trip: 1.2, boxCount: 3, view: [], recce: { km: 1.2, changes: 2, auto: 1 } })
   await sleep(100)
-  const want = { UNDO: 'recceUndo', HERE: 'recceMove', TAG: 'recceRetag', '\u2713': 'recceConfirm', '\u2715': 'recceDelete', '+ BOX HERE': 'recceDrop', RECCE: 'recce', 'AT TRIP': 'recceSel', '\u25B6': 'recceSel', '\u25C0': 'recceSel', 'KM = TRIP': 'recceKm', '+10': 'recceKm', '-10': 'recceKm', 'CAP HERE': 'recceCap', REPORT: 'recceReport', MERGE: 'reccePreview' }
-  for (const [label, c] of Object.entries(want)) {
-    await reset(r)
-    const ok = await clickText(r, '#rb', label)
-    check(ok && (await calls(r)).some(x => x.includes("cmd('" + c + "',")), 'Roadbook ' + label + ' sends ' + c)
-  }
-
+  check(await r.evaluate(() => { const e = document.querySelector('#rb .rrb-rc'); return !!e && e.offsetParent !== null }) && !(await r.evaluate(() => !!document.querySelector('#rb .rrc'))), 'Roadbook: a RECCE tag in the head while recce is on, no recce controls')
   // ---------------------------------------------------------------- Repair
   const p = await open('resume_app_preview.html')
   check((await calls(p)).some(c => c.includes("cmd('keys'")), 'Repair asks for the keys')
@@ -140,7 +137,7 @@ const KEPT = { rallyRaid_tripPlus: 'Ctrl+Shift+Up', rallyRaid_tripMinus: 'Ctrl+S
   check(!(await p.$eval('#f .rrr-bar .k', e => e.offsetParent !== null)), 'Repair bar: no key label when repair has no key')
   await send(p, '#f', 'RallyRaidKeys', { keys: { rallyRaid_repairMenu: 'Alt+F' } })
   check(await p.$eval('#f .rrr-bar .k', e => e.offsetParent !== null && e.textContent === 'Alt+F'), 'Repair bar shows a key the player bound (Alt+F)')
-  check(/Confirm here, or press RECOVER in the GPS app again/.test(await p.$eval('#a .rrr-rec', e => e.innerText)), 'recover confirm points to the GPS button')
+  check(/Confirm here, or press RECOVER in the GPS MENU again/.test(await p.$eval('#a .rrr-rec', e => e.innerText)), 'recover confirm points to the GPS button')
 
   // ---------------------------------------------------------------- Planner
   const n = await open('planner_app_preview.html')
@@ -149,8 +146,27 @@ const KEPT = { rallyRaid_tripPlus: 'Ctrl+Shift+Up', rallyRaid_tripMinus: 'Ctrl+S
   check(!(await n.$eval('#a .rpl-bar .k', e => e.offsetParent !== null)), 'Planner bar: no key label by default')
   await send(n, '#a', 'RallyRaidKeys', { keys: { rallyRaid_plannerMenu: 'Alt+J' } })
   check(await n.$eval('#a .rpl-bar .k', e => e.offsetParent !== null && e.textContent === 'Alt+J'), 'Planner bar shows a key the player bound')
+  // the RECCE panel (18 Nov: moved here from the Roadbook app): hidden, RECCE in the bar shows it; Alt+R on its RECCE ON
+  check(!(await n.evaluate(() => { const e = document.querySelector('#a .rpl-recce'); return !!e && e.offsetParent !== null })), 'Planner: the RECCE panel is hidden at start')
+  await send(n, '#a', 'RallyRaidKeys', { keys: { rallyRaid_recce: 'Alt+R' } })
+  await send(n, '#a', 'RallyRaidRoadbook', { phase: 'idle', stageId: 'x', boxCount: 3, view: [], recce: null })
+  check(await clickText(n, '#a .rpl-bar', 'RECCE'), 'Planner bar has a RECCE button')
+  check(await n.evaluate(() => [...document.querySelectorAll('#a .rpl-recce button')].some(b => b.textContent.trim() === 'RECCE ON' && /\(Alt\+R\)/.test(b.title) && !b.disabled)), 'RECCE ON shows the player\'s key (Alt+R)')
+  await reset(n)
+  await clickText(n, '#a .rpl-recce', 'RECCE ON')
+  check((await n.evaluate(() => calls.slice())).some(x => x.includes("cmd('recce', nil, 'planner')")), 'RECCE ON sends recce (planner)')
+  // recce panel buttons (a roadbook state with recce on and a box near)
+  await send(n, '#a', 'RallyRaidRoadbook', { phase: 'running', stageId: 'x', trip: 1.2, boxCount: 3, view: [], recce: { km: 1.2, changes: 2, auto: 1, nearest: { n: 3, d: 12, notes: 'x', verified: false }, target: { n: 3, d: 12, km: 1.2, how: 'nearest', notes: 'x', verified: false } } })
+  await sleep(100)
+  const want = { UNDO: 'recceUndo', HERE: 'recceMove', TAG: 'recceRetag', '\u2713': 'recceConfirm', '\u2715': 'recceDelete', '+ BOX HERE': 'recceDrop', OFF: 'recce', 'AT TRIP': 'recceSel', '\u25B6': 'recceSel', '\u25C0': 'recceSel', 'KM = TRIP': 'recceKm', '+10': 'recceKm', '-10': 'recceKm', 'CAP HERE': 'recceCap', REPORT: 'recceReport', MERGE: 'reccePreview' }
+  for (const [label, c] of Object.entries(want)) {
+    await reset(n)
+    const ok = await clickText(n, '#a .rpl-recce', label)
+    check(ok && (await n.evaluate(() => calls.slice())).some(x => x.includes("cmd('" + c + "',")), 'Planner RECCE ' + label + ' sends ' + c)
+  }
 
-  check(errors.length === 0, 'no page errors: ' + JSON.stringify(errors))
+
+  check(errors.filter(e => !/favicon/.test(e)).length === 0, 'no page errors: ' + JSON.stringify(errors))
   await browser.close(); srv.close()
   console.log(fails ? fails + ' FAILED' : 'all passed')
   process.exit(fails ? 1 : 0)

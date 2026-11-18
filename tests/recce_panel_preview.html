@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>rally.raid Earth Planner RECCE panel preview (outside the game)</title>
+<link rel="icon" href="data:,">
+<script src="https://unpkg.com/angular@1.5.8/angular.min.js"></script>
+<style>body{background:#6d7a63;margin:0;font-family:sans-serif} .slot{position:absolute;top:10px;width:440px} #a{left:10px} #b{left:460px}</style>
+<script>
+// the Planner app's RECCE panel on its own (tests/panel_shim.js), fed 'RallyRaidRoadbook' as core.lua sends it
+var calls = []
+window.bngApi = { engineLua: function (cmd, cb) { calls.push(cmd) } }
+angular.module('beamng.apps', [])
+function feed(id, data) { var s = angular.element(document.querySelector('#' + id + ' > *')).isolateScope(); s.$apply(function () { s.$broadcast('RallyRaidRoadbook', data) }) }
+</script>
+<script src="/ui/modules/apps/RallyRaidPlanner/app.js"></script><script src="/tests/panel_shim.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="a"><rally-raid-recce></rally-raid-recce></div>
+<div class="slot" id="b"><rally-raid-recce></rally-raid-recce></div>
+</body></html>

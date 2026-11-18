@@ -1,0 +1,109 @@
+rally.raid Earth - THREE HUD APPS retest (18 Nov 2026)
+Zip: rallyraid_earth_3apps1118_test.zip (TEST build, not a release; built with --include-events --include-rally --include-rally-events)
+Branch three-apps-1118 (local only, not pushed).
+
+What changed:
+- GPS app = the rally computer, with the REPAIR panel built in (MENU > REPAIR: everything the Repair app had) and the
+  RALLY panel (MENU > RALLY: everything the Rally app had, EXPERIMENTAL).
+- Planner app = the planner, plus a RECCE button in its bar: the recce controls that were in the Roadbook app.
+- Roadbook app = the reader, as before, minus its RECCE button and panel (a small RECCE tag shows in its head while recce is on).
+- The Repair, Rally and Event apps are gone from the zip. No new keys: still the same 9 default keys.
+
+Before you start (2 min)
+1. Close the game. Remove any older rally.raid Earth zip from the mods folder and put rallyraid_earth_3apps1118_test.zip in.
+   Expected: only one rally.raid Earth zip in mods.
+2. Start the game, load BeamNG.Earth, spawn a car. Open the console (~) and keep it handy.
+   Expected: no red rally.raid Earth errors in the console.
+
+A. The app list and the layouts (4 min)
+3. Esc > UI Apps > Add app, search "rally.raid".
+   Expected: exactly three: rally.raid Earth GPS, rally.raid Earth Roadbook, rally.raid Earth Planner. No Repair, Rally or Event app.
+   (If you still see the old Repair / Rally apps on screen from an old layout, remove them: they are not in this zip.)
+4. Add the GPS app. In it press MENU > RALLY LAYOUT.
+   Expected: GPS + Roadbook on screen (nothing else from the mod). Console: "app layout -> rallyRaidEarth".
+5. MENU > PLANNER LAYOUT.
+   Expected: GPS + Roadbook + Planner. Console: "app layout -> rallyRaidEarthPlanner".
+6. MENU > MY LAYOUT.
+   Expected: back to the layout you had before. Then go back to PLANNER LAYOUT for the rest of the test.
+
+B. REPAIR in the GPS app (6 min)
+7. With no stage running: GPS MENU. Look at the row "Repairs, spares, bivouac time (...)".
+   Expected: the row is there with a REPAIR button; the brackets show resets (and spares mid-stage).
+8. Press REPAIR.
+   Expected: a REPAIR panel covers the GPS: a header "REPAIR" with an X, the repair status bar (CLOSE, RESETS n/3) and
+   "No repairs here ..." text. Console: "cmd repairOpen (gps)" and "repair menu opened (none, GPS app on screen)".
+9. Press CLOSE in the panel.
+   Expected: the panel goes, the GPS computer shows again. Console: "cmd repairClose".
+10. Load a stage (STAGES > pick > LOAD), TP TO DSS, START, drive 1-2 km, stop the car. Hit something first if you can
+    (a flat tyre or a bent radiator is ideal). GPS MENU > REPAIR.
+    Expected: the mid-stage list: change wheel FL/FR/RL/RR (with spare count), suspension, radiator, with minutes; the
+    REPAIR button is greyed until you tick something.
+11. Tick one item, press REPAIR in the panel.
+    Expected: the repair runs, the time is added as a penalty (shown in the GPS penalties), spares go down by one for a wheel,
+    the panel closes after.
+12. Panel X (top right) instead of CLOSE, on a second open.
+    Expected: closes the same way.
+13. Finish the stage (or abort it) so the bivouac opens. GPS MENU > REPAIR.
+    Expected: the bivouac list (whole-car repair, engine change with its penalty), the bivouac time used / budget / left.
+14. Only if you have bound a key to "rally.raid Earth: repair menu": press it.
+    Expected: the REPAIR panel opens on the GPS by itself. Skip if no key is bound.
+
+C. RECOVER and crash RESUME still in the GPS (3 min)
+15. During a stage, GPS MENU > RECOVER, then CONFIRM.
+    Expected: the same as before (penalty shown, car put back on the route). The REPAIR panel's RECOVER CAR button does the same.
+16. (Optional, 5 min more) Kill the game mid-stage, relaunch, load the same stage.
+    Expected: the GPS MENU opens with the crash save, RESUME then CONFIRM RESUME works.
+
+D. RALLY in the GPS (EXPERIMENTAL, 4 min)
+17. GPS MENU.
+    Expected: a row "Rally mode EXPERIMENTAL" with a RALLY button.
+18. Press RALLY.
+    Expected: a RALLY panel over the GPS with the list of rallies (Atlantic to Atlas 2027). Console: "cmd rallyList (gps)".
+19. Pick the rally (LOAD), then DRIVE or TELEPORT for the first liaison. Close the panel with X.
+    Expected: while a liaison runs, a yellow "LIAISON ... km, CAP ..., LEFT ..." line shows on the GPS with a RALLY button
+    that opens the panel again.
+
+E. RECCE in the Planner (8 min)
+20. Abort any stage and make sure no stage is loaded (restart the map if needed). In the Planner bar press RECCE.
+    Expected: a RECCE panel under the bar: "No stage loaded in the game ... Load one with STAGES in the GPS app, then
+    RECCE ON." The RECCE ON button is greyed.
+21. Load a stage in the GPS (STAGES > LOAD), e.g. SS1 Moab Sand Flats.
+    Expected: the RECCE panel now names the stage and its number of boxes; RECCE ON is active.
+22. Press RECCE ON.
+    Expected: the full recce controls (the same as the old Roadbook RECCE panel): NEAR n, the arrows, AT TRIP, KM = TRIP,
+    -10 / +10, CAP HERE, + BOX HERE, CHANGES n, REPORT, MERGE, OFF. The Planner bar button reads "● RECCE". The Roadbook
+    head shows "· RECCE". Console: "cmd recce (planner)".
+23. Drive next to a box. Press the right arrow twice, then AT TRIP.
+    Expected: "SEL n" follows the arrows; AT TRIP picks the box at the trip meter.
+24. Press KM = TRIP, then +10.
+    Expected: the selected box's km changes to the trip, then 10 m more; the Roadbook app shows the new km at once.
+25. Press CAP HERE.
+    Expected: the box CAP becomes the car heading; the Roadbook shows it at once.
+26. Press + BOX HERE, pick a symbol, tap two note presets (e.g. ROUGH, JUNCTION NOT VISIBLE), SAVE.
+    Expected: the presets fill the notes; after SAVE the new box shows in the Roadbook app at once with those notes.
+27. Open CHANGES n. Press UNDO on one row.
+    Expected: only that change is taken back (the Roadbook shows the old value again).
+28. Press MERGE.
+    Expected: a MERGE PREVIEW line (how many changes, warnings). Press CANCEL: it closes, nothing written.
+29. Press REPORT.
+    Expected: "REPORT: /rallyraid/recce/<stage>.report.txt" shows; the .txt and .json are in your BeamNG user folder.
+30. Press MERGE, then CONFIRM MERGE.
+    Expected: the roadbook is written (a new rev), CHANGES 0.
+31. Press OFF.
+    Expected: recce is off, the panel shows RECCE ON again, the Roadbook head tag goes away.
+32. Press RECCE in the Planner bar.
+    Expected: the RECCE panel hides. The rest of the Planner (PLANNER button, NEW STAGE HERE / EDIT LOADED STAGE) still works.
+
+F. The Roadbook app is a reader (2 min)
+33. Look at the Roadbook app's buttons.
+    Expected: ▲ ▼ SYNC ↻ BOOK only, no RECCE button, no recce panel. Box up / down / sync keys work as before.
+
+G. Planner basics still fine (3 min)
+34. Planner bar > PLANNER > EDIT LOADED STAGE (with a stage loaded).
+    Expected: the loaded stage opens in the planner editor, as on 17 Nov.
+
+H. Report back (2 min)
+35. Copy the console lines that start with "[rally.raid Earth]" (or the whole log) and screenshots of: the GPS REPAIR panel,
+    the GPS RALLY panel, the Planner RECCE panel with recce on, and the Roadbook while recce is on.
+
+Rough total: about 35-40 min (about 45 min with the optional crash test).

@@ -1,5 +1,7 @@
 # Retest: 17 Nov bug batch (test zip `rallyraid_earth_fix1117_test.zip`)
 
+> 18 Nov 2026: the Repair and Rally apps are now panels in the GPS app (MENU > REPAIR / RALLY) and the recce controls are in the Planner app. This file is kept as written for that date; see docs/RETEST_3APPS_1118.txt for the current checks.
+
 Test build, not a release. Remove the old rally.raid Earth zip from `mods/`, put this one in, and start the game.
 Each item takes under 5 minutes. Before you start, open the console (`~`) and type `rallyRaid` in its filter box. Every line
 from this mod starts with **`[rally.raid Earth]`**.

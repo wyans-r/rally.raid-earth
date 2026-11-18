@@ -70,3 +70,10 @@
 .rr-credits summary { cursor:pointer; color:#c8ccd0; font-weight:700; letter-spacing:.02em; }
 .rr-credits p { margin:4px 0 0; }
 .rr-credits a { color:#ffd400; }
+/* REPAIR and RALLY panels (the former Repair and Rally apps, 18 Nov): an overlay over the computer, scrolling */
+.rrg-panel { overflow-y: auto; justify-content: flex-start; z-index: 5; }
+.rrg-phead { justify-content: space-between; flex: 0 0 auto; }
+.rrg-phost { flex: 1 1 auto; }
+.rrg-liaison { color: #ffd400; justify-content: space-between; }
+.rrr-embedded, .rrl-embedded { height: auto; overflow: visible; }
+.rrr-embedded .rrr, .rrl-embedded .rrl { width: 100%; height: auto; }

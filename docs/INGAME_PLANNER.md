@@ -28,8 +28,10 @@ is `[lat, lon, alt]`).
 
 **Reused from the mod:** the stage loader and its checks (`rallyRaid_core.loadStage`, the same as the stage picker),
 the teleport to the start, `reloadRoadbook`, and the recce quick-pick symbol list (`recce.lua` `M.QUICK`). Recce
-mode is untouched: it is still the way to *drive and verify* an existing roadbook; the planner is the way to *make*
-one. Repair v1 is not touched.
+mode is the way to *drive and verify* an existing roadbook; the planner is the way to *make* one. Since 18 Nov the
+recce controls are the Planner app's **RECCE** panel (it was in the Roadbook app): the RECCE button in the Planner bar
+shows it; it works on the stage the game has loaded (load one first: the panel says so), and every edit shows live
+in the Roadbook app. Repair v1 is not touched.
 
 ## Offline vs internet
 

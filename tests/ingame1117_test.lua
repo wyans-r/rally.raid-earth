@@ -59,20 +59,24 @@ check(has(LOGS, '^E .*cmd unload.*boom') or has(LOGS, '^E .*boom'), 'the error i
 check(#NOTES > 0, 'and the player gets a notice')
 
 -- the app heartbeat
-check(not core.appOn('repair'), 'no Repair app yet')
-core.appHello('repair', true)
-check(core.appOn('repair'), 'hello: the Repair app is on screen')
-check(has(LOGS, 'app on screen: repair'), 'first hello logged')
+check(not core.appOn('gps'), 'no GPS app yet')
+core.appHello('gps', true)
+check(core.appOn('gps'), 'hello: the GPS app is on screen')
+check(has(LOGS, 'app on screen: gps'), 'first hello logged')
 LOGS = {}
-for i = 1, 30 do core.appHello('repair', true) end
+for i = 1, 30 do core.appHello('gps', true) end
 check(count(LOGS, 'app on screen') == 0, 'repeated hellos are not logged')
 for i = 1, 90 do core.onUpdate(0.1, 0.1) end
-check(not core.appOn('repair'), 'no hello for 9 s: the app is gone (closed, or UI reloaded)')
-core.appHello('repair', true); core.appHello('planner', true)
+check(not core.appOn('gps'), 'no hello for 9 s: the app is gone (closed, or UI reloaded)')
+core.appHello('roadbook', true); core.appHello('planner', true)
 local snap = core.getState()
-check(snap.apps and snap.apps.repair == true and snap.apps.planner == true and snap.apps.gps == false, 'the state tells the GPS which apps are on screen')
-check(core.appHello('repair', false) == false and not core.appOn('repair'), 'hello(false): gone at once')
-check(core.appHint('repair'):find('Repair') and core.appHint('repair'):find('RALLY LAYOUT'), 'hint: ' .. core.appHint('repair'))
+check(snap.apps and snap.apps.roadbook == true and snap.apps.planner == true and snap.apps.gps == false, 'the state tells the GPS which apps are on screen')
+check(snap.apps.repair == nil and snap.apps.rally == nil and snap.apps.event == nil, 'three HUD apps only (18 Nov): no repair / rally / event app in s.apps')
+local na = 0; for _ in pairs(snap.apps) do na = na + 1 end
+check(na == 3, 'three HUD apps tracked: ' .. na)
+check(core.appHello('planner', false) == false and not core.appOn('planner'), 'hello(false): gone at once')
+check(core.appHint('planner'):find('Planner') and core.appHint('planner'):find('PLANNER LAYOUT'), 'hint: ' .. core.appHint('planner'))
+check(core.appHint('gps'):find('GPS') and core.appHint('gps'):find('RALLY LAYOUT'), 'hint: ' .. core.appHint('gps'))
 
 -- the layouts
 GS_CALLS = {}

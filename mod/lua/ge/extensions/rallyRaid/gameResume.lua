@@ -14,7 +14,7 @@
 --     speed-zone state, flags, repairs and spares used, car recoveries and resets (counts and log), game-crash resumes
 --     so far, the bivouac that closed at the start, and the odometers
 --   * after a relaunch, loading that stage offers "Resume from last save (h:mm:ss elapsed, saved X ago)" or "Discard"
---     (RESUME in the GPS or Repair app, or a bound key twice). Resume: the saved car model is spawned if another one is out, the car is set
+--     (RESUME in the GPS app, or a bound key twice). Resume: the saved car model is spawned if another one is out, the car is set
 --     down where it was (BeamNG.Earth's teleport first if that part of the world is not loaded), its damage is put back,
 --     the stage state is restored and the clock is held at the saved time until the car moves (or GO)
 --   * policy (Wyans 2026-11-16): no time penalty, no limits, but every resume is flagged for organizer review in the
@@ -491,7 +491,7 @@ function M.stageLoaded()
   o.text = string.format('Resume from last save (%s elapsed, saved %s ago)', hms(o.elapsedS), ago(agoS))
   R.offer = { doc = d, found = found, beat = beat, o = o }
   log_('I', 'crash save OFFERED: ' .. found.file .. ' (' .. o.text .. ')')
-  notify('rally.raid Earth: ' .. o.text .. '? RESUME in the GPS or Repair app' .. keys.hint('rallyRaid_gameResume', ' (or %s twice)') .. '; DISCARD in the Repair app starts the stage again.', 10)
+  notify('rally.raid Earth: ' .. o.text .. '? RESUME in the GPS app' .. keys.hint('rallyRaid_gameResume', ' (or %s twice)') .. '; DISCARD (GPS MENU > REPAIR) starts the stage again.', 10)
   M.push()
   return o
 end

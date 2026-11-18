@@ -96,26 +96,6 @@
     "width": "380px",
     "height": "490px"
    }
-  },
-  {
-   "appName": "rallyRaidRepair",
-   "placement": {
-    "position": "absolute",
-    "top": "610px",
-    "left": "5px",
-    "width": "360px",
-    "height": "300px"
-   }
-  },
-  {
-   "appName": "rallyRaidRally",
-   "placement": {
-    "position": "absolute",
-    "top": "460px",
-    "left": "390px",
-    "width": "380px",
-    "height": "440px"
-   }
   }
  ]
 }

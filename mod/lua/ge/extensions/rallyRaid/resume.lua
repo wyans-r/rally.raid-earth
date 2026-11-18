@@ -8,7 +8,7 @@
 --   * every 30 s of stage clock: a recovery state. The game keeps where the car is (lat / lon, never game x / y: the
 --     world rebases), its heading, speed, its place along the stage route and the stage progress; the car keeps its
 --     damage, tyres, fuel and engine state (vehRepair.resumeSnapshot)
---   * RECOVER in the GPS app (or the Repair app's RECOVER CAR; the rallyRaid_recoverCar action has no key by default): the penalty and recoveries left are shown, a second press (or
+--   * RECOVER in the GPS app (or RECOVER CAR in its MENU > REPAIR panel; the rallyRaid_recoverCar action has no key by default): the penalty and recoveries left are shown, a second press (or
 --     CONFIRM) starts it; refused with the reason when the rules don't allow it (then RETIRE STAGE is offered)
 --   * the recovery: the stage clock stops; the car is set down on the route, backOffM behind where it got stuck, facing
 --     along the route, and the damage of the latest good recovery state (at least 5 s old) is put back (not a free

@@ -26,7 +26,7 @@ Code: `mod/lua/ge/extensions/rallyRaid/recce.lua` (701 lines), `core.lua` `M.rec
 
 ## What recce does today
 
-Recce needs a **loaded stage with a roadbook**. Press RECCE in the Roadbook app to turn it on or off.
+Recce needs a **loaded stage with a roadbook**. Since 18 Nov the recce controls are in the **Planner app**: press **RECCE** in its bar, then **RECCE ON** / **OFF** (with no stage loaded the panel says so and RECCE ON is greyed). Every recce edit shows in the Roadbook app at once; the Roadbook app is a reader only (a RECCE tag in its head while recce is on).
 
 | Part | What it does | Where you see it |
 |---|---|---|
@@ -58,7 +58,7 @@ Estimates are focused work time, including tests, for the Lua side plus the app.
 
 | # | Item | What | Estimate |
 |---|---|---|---|
-| 1 | **Changes list** | A "CHANGES n" tab in the recce panel listing every change (auto and manual) with its km, kind and symbols. Tap one to select it, then ✓ / ✕ / TAG it. Shows the automatic boxes so recce visibly does something. | 0.5 day + 15 min in game |
+| 1 | **Changes list** | A "CHANGES n" tab in the RECCE panel (Planner app) listing every change (auto and manual) with its km, kind and symbols. Tap one to select it, then ✓ / ✕ / TAG it. Shows the automatic boxes so recce visibly does something. | 0.5 day + 15 min in game |
 | 2 | **Select any box, not only the nearest** | ◀ ▶ to step through roadbook boxes (the display already scrolls with box up/down). The recce actions apply to the box on screen, so you can fix a box behind you. | 0.5 day |
 | 3 | **Edit km / distance** | "KM HERE" sets the box's km to the current trip. ± 10 m nudges it. Same change record (`move` with km only). | 0.5 day |
 | 4 | **Edit CAP and instruction** | CAP from the car's heading ("CAP HERE"), plus a short list of instructions (KEEP LEFT/RIGHT, TURN L/R, STRAIGHT ON, a junction tulip from the driven line). Needs an `update` with `cap` / `instr` fields, and the merge plus the stage builder accepting them. | 1–1.5 days |

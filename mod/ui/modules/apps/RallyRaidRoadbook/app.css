@@ -39,28 +39,7 @@
 /* recce mode */
 .rrb-box.rc { box-shadow: inset 5px 0 0 #b24bd6; }
 .rrb-box.chk .rrb-no { background: #b24bd6; }
-.rrc { background: #1a1020; border: 1px solid #5a2a6a; border-radius: 4px; padding: 3px 5px; margin-bottom: 4px; font-size: 12px; color: #eee; }
-.rrc .rrb-btn { font-size: 11px; padding: 2px 6px; margin-left: 2px; }
-.rrc-top, .rrc-near, .rrc-row { display: flex; align-items: center; gap: 4px; min-height: 22px; }
-.rrc-near { justify-content: space-between; }
-.rrc-sp { flex: 1; }
-.rrc-dim { color: #a99bb0; font-size: 11px; }
-.rrc-dot { width: 9px; height: 9px; border-radius: 50%; background: #e33; display: inline-block; animation: rrcblink 1s infinite; }
-.rrc-dot.air { background: #3cf; }
-@keyframes rrcblink { 50% { opacity: .3; } }
-.rrc-last { color: #e58cff; font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rrc-ck { font-size: 11px; color: #ccc; }
-.rrc-add { width: 100%; }
-.rrc-syms { display: flex; flex-wrap: wrap; gap: 2px; background: #fff; border-radius: 3px; padding: 2px; margin: 2px 0; }
-.rrc-sym { border: 2px solid transparent; border-radius: 3px; cursor: pointer; line-height: 0; }
-.rrc-sym.on { border-color: #b24bd6; background: #f1def7; }
-.rrc-notes { flex: 1; background: #000; color: #fff; border: 1px solid #555; border-radius: 3px; font-size: 12px; padding: 2px 4px; text-transform: uppercase; }
 .rrb-foot { flex-wrap: nowrap; gap: 3px; } .rrb-foot > span { white-space: nowrap; } .rrb-foot .rrb-btn { padding: 3px 7px; }
-.rrc-top { white-space: nowrap; }
-.rrc-tabs { flex-wrap: wrap; gap: 2px; }
-.rrc-tabs .rrb-btn { font-size: 9px; padding: 1px 4px; }
-.rrc-find { width: 80px; font-size: 10px; background: #111; color: #eee; border: 1px solid #555; border-radius: 3px; padding: 1px 4px; }
-.rrc-syms { max-height: 124px; overflow-y: auto; }
 
 .rrb-overlay { position: absolute; inset: 0; background: rgba(5,6,7,.97); z-index: 6; padding: 8px; display: flex; flex-direction: column; box-sizing: border-box; }
 .rrb-plist { flex: 1; overflow-y: auto; margin: 6px 0; border: 1px solid #222; }
@@ -73,19 +52,5 @@
 .rr-credits summary { cursor:pointer; color:#c8ccd0; font-weight:700; letter-spacing:.02em; }
 .rr-credits p { margin:4px 0 0; }
 .rr-credits a { color:#ffd400; }
-/* recce: select any box, km / CAP, changes list, presets, merge preview, report (17 Nov) */
-.rrc-sel { flex-wrap: wrap; }
-.rrc-pv { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px; padding: 2px 0; color: #ffd400; font-size: 12px; }
-.rrc-pv .warn { color: #ff6a4d; }
-.rrc-report { padding: 1px 0; word-break: break-all; }
-.rrc-list { max-height: 140px; overflow-y: auto; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 2px; }
-.rrc-li { display: flex; align-items: center; gap: 4px; font-size: 11px; min-height: 20px; }
-.rrc-li.old { opacity: 0.6; }
-.rrc-li.gone .rrc-n { text-decoration: line-through; }
-.rrc-k { width: 34px; font-weight: bold; }
-.rrc-n { width: 30px; }
-.rrc-km { width: 40px; text-align: right; }
-.rrc-t { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.rrc-presets { flex-wrap: wrap; }
-.rrc-presets .rrb-btn { font-size: 10px; padding: 1px 4px; }
-.rrc-near .rrc-add { width: auto; flex: 1; }
+
+.rrb-rc { color: #e58cff; font-weight: 700; }

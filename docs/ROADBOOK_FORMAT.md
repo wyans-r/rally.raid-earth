@@ -348,7 +348,7 @@ the car's motion, so the world's rebasing cannot break anything; frames during a
     or from the car's pitch / roll when the game does not answer the ray casts.
   - the same kind found twice within 40 m is one box (the more dangerous one kept); a detection within 60 m of a
     roadbook box with the same symbol is noted as `box.near` = that box's id, for the editor to compare.
-- **What the driver does** (`by: "recce-manual"`), on the recce panel's buttons (no default keys; each is bindable):
+- **What the driver does** (`by: "recce-manual"`), on the RECCE panel's buttons in the Planner app (18 Nov: moved there from the Roadbook app, which is a reader now and shows each edit live; no default keys; each is bindable):
   - **+ BOX HERE**: a new box at the car (lat / lon and the trip km); the app shows the quick-pick: 30 common symbols (QUICK tab), every legend group as a tab and a symbol search,
     danger 0-3, notes; SAVE (or + BOX HERE again) adds it, CANCEL drops it.
   - The app shows the nearest roadbook box within 150 m: ✓ confirm, HERE move it here,

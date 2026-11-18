@@ -468,7 +468,7 @@ function M.roadbookState()
   local nxt = boxes[(idx or 0) + 1]
   local lastWp
   if S then for i = S.target - 1, 1, -1 do if S.state[i] == 'ok' then local w = S.stage.waypoints[i]; lastWp = { n = w.n, type = w.type, km = w.km } break end end end
-  return { schema = 1, stageId = S and S.stage.id or nil, phase = S and S.phase or 'idle',
+  return { schema = 1, stageId = S and S.stage.id or nil, stageName = S and S.stage.name or nil, phase = S and S.phase or 'idle',
     trip = tripKm, partial = odo.partial / 1000, total = odo.total / 1000, countDown = odo.countDown,
     cap = nav.cap, speed = nav.speed * 3.6, clock = S and S.clock or 0,
     boxIndex = idx, box = idx and boxes[idx] and boxes[idx].n or nil,
@@ -655,9 +655,9 @@ function M.recceCmd(sub, arg)
       if S.phase == 'running' then S.flags.recce = true end
       local d = recce.get().doc
       said = 'rally.raid Earth: RECCE ON. ' .. (#d.changes > 0 and (#d.changes .. ' earlier changes kept. ') or '') ..
-        'Roadbook app recce panel: + BOX HERE' .. keys.hint('rallyRaid_recceDrop') .. ' drops a box here; check / HERE / TAG / delete act on the nearest box.'
+        'Planner app RECCE panel: + BOX HERE' .. keys.hint('rallyRaid_recceDrop') .. ' drops a box here; check / HERE / TAG / delete act on the nearest box.'
     end
-  elseif not recce.active() then said = 'rally.raid Earth: recce is off (RECCE in the Roadbook app' .. keys.hint('rallyRaid_recce', ', or %s') .. ').'
+  elseif not recce.active() then said = 'rally.raid Earth: recce is off (RECCE > RECCE ON in the Planner app' .. keys.hint('rallyRaid_recce', ', or %s') .. ').'
   elseif sub == 'Drop' then if recce.get().pending then recce.commitPending() else recce.drop() end
   elseif sub == 'Pick' then recce.pick(arg)
   elseif sub == 'Save' then recce.commitPending()
@@ -779,15 +779,15 @@ local function dispatch(name, arg)
   elseif name:sub(1, 6) == 'repair' then
     repair.cmd(name:sub(7), arg)
     if name == 'repairAppHere' then resume.push(); gameResume.push() end   -- the app just opened: everything it shows
-  elseif name:sub(1, 7) == 'recover' then resume.cmd(name:sub(8), arg)   -- RECOVER CAR (GPS / Repair app button)
-  elseif name:sub(1, 10) == 'gameResume' then gameResume.cmd(name:sub(11), arg)   -- after a game crash (RESUME in the GPS / Repair app)
+  elseif name:sub(1, 7) == 'recover' then resume.cmd(name:sub(8), arg)   -- RECOVER (GPS app; MENU > REPAIR > RECOVER CAR)
+  elseif name:sub(1, 10) == 'gameResume' then gameResume.cmd(name:sub(11), arg)   -- after a game crash (RESUME in the GPS app)
   elseif name:sub(1, 6) == 'resume' then resume.cmd(name:sub(7), arg)   -- (older name of the recover commands)
   elseif name:sub(1, 7) == 'planner' then planner.cmd(name:sub(8), arg)
   elseif name == 'rallyNew' then repair.newRally()
   elseif name:sub(1, 5) == 'rally' then rally.cmd(name:sub(6), arg)   -- RALLY MODE (rallyList, rallyLoad, rallyDrive, ...)
   elseif name == 'keys' then M.pushKeys(true)
   elseif name == 'liveFile' then M.settings.liveFile = not M.settings.liveFile; saveSettings(); M.requestState()
-  elseif name == 'hello' then M.requestState(); resume.push(); gameResume.push(); repair.push()   -- an app just opened
+  elseif name == 'hello' then M.requestState(); resume.push(); gameResume.push(); repair.push(); if rally.push then rally.push() end   -- an app just opened
   elseif name == 'appsRally' then M.showApps('rally')
   elseif name == 'appsPlanner' then M.showApps('planner')
   elseif name == 'appsBack' then M.showApps('back')
@@ -823,8 +823,8 @@ end
 local APP_TTL = 8
 local uptime = 0
 local appSeen = {}
-M.APP_TITLES = { gps = 'rally.raid Earth GPS', roadbook = 'rally.raid Earth Roadbook', repair = 'rally.raid Earth Repair',
-  planner = 'rally.raid Earth Planner', rally = 'rally.raid Earth Rally', event = 'rally.raid Earth Event' }
+-- 18 Nov: three HUD apps. GPS (REPAIR and RALLY built in: they say hello as 'gps'), Roadbook (reader), Planner (RECCE)
+M.APP_TITLES = { gps = 'rally.raid Earth GPS', roadbook = 'rally.raid Earth Roadbook', planner = 'rally.raid Earth Planner' }
 function M.appOn(name) local t = appSeen[name]; return t ~= nil and uptime - t <= APP_TTL end
 function M.apps() local o = {} for k in pairs(M.APP_TITLES) do o[k] = M.appOn(k) end return o end
 function M.appHello(name, on)
@@ -837,10 +837,9 @@ function M.appHello(name, on)
   appSeen[name] = uptime
   if first then
     log_('I', 'app on screen: ' .. name)
-    if name == 'repair' then repair.cmd('AppHere'); resume.push(); gameResume.push()
-    elseif name == 'planner' then planner.cmd('AppHere')
-    elseif name == 'gps' then resume.push(); gameResume.push() end
-    M.requestState()                        -- the GPS reads s.apps to know if REPAIR / PLANNER can open on screen
+    if name == 'planner' then planner.cmd('AppHere')
+    elseif name == 'gps' then repair.cmd('AppHere'); resume.push(); gameResume.push(); if rally.push then rally.push() end end
+    M.requestState()                        -- the GPS reads s.apps to know if the PLANNER app is on screen
   end
   return true
 end
@@ -851,7 +850,7 @@ function M.appHint(name)
 end
 
 -- the mod's two app layouts (settings/ui_apps/originalLayouts/default/*.uilayout.json, the way BeamNG.Earth ships its
--- ".Earth" layout): 'rally' = GPS, Roadbook, Repair, Rally; 'planner' = GPS, Roadbook, Planner. core_gamestate.setGameState's
+-- ".Earth" layout): 'rally' = GPS, Roadbook; 'planner' = GPS, Roadbook, Planner. core_gamestate.setGameState's
 -- second argument picks the layout (the same call BeamNG.Earth makes after its level loads). 'back': the layout before.
 M.LAYOUTS = { rally = 'rallyRaidEarth', planner = 'rallyRaidEarthPlanner' }
 local layoutBefore

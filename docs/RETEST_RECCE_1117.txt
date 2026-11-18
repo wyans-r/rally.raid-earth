@@ -1,4 +1,5 @@
 rally.raid Earth - RECCE retest (17 Nov batch)
+(18 Nov 2026: the RECCE panel is now in the Planner app, not the Roadbook app. See docs/RETEST_3APPS_1118.txt.)
 Zip: rallyraid_earth_recce1117_test.zip (TEST build, not a release)
 
 This zip ALSO has every fix from rallyraid_earth_fix1117_test.zip. Do the fix retest first

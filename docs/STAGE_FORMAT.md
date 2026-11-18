@@ -183,8 +183,8 @@ more than 200 m, a warning says it should be re-synced in the editor. Not found:
    `keys` pushes guihook `RallyRaidKeys` = { keys = { action = 'Ctrl+Shift+End', ... } }, the player's actual bindings).
    Recce mode (docs/ROADBOOK_FORMAT.md *Recce*): `recce` (on / off), `recceNew`, `recceDrop`, `reccePick` ({symbol |
    danger | notes}), `recceSave`, `recceCancel`, `recceConfirm` / `recceMove` / `recceRetag` / `recceDelete` (nearest
-   box, or arg = box id), `recceUndo`, `recceMerge` (arg `'rescale'`). No default keys (the Roadbook app's recce panel has
-   the buttons); a player can bind the rallyRaid_recce* actions. `roadbookState().recce` carries the recce panel's data.
+   box, or arg = box id), `recceUndo`, `recceMerge` (arg `'rescale'`). No default keys (the Planner app's RECCE panel has
+   the buttons; it was in the Roadbook app until 18 Nov); a player can bind the rallyRaid_recce* actions. `roadbookState().recce` carries the recce panel's data.
    In-game planner (`docs/INGAME_PLANNER.md`): `plannerMenu`, `plannerOpen`, `plannerClose`, `plannerWaypoint`,
    `plannerBox`, `plannerRec`, `plannerAppHere`; the app's own calls go through
    `rallyRaid_core.plannerCall(name, argsJson, text)`. No default keys (the Planner app's buttons, and PLANNER in

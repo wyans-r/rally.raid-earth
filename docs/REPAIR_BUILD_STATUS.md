@@ -1,5 +1,7 @@
 # Repair build status
 
+> 18 Nov 2026: the Repair and Rally apps are now panels in the GPS app (MENU > REPAIR / RALLY) and the recce controls are in the Planner app. This file is kept as written for that date; see docs/RETEST_3APPS_1118.txt for the current checks.
+
 > 17 Nov 2026: the repair / recover / crash-resume keys below (Ctrl+Shift+F / G / H) were taken out of the defaults; they are buttons now (GPS app MENU, Repair app). Only the 9 driving keys keep a default. The notes below are the build history.
 
 v1 built 2026-11-16 (America/Chicago), after the roadbook quality work. Nothing is deployed: the mod zip was rebuilt

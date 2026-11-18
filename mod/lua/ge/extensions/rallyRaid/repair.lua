@@ -267,10 +267,10 @@ function M.openMenu()
   if M.mode() == 'none' then
     R.msg = (L and L.retired) and 'Retired from the rally.' or 'No repairs here: run a stage (mid-stage repairs) or finish one (bivouac).'
   else M.requestSurvey() end
-  local on = H.appOn and H.appOn('repair')
+  local on = H.appOn and H.appOn('gps')           -- 18 Nov: the repair menu is the GPS app's REPAIR panel
   if on == nil then on = R.appSeen end
-  if not on then notify(H.appHint and H.appHint('repair') or 'rally.raid Earth: add the "rally.raid Earth Repair" app (UI Apps) to see the repair menu.', 8) end
-  log_('I', 'repair menu opened (' .. M.mode() .. ', Repair app ' .. (on and 'on screen' or 'NOT on screen') .. ')')
+  if not on then notify(H.appHint and H.appHint('gps') or 'rally.raid Earth: add the "rally.raid Earth GPS" app (UI Apps) to see the repair menu.', 8) end
+  log_('I', 'repair menu opened (' .. M.mode() .. ', GPS app ' .. (on and 'on screen' or 'NOT on screen') .. ')')
   M.push()
 end
 function M.closeMenu() R.open = false; M.push() end
@@ -487,7 +487,7 @@ function M.stageFinished(res)
   if s and not L.retired then
     L.bivouac = { open = true, afterStage = s.stage.id, openedAt = now(), usedMin = 0, budgetMin = cfg.bivouac.budgetMin,
       engineChanges = 0, log = {}, resets = {} }
-    notify(string.format('rally.raid Earth: bivouac open: %d h of service time (REPAIR in the GPS app or the Repair app bar%s). It closes when the next stage starts.', cfg.bivouac.budgetMin / 60, keys.hint('rallyRaid_repairMenu', ', or %s')), 7)
+    notify(string.format('rally.raid Earth: bivouac open: %d h of service time (MENU > REPAIR in the GPS app%s). It closes when the next stage starts.', cfg.bivouac.budgetMin / 60, keys.hint('rallyRaid_repairMenu', ', or %s')), 7)
   end
   local last = L.stages[#L.stages]
   if last and s and last.id == s.stage.id then last.finishedAt = now(); last.retired = res and res.retired or nil; last.totalTime = res and res.totalTime end

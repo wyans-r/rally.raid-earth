@@ -4,7 +4,7 @@
   "types": [
     "ui.apps.categories.utility"
   ],
-  "description": "Digital roadbook reader for rally.raid Earth stages: the roadbook made in the stage builder's editor scrolls with the trip odometer. Box up / down (default keys Ctrl+Shift+PgUp / PgDn), sync the trip to a box (Ctrl+Shift+End). RECCE button: record the driven line, mark, confirm, move, retag or delete boxes as you drive with the recce panel's buttons, and let the car detect jumps, crests, compressions, soft sand and slopes.",
+  "description": "Digital roadbook reader for rally.raid Earth stages: the roadbook made in the stage builder's editor scrolls with the trip odometer. Box up / down (default keys Ctrl+Shift+PgUp / PgDn), sync the trip to a box (Ctrl+Shift+End). A reader: recce edits (made with RECCE in the Planner app) show here as you drive, with a RECCE tag in the head while recce is on.",
   "css": {
     "top": "430px",
     "right": "10px",

@@ -5,7 +5,7 @@
 -- Rest days add service time; a transfer is a liaison only (a sea crossing is teleport only).
 -- Rally total = the stage totals (stage time + stage penalties) + liaison late penalties.
 -- Progress is saved in /rallyraid/rally/rally_<id>.json, so a rally can be continued after a restart.
--- UI: guihook 'RallyRaidRally' (the rally.raid Earth Rally app). Commands: rallyRaid_core.cmd('rally<Sub>', arg) with
+-- UI: guihook 'RallyRaidRally' (the RALLY panel in the rally.raid Earth GPS app: MENU > RALLY). Commands: rallyRaid_core.cmd('rally<Sub>', arg) with
 -- List, Load (path), Start, Drive, Teleport, CheckIn, LoadStage, TpDss, NextDay, Restart, Close, AppHere.
 -- No default keys (only 9 default keys are allowed): buttons in the app only.
 -- Every tunable value: repairConfig.lua M.rally.

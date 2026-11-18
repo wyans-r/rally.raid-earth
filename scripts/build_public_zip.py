@@ -5,7 +5,9 @@ Default (public) build:
   - Top-level folders inside the zip are lua, ui, scripts, settings, rallyraid
     (no wrapper folder named after the mod).
   - Leaves out the unreleased rally.raid Earth Event app, official.lua and sha256.lua.
-  - RALLY MODE (B10, EXPERIMENTAL - not yet tested in game): the Rally app and rally.lua go in only with
+  - Three HUD apps (18 Nov): GPS (with REPAIR and RALLY built in), Roadbook (reader), Planner (with RECCE). The Event
+    app (a COMING SOON placeholder) is never in a zip, not even with --include-events (its Lua is).
+  - RALLY MODE (B10, EXPERIMENTAL - not yet tested in game): the GPS rally panel styles and rally.lua go in only with
     --include-rally (core.lua runs without them). Rally files (rallyraid/rallies/, the events) need
     --include-rally-events as well; they stay out until wyans has checked the event in game.
   - Leaves out README / LICENSE / docs (BeamNG.com asks you not to pack a readme;
@@ -48,9 +50,11 @@ PUBLIC_EXCLUDE_PREFIXES = (
     "lua/ge/extensions/rallyRaid/sha256.lua",
 )
 
-# RALLY MODE (B10, EXPERIMENTAL): only with --include-rally
+# never in any zip (18 Nov: three HUD apps; the Event app is a COMING SOON placeholder until Async Events)
+ALWAYS_EXCLUDE_PREFIXES = ("ui/modules/apps/RallyRaidEvent/",)
+# RALLY MODE (B10, EXPERIMENTAL): only with --include-rally (the GPS RALLY panel hides itself without rally.lua)
 RALLY_PREFIXES = (
-    "ui/modules/apps/RallyRaidRally/",
+    "ui/modules/apps/RallyRaidGPS/rally.css",
     "lua/ge/extensions/rallyRaid/rally.lua",
 )
 # rally files (events): only with --include-rally-events
@@ -72,6 +76,9 @@ def should_skip(rel: str, include_events: bool, include_rally: bool = False, inc
         return True
     if name.endswith(".bak-trackfix"):
         return True
+    for p in ALWAYS_EXCLUDE_PREFIXES:
+        if rel == p.rstrip("/") or rel.startswith(p):
+            return True
     if not include_events:
         for p in PUBLIC_EXCLUDE_PREFIXES:
             if rel == p.rstrip("/") or rel.startswith(p):
@@ -123,7 +130,9 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
         "ui/modules/apps/RallyRaidGPS/app.js",
         "ui/modules/apps/RallyRaidRoadbook/app.js",
         "ui/modules/apps/RallyRaidPlanner/app.js",
-        "ui/modules/apps/RallyRaidRepair/app.js",
+        "ui/modules/apps/RallyRaidGPS/repair.css",
+        "ui/modules/apps/RallyRaidPlanner/recce.css",
+        "ui/modules/apps/RallyRaidRoadbook/roadbook-render.js",
         "rallyraid/stages/moab-sand-flats-ss1.json",
         "settings/ui_apps/originalLayouts/default/rallyRaidEarth.uilayout.json",
         "settings/ui_apps/originalLayouts/default/rallyRaidEarthPlanner.uilayout.json",
@@ -140,16 +149,14 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
         if any("RallyRaidEvent" in rel or rel.endswith("official.lua") or rel.endswith("sha256.lua") for rel in have):
             raise SystemExit("public zip still contains Events files")
 
+    apps = sorted({rel.split("/")[3] for rel in have if rel.startswith("ui/modules/apps/") and rel.endswith("/app.json")})
+    if apps != ["RallyRaidGPS", "RallyRaidPlanner", "RallyRaidRoadbook"]:
+        raise SystemExit(f"zip should have the three HUD apps (GPS, Roadbook, Planner), has: {apps}")
+
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path, rel in files:
             # arcname is the path inside the zip: no wrapper folder
-            if rel.endswith(".uilayout.json") and not include_rally:
-                # the GPS "RALLY LAYOUT" layout lists the Rally app: drop it from a build without rally mode
-                doc = json.loads(path.read_text(encoding="utf-8"))
-                doc["apps"] = [a for a in doc.get("apps", []) if "rallyRaidRally" not in json.dumps(a)]
-                zf.writestr(rel, json.dumps(doc, indent=2))
-            else:
-                zf.write(path, arcname=rel)
+            zf.write(path, arcname=rel)
 
     if not include_rally and any(rel.startswith(p) or rel == p for rel in have for p in RALLY_PREFIXES):
         raise SystemExit("zip still contains rally mode files")
@@ -159,7 +166,7 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
     if junk:
         raise SystemExit(f"zip contains junk files: {junk}")
     if include_rally:
-        for n in ("lua/ge/extensions/rallyRaid/rally.lua", "ui/modules/apps/RallyRaidRally/app.js"):
+        for n in ("lua/ge/extensions/rallyRaid/rally.lua", "ui/modules/apps/RallyRaidGPS/rally.css"):
             if n not in have:
                 raise SystemExit(f"rally build is missing {n}")
 
@@ -168,6 +175,7 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
     kind = ("dev (events included)" if include_events else "public (events omitted)") + (", rally mode included" if include_rally else ", rally mode omitted") + (", rally events included" if include_rally_events else "")
     print(f"Wrote {output} ({kind})")
     print(f"  files: {len(files)}")
+    print(f"  HUD apps: {', '.join(apps)}")
     print(f"  top-level folders: {', '.join(tops)}")
     print(f"  size: {size} bytes")
     print(f"  sha256: {digest}")
@@ -177,7 +185,7 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--include-events", action="store_true", help="include the unreleased Events app and official.lua")
-    ap.add_argument("--include-rally", action="store_true", help="include RALLY MODE (B10, experimental): Rally app, rally.lua, rallyraid/rallies/")
+    ap.add_argument("--include-rally", action="store_true", help="include RALLY MODE (B10, experimental): rally.lua and the GPS app RALLY panel styles (rally files need --include-rally-events)")
     ap.add_argument("--include-rally-events", action="store_true", help="also include rally files (rallyraid/rallies/); needs --include-rally")
     ap.add_argument("--output", "-o", type=Path, default=DEFAULT_OUT, help="zip path (default: dist/rallyraid_earth.zip)")
     args = ap.parse_args(argv)

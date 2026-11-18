@@ -1,7 +1,9 @@
 // rally.raid Earth Roadbook: the in-game roadbook reader for rallyRaid_core (lua/ge/extensions/rallyRaid/core.lua).
 // Lua -> app: guihooks 'RallyRaidRoadbook' (about 10 a second): trip, the box the trip is in, and `view`, the boxes on
 // screen (the current one and the next three, or where the driver scrolled to with box up / down).
-// App -> Lua: rallyRaid_core.cmd('boxPrev' | 'boxNext' | 'boxSync' | 'reloadRoadbook' | 'recce*' | 'keys').
+// App -> Lua: rallyRaid_core.cmd('boxPrev' | 'boxNext' | 'boxSync' | 'reloadRoadbook' | 'keys').
+// A reader only (18 Nov): the recce controls moved to the Planner app; recce edits still show here live (the boxes come
+// from the same Lua list) and the head says RECCE while it is on.
 // Keys: only box up / down / sync have default keys; the button titles show the player's actual key from the
 // guihook 'RallyRaidKeys' (rallyRaid/keys.lua), so a key the player bound in Options > Controls shows up too.
 // Drawing (tulips, symbols) is roadbook-render.js, the same file the stage builder's editor and PDF use.
@@ -66,54 +68,10 @@ angular.module('beamng.apps')
     '<div class="bngApp rrb-host">' +
     '<link type="text/css" rel="stylesheet" href="/ui/modules/apps/RallyRaidRoadbook/app.css">' +
     '<div class="rrb" ng-style="{transform: \'scale(\' + k + \')\'}">' +
-      '<div class="rrb-head"><span>BOX <b>{{ r.box || \'-\' }}</b> / {{ r.boxCount || 0 }}<span ng-show="r.manual" style="color:#ffd400"> &middot; SCROLLED</span></span>' +
+      '<div class="rrb-head"><span>BOX <b>{{ r.box || \'-\' }}</b> / {{ r.boxCount || 0 }}<span ng-show="r.manual" style="color:#ffd400"> &middot; SCROLLED</span>' +
+          '<span ng-show="r.recce" class="rrb-rc" title="recce is on (its controls are in the Planner app)"> &middot; RECCE</span></span>' +
         '<span class="rrb-trip">{{ trip() }}</span></div>' +
       '<div class="rrb-next"><span>NEXT {{ r.nextBox || \'-\' }}</span><span class="rrb-bar"><i ng-style="{width: bar() + \'%\'}"></i></span><span>{{ toNext() }}</span></div>' +
-      '<div class="rrc" ng-if="r.recce">' +
-        '<div class="rrc-top"><span class="rrc-dot" ng-class="{air: r.recce.airborne}"></span><b>RECCE</b> {{ r.recce.km.toFixed(2) }} km &middot; {{ r.recce.changes }} <span class="rrc-dim">({{ r.recce.auto }} auto)</span>' +
-          '<span class="rrc-sp"></span><button class="rrb-btn" ng-click="cmd(\'recceUndo\')" title="{{ kt(\'rallyRaid_recceUndo\', \'Take the last change back\') }}">UNDO</button>' +
-          '<button class="rrb-btn" ng-click="merge()" title="First shows what a merge would do; then CONFIRM MERGE writes the changes into the roadbook file (a backup is kept)">MERGE</button>' +
-          '<label class="rrc-ck" title="When merging, re-measure the box km from the driven line"><input type="checkbox" ng-model="ui.rescale"> km</label></div>' +
-        '<div class="rrc-last" ng-if="r.recce.last">DETECTED: {{ r.recce.last.notes }}</div>' +
-        '<div class="rrc-pv" ng-if="r.recce.preview && !r.recce.pending"><span>MERGE PREVIEW: <b>{{ r.recce.preview.applied }}</b> of {{ r.recce.preview.changes }} apply, ' +
-          '<b ng-class="{warn: r.recce.preview.conflicts}">{{ r.recce.preview.conflicts }}</b> conflicts <span class="rrc-dim">{{ r.recce.preview.why.join(\'; \') }}</span></span>' +
-          '<span><button class="rrb-btn on" ng-click="mergeConfirm()">CONFIRM MERGE</button><button class="rrb-btn" ng-click="cmd(\'reccePreviewCancel\')">CANCEL</button></span></div>' +
-        // the box the buttons act on: the selected one (step with < >, or AT TRIP), else the nearest
-        '<div class="rrc-near" ng-if="r.recce.target && !r.recce.pending"><span>{{ r.recce.target.how === \'selected\' ? \'SEL\' : \'NEAR\' }} <b>{{ r.recce.target.n }}</b> {{ r.recce.target.km.toFixed(2) }} km' +
-          '<span ng-if="r.recce.target.d !== undefined && r.recce.target.d !== null"> &middot; {{ r.recce.target.d }} m</span> <span class="rrc-dim">{{ (r.recce.target.notes || \'\').substr(0, 12) }}</span></span>' +
-          '<span><button class="rrb-btn" ng-class="{on: r.recce.target.verified}" ng-click="cmd(\'recceConfirm\')" title="{{ kt(\'rallyRaid_recceConfirm\', \'Confirm this box\') }}">&#10003;</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceMove\')" title="{{ kt(\'rallyRaid_recceMove\', \'Move it here\') }}">HERE</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceRetag\')" title="{{ kt(\'rallyRaid_recceRetag\', \'Retag\') }}">TAG</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceDelete\')" title="{{ kt(\'rallyRaid_recceDelete\', \'Delete this box\') }}">&#10005;</button></span></div>' +
-        '<div class="rrc-near rrc-sel" ng-if="!r.recce.pending"><span>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceSel\', \'prev\')" title="select the box before">&#9664;</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceSel\', \'next\')" title="select the box after">&#9654;</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceSel\', \'trip\')" title="select the box the trip meter is in">AT TRIP</button>' +
-          '<button class="rrb-btn" ng-show="r.recce.target.how === \'selected\'" ng-click="cmd(\'recceSel\', \'nearest\')" title="back to the nearest box">NEAREST</button></span>' +
-          '<span ng-if="r.recce.target"><button class="rrb-btn" ng-click="cmd(\'recceKm\', \'trip\')" title="this box is at the trip meter reading now: set its km (the partials after it follow)">KM = TRIP</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceKm\', \'-10\')" title="10 m earlier">-10</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceKm\', \'+10\')" title="10 m later">+10</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceCap\')" title="the CAP out of this box := the car heading now">CAP HERE</button></span></div>' +
-        '<div class="rrc-near" ng-if="!r.recce.pending"><button class="rrb-btn rrc-add" ng-click="cmd(\'recceDrop\')" title="{{ kt(\'rallyRaid_recceDrop\', \'A new box at the car\') }}">+ BOX HERE</button>' +
-          '<span><button class="rrb-btn" ng-class="{on: ui.list}" ng-click="ui.list = !ui.list" title="every recce change not merged yet; UNDO takes any one back">CHANGES {{ r.recce.changes }}</button>' +
-          '<button class="rrb-btn" ng-click="cmd(\'recceReport\')" title="save a report of the changes (text + JSON) in the BeamNG user folder">REPORT</button></span></div>' +
-        '<div class="rrc-report rrc-dim" ng-if="r.recce.report && !r.recce.pending">REPORT: {{ r.recce.report.txt || r.recce.report.json }}</div>' +
-        '<div class="rrc-list" ng-if="ui.list && !r.recce.pending">' +
-          '<div class="rrc-dim" ng-hide="r.recce.list.length">No changes yet.</div>' +
-          '<div class="rrc-li" ng-repeat="c in r.recce.list track by c.i" ng-class="{old: c.earlier, gone: c.gone}">' +
-            '<span class="rrc-k">{{ c.kind }}</span><span class="rrc-n">{{ c.n ? (\'#\' + c.n) : \'-\' }}</span><span class="rrc-km">{{ c.km !== undefined && c.km !== null ? c.km.toFixed(2) : \'\' }}</span>' +
-            '<span class="rrc-t">{{ c.text }}{{ c.earlier ? \' (earlier)\' : \'\' }}</span>' +
-            '<button class="rrb-btn" ng-click="cmd(\'recceUndoAt\', c.i)" title="take this change back">UNDO</button></div></div>' +
-        '<div class="rrc-pick" ng-if="r.recce.pending">' +
-          '<div class="rrc-dim">{{ r.recce.pending.mode === \'add\' ? \'NEW BOX HERE\' : \'RETAG BOX\' }}: symbols, danger, notes</div>' +
-          '<div class="rrc-row rrc-tabs"><button class="rrb-btn" ng-repeat="g in groups" ng-class="{on: ui.grp === g}" ng-click="setGrp(g)">{{ g === \'quick\' ? \'QUICK\' : g.toUpperCase() }}</button>' +
-            '<input class="rrc-find" ng-model="ui.find" ng-change="findSym()" placeholder="find symbol"></div>' +
-          '<div class="rrc-syms"></div>' +
-          '<div class="rrc-row"><span>DANGER</span><button class="rrb-btn" ng-repeat="d in [0,1,2,3]" ng-class="{on: r.recce.pending.danger === d}" ng-click="pick({danger: d})">{{ d ? \'!!!\'.substr(0, d) : \'0\' }}</button></div>' +
-          '<div class="rrc-row rrc-presets"><button class="rrb-btn" ng-repeat="p in r.recce.presets" ng-class="{on: hasNote(p)}" ng-click="pick({preset: p})">{{ p }}</button></div>' +
-          '<div class="rrc-row"><input class="rrc-notes" ng-model="ui.notes" ng-blur="pick({notes: ui.notes})" placeholder="notes (optional)" maxlength="120">' +
-          '<button class="rrb-btn on" ng-click="save()">SAVE</button><button class="rrb-btn" ng-click="cmd(\'recceCancel\')">CANCEL</button></div></div>' +
-      '</div>' +
       '<div class="rrb-list"></div>' +
       // stage / roadbook picker: a roadbook belongs to a stage, so choosing one loads that stage and its roadbook
       '<div class="rrb-overlay" ng-show="picker">' +
@@ -129,7 +87,6 @@ angular.module('beamng.apps')
         '<button class="rrb-btn" ng-click="cmd(\'boxNext\')" title="{{ kt(\'rallyRaid_boxNext\', \'box down\') }}">&#9660;</button> ' +
         '<button class="rrb-btn" ng-class="{on: r.manual}" ng-click="cmd(\'boxSync\')" title="{{ kt(\'rallyRaid_boxSync\', \'I am at this box: set the trip to its km\') }}">SYNC</button></span>' +
         '<span class="rrb-src" title="{{ r.roadbookFile }}">{{ r.roadbookFile ? r.roadbookFile.replace(\'/rallyraid/roadbooks/\', \'\') : \'stage boxes only\' }}</span>' +
-        '<button class="rrb-btn" ng-class="{on: r.recce}" ng-click="cmd(\'recce\')" title="{{ kt(\'rallyRaid_recce\', \'Recce mode on / off: record the line, mark and fix boxes as you drive\') }}">RECCE</button>' +
         '<button class="rrb-btn" ng-click="cmd(\'reloadRoadbook\')" title="re-read the roadbook file">&#8635;</button>' +
         '<button class="rrb-btn" ng-click="openStages()" title="choose a stage and its roadbook">BOOK</button></div>' +
       '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://stagebuilder.wyans.net and the project README.</p></details>' +
@@ -150,7 +107,7 @@ angular.module('beamng.apps')
         if (!v.length) { list.innerHTML = '<div class="rrb-empty">' + (scope.r.phase === 'idle' || !scope.r.stageId ? 'No stage loaded.<br>Press <b>BOOK</b> below to choose a roadbook,<br>or load a stage in the rally.raid Earth GPS app.' : 'This stage has no roadbook boxes.<br>Make a roadbook in the stage builder and save it as<br><b>rallyraid/roadbooks/' + esc(scope.r.stageId) + '.roadbook.json</b>') + '</div>'; return }
         list.innerHTML = v.map(function (b) { return boxHTML(R, b) }).join('')
       }
-      renderer(function (r) { R = r; lastSig = ''; scope.$evalAsync(function () { scope.groups = ['quick'].concat(R.GROUPS ? Object.keys(R.GROUPS) : []) }); draw() })
+      renderer(function (r) { R = r; lastSig = ''; draw() })
       scope.trip = function () { var t = scope.r.trip; return (typeof t === 'number' && isFinite(t)) ? t.toFixed(2) : '0.00' }
       scope.toNext = function () { var d = scope.r.toNextBox; return (typeof d === 'number' && isFinite(d)) ? (d < 1 ? Math.max(0, Math.round(d * 1000)) + ' m' : d.toFixed(2) + ' km') : '' }
       scope.bar = function () {
@@ -176,51 +133,10 @@ angular.module('beamng.apps')
       }
       scope.choose = function (st) { if (st && st.ok) scope.sp.path = st.path }
       scope.loadSel = function () { if (!scope.sp.path) return; scope.cmd('load', scope.sp.path); scope.picker = false }
-      // recce: quick-pick and merge
-      scope.ui = { rescale: false, notes: '', grp: 'quick', find: '' }
-      scope.pick = function (p) { scope.cmd('reccePick', p) }
-      scope.save = function () { if (scope.ui.notes) scope.pick({ notes: scope.ui.notes }); scope.cmd('recceSave'); scope.ui.notes = '' }
-      // MERGE: first a preview (what would apply, conflicts), then CONFIRM MERGE writes the roadbook file
-      scope.merge = function () { if (scope.r.recce && scope.r.recce.preview) scope.mergeConfirm(); else scope.cmd('reccePreview') }
-      scope.mergeConfirm = function () { scope.cmd('recceMerge', scope.ui.rescale ? 'rescale' : '') }
-      scope.hasNote = function (p) {
-        var n = (scope.r.recce && scope.r.recce.pending && scope.r.recce.pending.notes) || ''
-        return n.split(',').map(function (x) { return x.trim() }).indexOf(p) >= 0
-      }
-      // quick-pick tabs: QUICK (the recce's list) + the legend's groups; "find" searches the whole library by name
-      scope.groups = ['quick'].concat(R && R.GROUPS ? Object.keys(R.GROUPS) : [])
-      scope.setGrp = function (g) { scope.ui.grp = g; scope.ui.find = ''; drawPick() }
-      scope.findSym = function () { drawPick() }
-      function symList() {
-        var f = (scope.ui.find || '').toLowerCase()
-        if (f && R && R.GROUPS) {
-          var all = []
-          Object.keys(R.GROUPS).forEach(function (g) { R.GROUPS[g].forEach(function (c) { if (all.indexOf(c) < 0 && (c.indexOf(f) >= 0 || R.symbolName(c).toLowerCase().indexOf(f) >= 0)) all.push(c) }) })
-          return all
-        }
-        if (scope.ui.grp && scope.ui.grp !== 'quick' && R && R.GROUPS && R.GROUPS[scope.ui.grp]) return R.GROUPS[scope.ui.grp]
-        return arr(scope.r.recce.quick)
-      }
-      var symSig = ''
-      function drawPick() {
-        var host = element[0].querySelector('.rrc-syms')
-        var P = scope.r.recce && scope.r.recce.pending
-        if (!host || !P) { symSig = ''; return }
-        var q = symList(), on = arr(P.symbols)
-        var sig = JSON.stringify([q, on, !!R])
-        if (sig === symSig && host.childNodes.length) return
-        symSig = sig
-        host.innerHTML = q.map(function (c) { return '<span class="rrc-sym' + (on.indexOf(c) >= 0 ? ' on' : '') + '" data-c="' + esc(c) + '" title="' + esc(R && R.symbolName ? R.symbolName(c) : c) + '">' + (R ? R.symbolSVG(c, 26) : esc(c)) + '</span>' }).join('')
-      }
-      element[0].addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('.rrc-sym'); if (t) scope.pick({ symbol: t.getAttribute('data-c') }) })
       scope.$on('RallyRaidRoadbook', function (event, data) {
         scope.$evalAsync(function () {
           if (!data) return
-          var wasPending = scope.r.recce && scope.r.recce.pending
           scope.r = data; draw()
-          var P = data.recce && data.recce.pending
-          if (P && (!wasPending || (P.notes || '') !== (wasPending.notes || ''))) scope.ui.notes = P.notes || ''   // a preset changed the notes
-          setTimeout(drawPick, 0)
         })
       })
       function fit () {

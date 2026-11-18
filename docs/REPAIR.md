@@ -1,5 +1,7 @@
 # Repairs, the bivouac, recover car, game-crash resume and resets (rally.raid Earth v1)
 
+> 18 Nov 2026: there is no separate Repair app any more. Everything below that says "Repair app" is the **REPAIR panel in the GPS app** (MENU > REPAIR): the same buttons, the same Lua.
+
 How car repairs work in a rally.raid Earth stage, what they cost, how to get the car back on the route when it's stuck or
 rolled (**Recover car**), how to carry on after the **game** crashes (**Game-crash resume**), and what happens if the
 car is reset some other way.
@@ -72,13 +74,13 @@ Rolled into a ravine, stuck on a rock, or lost far off the route? **Recover car*
 route for a time penalty. It is the **one reset allowed in a stage**: BeamNG's own reset keys stay switched off.
 
 1. Stop the car (under 10 km/h) and press **MENU** > **RECOVER** in the GPS app, or **RECOVER CAR** in the repair menu.
-2. The Repair app (and, in short, the GPS app's menu) shows what it will cost before anything happens:
+2. The GPS app's REPAIR panel (MENU > REPAIR; and, in short, the GPS app's menu) shows what it will cost before anything happens:
    - the penalty, **+15 min** for your first recovery of the rally and **+30 min** for each one after that (the same
      penalty as a reset the app didn't make, and they share one count);
    - how many of your 3 recoveries / resets are used, how many are left after this one, and this stage's 0 of 1;
    - where the car goes: back on the route, 30 m behind where it got stuck, at the roadbook km shown;
    - which damage comes back: the car as it was at the last saved state, and how long ago that was.
-3. Press **CONFIRM RECOVERY** (Repair app), or **CONFIRM** in the GPS app's menu within 15 seconds. **CANCEL** leaves everything as it is.
+3. Press **CONFIRM RECOVERY** (REPAIR panel), or **CONFIRM** in the GPS app's menu within 15 seconds. **CANCEL** leaves everything as it is.
 4. The stage clock stops. The car is set down on the route, upright and facing the way the route goes, and the trip
    meter jumps to that place's roadbook km. Two seconds later the clock runs again and the penalty is added to your
    stage time.
@@ -131,14 +133,14 @@ kill), you don't lose the stage.
 
 The repair menu shows "saved to disk N s ago" under RECOVER CAR.
 
-**After the relaunch**, load the same stage (the GPS app's stage list or the planner). The Repair app shows
+**After the relaunch**, load the same stage (the GPS app's stage list or the planner). The GPS app's REPAIR panel shows
 **SAVED STAGE FOUND (GAME CRASH)** with *"Resume from last save (1:15:21 elapsed, saved 12 min ago)"*, what was saved
 (waypoints passed, penalties, spares, recoveries) and roughly how much driving after the save was lost.
 - **RESUME** (or, in the GPS app's menu, which opens by itself when a save is found, **RESUME** then **CONFIRM RESUME**): if another car is out, the saved car (same model and part config) is
   spawned first. The car is put back exactly where it was saved, facing the same way (BeamNG.Earth's teleport first if
   that part of the world isn't loaded), with its saved damage, flat tyres and fuel. The stage clock, waypoints,
   penalties, spares, repairs, recoveries / resets and the trip meter all come back as saved.
-- The **clock is held** at the saved time (**HELD** in the bar) until you drive off, or press **GO** (Repair app
+- The **clock is held** at the saved time (**HELD** in the bar) until you drive off, or press **GO** (the REPAIR panel
   or the GPS app's menu).
 - **DISCARD** (asks "Really discard?") deletes the save. Drive to the DSS to run the stage again from scratch. Starting
   the stage without resuming discards the save as well.

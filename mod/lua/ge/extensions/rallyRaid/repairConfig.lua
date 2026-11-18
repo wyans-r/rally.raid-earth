@@ -79,7 +79,7 @@ M.resume = {
 
 ------------------------------------------------------------------------------------------------------------------
 -- RECOVER CAR (rallyRaid/resume.lua): the one reset allowed in a stage (Wyans 2026-11-16). The car is stuck, rolled or
--- lost off the route while the game runs: the driver asks for it (RECOVER in the GPS app or RECOVER CAR in the Repair app), it
+-- lost off the route while the game runs: the driver asks for it (RECOVER in the GPS app, or RECOVER CAR in its MENU > REPAIR panel), it
 -- costs the M.resume penalty above (15 min first, then 30 min) and counts in the same resume / reset log and limits
 -- (3 per rally, 1 per stage, none within 1 km of the ASS). These are the mechanics. BeamNG's own reset keys stay
 -- blocked in stages. docs/REPAIR.md "Recover car" explains it to players.
