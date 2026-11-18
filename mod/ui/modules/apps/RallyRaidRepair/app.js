@@ -13,8 +13,23 @@
 angular.module('beamng.apps')
 .directive('rallyRaidRepair', [function () {
   var W = 360, H = 300
+  var APP = 'repair'
   function lua(cmd) { if (window.bngApi) bngApi.engineLua(cmd) }
-  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'" }
+  // a Lua string literal (quotes, backslashes and line breaks escaped)
+  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r') + "'" }
+  // a line in the game's console (~), "[rally.raid Earth] UI <app>: ..." (says so when rallyRaid_core is not loaded)
+  function rlog(msg) {
+    try { console.log('[rally.raid Earth] ' + APP + ': ' + msg) } catch (e) {}
+    lua('if rallyRaid_core and rallyRaid_core.uiLog then rallyRaid_core.uiLog(' + q(APP) + ', ' + q(msg) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + msg + ' -- rallyRaid_core is NOT loaded (mod off, or a Lua error when it loaded: see above)') + ') end')
+  }
+  // a command for rallyRaid_core.cmd (logged in Lua with this app's name)
+  function cmdCode(name, arg) {
+    return 'if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + ', ' + (arg !== undefined ? q(arg) : 'nil') + ', ' + q(APP) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + name + ' pressed, but rallyRaid_core is NOT loaded') + ') end'
+  }
+  // hello: the app is on screen (again every 3 s: Lua may have been reloaded, or loaded after this app)
+  function hello(on) { lua('if rallyRaid_core and rallyRaid_core.appHello then rallyRaid_core.appHello(' + q(APP) + ', ' + (on ? 'true' : 'false') + ') end') }
   function hm(min) { min = Math.max(0, Math.round(min || 0)); return Math.floor(min / 60) + ':' + ('0' + min % 60).slice(-2) }
   function hms(s) { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 3600) + ':' + ('0' + Math.floor(s / 60) % 60).slice(-2) + ':' + ('0' + s % 60).slice(-2) }
   function ago(s) {
@@ -31,7 +46,7 @@ angular.module('beamng.apps')
     '<div class="rrr" ng-style="{transform: \'scale(\' + k + \')\'}">' +
       // the always-visible bar
       '<div class="rrr-bar" ng-click="toggle()">' +
-        '<span class="t">{{ modeText() }}</span>' +
+        '<button class="rrr-btn rrr-open" ng-click="toggle(); $event.stopPropagation()">{{ st.open ? \'CLOSE\' : modeText() }}</button>' +
         '<span ng-show="st.mode === \'stage\'">SPARES {{ st.spares.max - st.spares.used }}/{{ st.spares.max }}</span>' +
         '<span ng-show="st.mode === \'bivouac\' && st.bivouac" ng-class="{\'rrr-pen\': st.bivouac.overMin > 0}">LEFT {{ hm(st.bivouac.leftMin) }}</span>' +
         '<span ng-class="{\'rrr-pen\': st.resumes.rally >= st.resumes.max}" title="car recoveries and resets used in the rally">RESETS {{ st.resumes.rally || 0 }}/{{ st.resumes.max || 3 }}</span>' +
@@ -39,6 +54,8 @@ angular.module('beamng.apps')
         '<span class="rrr-held" ng-show="gr.hold && !gr.busy" title="the stage clock is held at the saved time until you drive off">HELD</span>' +
         '<span class="rrr-review" ng-show="gr.flagged" title="resumed after a game crash: flagged for organizer review">REVIEW</span>' +
         '<span class="k" ng-show="keys.rallyRaid_repairMenu && !rs.busy && !gr.busy && !gr.hold && !gr.flagged">{{ keys.rallyRaid_repairMenu }}</span></div>' +
+      // closed: what the menu would offer now (the app is never just an empty bar)
+      '<div class="rrr-hint" ng-show="!st.open && !rsShown() && !grShown()">{{ hintText() }}</div>' +
       // game-crash resume: the saved stage offered, the resume running, the clock held, the outcome
       '<div class="rrr-resume rrr-game" ng-show="grShown()">' +
         '<div class="rrr-rtitle" ng-class="{bad: gr.offer && gr.offer.policy && gr.offer.policy.refused}">{{ grTitle() }}</div>' +
@@ -166,8 +183,22 @@ angular.module('beamng.apps')
         if (!o.enabled) return
         scope.sel.ids[o.id] = !scope.sel.ids[o.id]
       }
-      scope.cmd = function (name, arg) { lua('if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + (arg !== undefined ? ', ' + q(arg) : '') + ') end') }
-      scope.toggle = function () { scope.cmd('repairMenu') }
+      scope.cmd = function (name, arg) { lua(cmdCode(name, arg)) }
+      // the bar / its button: opens or closes at once here, and tells Lua (which sends the options back)
+      scope.toggle = function () {
+        var open = !scope.st.open
+        scope.st.open = open
+        rlog('bar ' + (open ? 'OPEN' : 'CLOSE') + ' pressed (mode ' + scope.st.mode + ')')
+        scope.cmd(open ? 'repairOpen' : 'repairClose')
+      }
+      scope.hintText = function () {
+        var m = scope.st.mode
+        if (m === 'stage') return 'Stage running: stop the car, then ' + modeBtn() + ' for wheels, suspension and radiator (time is added to the stage). RECOVER CAR is in the menu too.'
+        if (m === 'bivouac') return 'Bivouac open: ' + modeBtn() + ' for the whole-car repair and the engine change (from the bivouac time).'
+        if (scope.st.retired) return 'Retired from the rally: no repairs.'
+        return 'No repairs now. They open in a running stage (car stopped) and at the bivouac after a stage. ' + modeBtn() + ' shows the menu.'
+      }
+      function modeBtn() { return scope.modeText() }
       // the player's keys (only actions that have one): kt -> 'text (key)'; keyText -> ' (key)' or ''
       scope.keys = {}
       scope.kt = function (action, text) { var k = scope.keys[action]; return k ? text + ' (' + k + ')' : text }
@@ -265,8 +296,11 @@ angular.module('beamng.apps')
       }
       var fitTimer = setInterval(fit, 500)
       fit()
+      rlog('app init (Repair)')
+      hello(true)
+      var helloTimer = setInterval(function () { hello(true) }, 3000)
       scope.cmd('repairAppHere')
-      scope.$on('$destroy', function () { clearInterval(fitTimer) })
+      scope.$on('$destroy', function () { clearInterval(fitTimer); clearInterval(helloTimer); hello(false) })
     }
   }
 }]);

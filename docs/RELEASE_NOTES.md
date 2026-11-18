@@ -67,7 +67,6 @@ These are in this download but have **not been tested in game yet**. They may no
 - **Recce mode**: the RECCE panel on the Roadbook app.
 - **Your own keys in the apps**: the apps show the key you bound instead of the default.
 - **Rally mode**: the rally.raid Earth Rally app, for multi-day rallies. You drive each liaison against a time allowance or teleport (the whole allowance is then counted). There is bivouac repair time, marathon refuges and rest days, and the app keeps your cumulative time. Buttons only. No rally files ship in this zip yet.
-- **Ctrl+Shift keys**: not yet checked whether a Ctrl+Shift key also fires BeamNG's own action for the plain key. If it does, rebind it.
 
 ## Bugs
 

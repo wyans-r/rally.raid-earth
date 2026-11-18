@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import sys
 import zipfile
 from pathlib import Path
@@ -124,6 +125,8 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
         "ui/modules/apps/RallyRaidPlanner/app.js",
         "ui/modules/apps/RallyRaidRepair/app.js",
         "rallyraid/stages/moab-sand-flats-ss1.json",
+        "settings/ui_apps/originalLayouts/default/rallyRaidEarth.uilayout.json",
+        "settings/ui_apps/originalLayouts/default/rallyRaidEarthPlanner.uilayout.json",
     ]
     have = {rel for _, rel in files}
     missing = [n for n in needed if n not in have]
@@ -140,7 +143,13 @@ def build(output: Path, include_events: bool, include_rally: bool = False, inclu
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path, rel in files:
             # arcname is the path inside the zip: no wrapper folder
-            zf.write(path, arcname=rel)
+            if rel.endswith(".uilayout.json") and not include_rally:
+                # the GPS "RALLY LAYOUT" layout lists the Rally app: drop it from a build without rally mode
+                doc = json.loads(path.read_text(encoding="utf-8"))
+                doc["apps"] = [a for a in doc.get("apps", []) if "rallyRaidRally" not in json.dumps(a)]
+                zf.writestr(rel, json.dumps(doc, indent=2))
+            else:
+                zf.write(path, arcname=rel)
 
     if not include_rally and any(rel.startswith(p) or rel == p for rel in have for p in RALLY_PREFIXES):
         raise SystemExit("zip still contains rally mode files")

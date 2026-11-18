@@ -17,8 +17,22 @@ angular.module('beamng.apps')
     return Math.floor(s / 3600) + ':' + ('0' + Math.floor(s / 60) % 60).slice(-2) + ':' + ('0' + s % 60).slice(-2)
   }
   function dist(m) { if (!isFinite(m)) return ''; return m >= 1000 ? (m / 1000).toFixed(2) + ' km' : Math.round(m) + ' m' }
+  var APP = 'gps'
   function lua(cmd) { if (window.bngApi) bngApi.engineLua(cmd) }
-  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'" }
+  // a Lua string literal (quotes, backslashes and line breaks escaped)
+  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r') + "'" }
+  // a line in the game's console (~), "[rally.raid Earth] UI gps: ...": app init, local buttons, errors. If the mod's Lua
+  // (rallyRaid_core) is not loaded, the line says so (the cause is then a Lua error higher up in the console)
+  function rlog(msg) {
+    try { console.log('[rally.raid Earth] ' + APP + ': ' + msg) } catch (e) {}
+    lua('if rallyRaid_core and rallyRaid_core.uiLog then rallyRaid_core.uiLog(' + q(APP) + ', ' + q(msg) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + msg + ' -- rallyRaid_core is NOT loaded (mod off, or a Lua error when it loaded: see above)') + ') end')
+  }
+  // a command for rallyRaid_core.cmd (logged in Lua with this app's name)
+  function cmdCode(name, arg) {
+    return 'if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + ', ' + (arg !== undefined ? q(arg) : 'nil') + ', ' + q(APP) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + name + ' pressed, but rallyRaid_core is NOT loaded') + ') end'
+  }
 
   return {
     template:
@@ -94,10 +108,20 @@ angular.module('beamng.apps')
         '<div class="rrg-mrow"><div class="rrg-mtext">{{ rsText() }}</div>' +
           '<button class="rrg-btn small" ng-show="rsArmed()" ng-click="cmd(\'recoverCancel\')">CANCEL</button>' +
           '<button class="rrg-btn warn" ng-click="cmd(\'recoverKey\')" ng-disabled="s.phase !== \'running\' || rs.enabled === false || rs.busy" title="{{ kt(\'rallyRaid_recoverCar\', \'press twice: see the penalty, then confirm\') }}">{{ rsArmed() ? \'CONFIRM\' : \'RECOVER\' }}</button></div>' +
-        '<div class="rrg-mrow"><div class="rrg-mtext">Repair menu (Repair app)</div>' +
-          '<button class="rrg-btn" ng-click="cmd(\'repairMenu\'); menu = false" title="{{ kt(\'rallyRaid_repairMenu\', \'open / close the repair menu\') }}">REPAIR</button></div>' +
-        '<div class="rrg-mrow"><div class="rrg-mtext">Stage &amp; roadbook planner (Planner app)</div>' +
-          '<button class="rrg-btn" ng-click="cmd(\'plannerMenu\'); menu = false" title="{{ kt(\'rallyRaid_plannerMenu\', \'open / close the planner\') }}">PLANNER</button></div>' +
+        // crash saves on disk with no stage offering one: LOAD that stage (its RESUME offer follows)
+        '<div class="rrg-mrow hot" ng-repeat="p in gr.pending track by $index" ng-show="!gr.offer && !gr.busy"><div class="rrg-mtext"><b>CRASH SAVE</b> {{ p.stageName || p.stageId }}: {{ p.elapsed }} driven, saved {{ p.ago }} ago' +
+            '<span ng-show="p.loaded" class="rrg-pen"><br>loaded, but the save does not match this stage file (see the console, ~)</span></div>' +
+          '<button class="rrg-btn go" ng-click="loadSaved(p)" ng-disabled="!p.stagePath || p.loaded" title="load this stage: RESUME is offered next">LOAD</button></div>' +
+        '<div class="rrg-mrow"><div class="rrg-mtext">Repair menu <small ng-hide="appOn(\'repair\')">(Repair app not on screen)</small></div>' +
+          '<button class="rrg-btn" ng-click="openApp(\'repair\')" title="{{ kt(\'rallyRaid_repairMenu\', \'open the repair menu in the Repair app\') }}">REPAIR</button></div>' +
+        '<div class="rrg-mrow"><div class="rrg-mtext">Stage &amp; roadbook planner <small ng-hide="appOn(\'planner\')">(Planner app not on screen)</small></div>' +
+          '<button class="rrg-btn" ng-click="openApp(\'planner\')" title="{{ kt(\'rallyRaid_plannerMenu\', \'open the planner in the Planner app\') }}">PLANNER</button></div>' +
+        '<div class="rrg-mrow hot" ng-show="note"><div class="rrg-mtext">{{ note }}</div>' +
+          '<button class="rrg-btn small" ng-click="note = \'\'">OK</button></div>' +
+        '<div class="rrg-mrow"><div class="rrg-mtext">App layout (adds the apps)</div><span>' +
+          '<button class="rrg-btn small" ng-click="layout(\'Rally\')" title="GPS, Roadbook, Repair, Rally">RALLY LAYOUT</button>' +
+          '<button class="rrg-btn small" ng-click="layout(\'Planner\')" title="GPS, Roadbook, Planner">PLANNER LAYOUT</button>' +
+          '<button class="rrg-btn small" ng-click="layout(\'Back\')" title="the layout you had before">MY LAYOUT</button></span></div>' +
         '<div class="rrg-msg" style="margin-top:auto" ng-show="keys.rallyRaid_tripPlus || keys.rallyRaid_boxSync">Driving keys: trip {{ keys.rallyRaid_tripPlus || \'-\' }} / {{ keys.rallyRaid_tripMinus || \'-\' }}, W {{ keys.rallyRaid_wPlus || \'-\' }} / {{ keys.rallyRaid_wMinus || \'-\' }}, box {{ keys.rallyRaid_boxPrev || \'-\' }} / {{ keys.rallyRaid_boxNext || \'-\' }}, sync {{ keys.rallyRaid_boxSync || \'-\' }}</div>' +
       '</div>' +
       // stage picker
@@ -153,14 +177,28 @@ angular.module('beamng.apps')
         if (scope.s.phase === 'idle') return 'STAGES to load a stage'
         return ''
       }
-      scope.cmd = function (name, arg) {
-        lua('if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + (arg !== undefined ? ', ' + q(arg) : '') + ') end')
+      scope.cmd = function (name, arg) { lua(cmdCode(name, arg)) }
+      // which rally.raid Earth apps are on screen (Lua hears each app's hello: s.apps); unknown (older Lua) = assume yes
+      scope.appOn = function (name) { var a = scope.s && scope.s.apps; return !a || a[name] !== false }
+      var TITLES = { repair: 'rally.raid Earth Repair', planner: 'rally.raid Earth Planner' }
+      scope.note = ''
+      // REPAIR / PLANNER: open that app's menu; BeamNG has no call to add an app to the screen, so without the app the
+      // menu says how (ESC > UI Apps > Add app, or one of the mod's layouts) and the menu opens once the app is there
+      scope.openApp = function (name) {
+        var on = scope.appOn(name)
+        rlog('MENU ' + name.toUpperCase() + ' pressed (' + TITLES[name] + ' app ' + (on ? 'on screen' : 'NOT on screen') + ')')
+        scope.cmd(name + 'Open')
+        if (on) { scope.menu = false; scope.note = '' }
+        else scope.note = 'The ' + TITLES[name] + ' app is not on your screen. Add it with ESC > UI Apps > Add app > ' + TITLES[name] +
+          ', or press ' + (name === 'planner' ? 'PLANNER' : 'RALLY') + ' LAYOUT below. Its menu is already open for when it shows.'
       }
+      scope.layout = function (which) { rlog('MENU layout ' + which); scope.cmd('apps' + which); scope.note = '' }
+      scope.loadSaved = function (p) { rlog('MENU crash save LOAD ' + p.stagePath); scope.cmd('load', p.stagePath) }
       // MENU state: recover car (RallyRaidRecover), crash resume (RallyRaidGameResume), the player's keys (RallyRaidKeys)
       var CONFIRM_MS = 15000            // repairConfig confirmS: a second press within this confirms
       scope.menu = false; scope.rs = {}; scope.gr = {}; scope.keys = {}
       var rsAskAt = 0, grArmAt = 0
-      scope.openMenu = function () { scope.menu = !scope.menu; if (scope.menu) { scope.picker = false; scope.cmd('recoverState'); scope.cmd('gameResumeState') } }
+      scope.openMenu = function () { scope.menu = !scope.menu; rlog('MENU ' + (scope.menu ? 'opened' : 'closed')); if (scope.menu) { scope.picker = false; scope.note = ''; scope.cmd('recoverState'); scope.cmd('gameResumeState') } }
       scope.kt = function (action, text) { var k = scope.keys[action]; return k ? text + ' (' + k + ')' : text }
       scope.rsArmed = function () { var a = scope.rs.ask; return !!(a && a.allowed && !scope.rs.busy && Date.now() - rsAskAt < CONFIRM_MS) }
       scope.rsText = function () {
@@ -186,6 +224,8 @@ angular.module('beamng.apps')
       scope.$on('RallyRaidGameResume', function (event, data) { scope.$evalAsync(function () {
         var d = data || {}
         if (d.keyArmed && !scope.gr.keyArmed) grArmAt = Date.now()
+        d.pending = Array.isArray(d.pending) ? d.pending : (d.pending ? Object.values(d.pending) : [])
+        if (d.offer && !scope.gr.offer) rlog('crash save offered: ' + (d.offer.text || ''))
         scope.gr = d
         if ((d.offer || d.hold) && !scope.gr_seen) { scope.gr_seen = true; scope.menu = true }   // a save to resume: show it
         if (!d.offer && !d.hold) scope.gr_seen = false
@@ -234,9 +274,13 @@ angular.module('beamng.apps')
       }
       var fitTimer = setInterval(fit, 500)
       fit()
-      lua('if rallyRaid_core then rallyRaid_core.requestState() end')
-      scope.cmd('recoverState'); scope.cmd('gameResumeState')
-      scope.$on('$destroy', function () { clearInterval(fitTimer); lua('if rallyRaid_core then rallyRaid_core.tripHold(0) end') })
+      // hello: the app is on screen (again every 3 s: Lua may have been reloaded, or loaded after this app)
+      function hello(on) { lua('if rallyRaid_core and rallyRaid_core.appHello then rallyRaid_core.appHello(' + q(APP) + ', ' + (on ? 'true' : 'false') + ') end') }
+      rlog('app init (GPS ' + (window.angular && angular.version ? 'angular ' + angular.version.full : '') + ')')
+      hello(true)
+      var helloTimer = setInterval(function () { hello(true) }, 3000)
+      scope.cmd('hello')
+      scope.$on('$destroy', function () { clearInterval(fitTimer); clearInterval(helloTimer); hello(false); lua('if rallyRaid_core then rallyRaid_core.tripHold(0) end') })
     }
   }
 }]);

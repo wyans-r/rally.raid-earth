@@ -117,12 +117,13 @@ test('/mod page marks every feature not yet tested in game as EXPERIMENTAL / UNT
   const block = html.match(/<ul id="experimental-list">([\s\S]*?)<\/ul>/)
   assert.ok(block, 'experimental list missing')
   const items = block[1].split('<li>').slice(1).map((x) => x.replace(/<[^>]+>/g, '').trim())
-  for (const f of ['Repair', 'Recover car', 'Crash resume', 'Planner', 'GPS MENU', 'Recce mode', 'Your own keys in the apps', 'Rally mode', 'Ctrl+Shift keys']) {
+  for (const f of ['Repair', 'Recover car', 'Crash resume', 'Planner', 'GPS MENU', 'Recce mode', 'Your own keys in the apps', 'Rally mode']) {
     const it = items.find((x) => x.includes(f))
     assert.ok(it, 'experimental list should name ' + f)
     assert.match(it, /^EXPERIMENTAL \/ UNTESTED/)
   }
-  assert.equal(items.length, 9)
+  assert.equal(items.length, 8)
+  assert.ok(!items.some((x) => x.includes('Ctrl+Shift')), 'Ctrl+Shift keys were checked in game (17 Nov): not experimental any more')
   const btn = html.match(/<h3>Buttons \(no default key\)<\/h3>[\s\S]*?<\/table>/)[0]
   const rows = btn.split('<tr>').slice(1)
   assert.equal(rows.length, 7)

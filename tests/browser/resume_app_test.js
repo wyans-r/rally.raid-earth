@@ -6,7 +6,7 @@
 // penalty lines, the clock held with GO, REVIEW in the bar, the stage-retired case, the "saved to disk" line.
 // Screenshot resume_app.png. Prints PASS / FAIL lines.
 const puppeteer = require('puppeteer-core'), fs = require('fs'), http = require('http'), path = require('path')
-const ROOT = '/workspace/rallyraid'
+const ROOT = path.resolve(__dirname, '..', '..')
 const srv = http.createServer((q, r) => {
   let u = q.url.split('?')[0]
   let f = u.startsWith('/ui/') ? path.join(ROOT, 'mod', u) : path.join(ROOT, u)
@@ -40,7 +40,7 @@ const shown = (page, sel) => page.$eval(sel, e => getComputedStyle(e).display !=
   await page.click('#a .rrr-rec .rrr-btn.rgo')
   await page.click('#a .rrr-rec .rrr-rfoot .rrr-btn:last-child')
   const ca = await page.evaluate(() => calls.slice())
-  check(ca.some(c => c.includes("cmd('recoverConfirm')")) && ca.some(c => c.includes("cmd('recoverCancel')")), 'a: CONFIRM and CANCEL send recoverConfirm / recoverCancel: ' + JSON.stringify(ca))
+  check(ca.some(c => c.includes("cmd('recoverConfirm'")) && ca.some(c => c.includes("cmd('recoverCancel'")), 'a: CONFIRM and CANCEL send recoverConfirm / recoverCancel: ' + JSON.stringify(ca))
   check(/RESETS 0\/3/.test(await page.$eval('#a .rrr-bar', e => e.textContent)), 'a: bar still shows the rally count')
   // b: refused, retire offered
   const b = await txt('b')
@@ -49,7 +49,7 @@ const shown = (page, sel) => page.$eval(sel, e => getComputedStyle(e).display !=
   check(await page.$eval('#b .rrr-rec .rrr-btn.bad', e => e.textContent) === 'RETIRE STAGE', 'b: RETIRE STAGE offered')
   await page.evaluate(() => { calls.length = 0 })
   await page.click('#b .rrr-rec .rrr-btn.bad')
-  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('recoverRetire')")), 'b: RETIRE sends resumeRetire')
+  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('recoverRetire'")), 'b: RETIRE sends resumeRetire')
   // c: sure?
   const c = await txt('c')
   check(/within 1000 m of the ASS/.test(c) && /Really retire this stage/.test(c), 'c: the 1 km rule, asks "really retire?"')
@@ -71,7 +71,7 @@ const shown = (page, sel) => page.$eval(sel, e => getComputedStyle(e).display !=
   const btn = await page.$$eval('#f .rrr-panel .rrr-btn.bad', x => x.map(b => b.textContent))
   check(btn.includes('RECOVER CAR'), 'f: RECOVER CAR button in the stage menu')
   await page.click('#f .rrr-panel .rrr-btn.bad')
-  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('recoverAsk')")), 'f: it sends recoverAsk')
+  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('recoverAsk'")), 'f: it sends recoverAsk')
   // f: the "saved to disk" line under it
   check(/saved to disk 12 s ago/.test(await page.$eval('#f .rrr-save', e => e.innerText)), 'f: saved to disk 12 s ago (game-crash save)')
   check(/stuck or rolled\? back on the route, \+15 \/ 30 min/.test(await page.$eval('#f .rrr-rrow', e => e.innerText)), 'f: says what RECOVER CAR costs')
@@ -94,9 +94,9 @@ const shown = (page, sel) => page.$eval(sel, e => getComputedStyle(e).display !=
     return !!b
   }, slot, text)
   await clickText('g', 'RESUME')
-  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('gameResumeResume')")), 'g: RESUME sends gameResumeResume')
+  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('gameResumeResume'")), 'g: RESUME sends gameResumeResume')
   await clickText('g', 'DISCARD')
-  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('gameResumeDiscard')")), 'g: DISCARD sends gameResumeDiscard')
+  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('gameResumeDiscard'")), 'g: DISCARD sends gameResumeDiscard')
   const hG = await page.$eval('#g .rrr', e => { const r = e.querySelector('.rrr-game').getBoundingClientRect(), o = e.getBoundingClientRect(); return r.bottom - o.top })
   check(hG <= 300, 'g: the offer fits in the app (' + Math.round(hG) + ' px of 300)')
   // h: discard asks first; the older save; official rules +15 min
@@ -117,7 +117,7 @@ const shown = (page, sel) => page.$eval(sel, e => getComputedStyle(e).display !=
   check(/HELD/.test(ib) && /REVIEW/.test(ib) && !/Ctrl\+Shift\+F/.test(ib), 'i: bar shows HELD and REVIEW')
   await page.evaluate(() => { calls.length = 0 })
   await clickText('i', 'GO')
-  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('gameResumeGo')")), 'i: GO sends gameResumeGo')
+  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('gameResumeGo'")), 'i: GO sends gameResumeGo')
   // j: resuming
   const j = await gtxt('j')
   check(/RESUMING THE SAVED STAGE/.test(j) && /clock is stopped/.test(j) && !(await shown(page, '#j .rrr-game .rrr-rfoot')), 'j: running, no buttons')

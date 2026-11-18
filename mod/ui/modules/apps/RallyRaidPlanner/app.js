@@ -14,6 +14,23 @@ angular.module('beamng.apps')
   var BASE = '/ui/modules/apps/RallyRaidPlanner/', RBASE = '/ui/modules/apps/RallyRaidRoadbook/'
   var STAGE_DIR = '/rallyraid/stages/', RB_DIR = '/rallyraid/roadbooks/', DRAFT_DIR = '/rallyraid/planner/drafts/', DRIVE_DIR = '/rallyraid/planner/drive/'
   var CHUNK = 30000
+  var APP = 'planner'
+  function lua(code) { if (window.bngApi) bngApi.engineLua(code) }
+  // a Lua string literal (quotes, backslashes and line breaks escaped)
+  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r') + "'" }
+  // a line in the game's console (~), "[rally.raid Earth] UI <app>: ..." (says so when rallyRaid_core is not loaded)
+  function rlog(msg) {
+    try { console.log('[rally.raid Earth] ' + APP + ': ' + msg) } catch (e) {}
+    lua('if rallyRaid_core and rallyRaid_core.uiLog then rallyRaid_core.uiLog(' + q(APP) + ', ' + q(msg) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + msg + ' -- rallyRaid_core is NOT loaded (mod off, or a Lua error when it loaded: see above)') + ') end')
+  }
+  // a command for rallyRaid_core.cmd (logged in Lua with this app's name)
+  function cmdCode(name, arg) {
+    return 'if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + ', ' + (arg !== undefined ? q(arg) : 'nil') + ', ' + q(APP) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + name + ' pressed, but rallyRaid_core is NOT loaded') + ') end'
+  }
+  // hello: the app is on screen (again every 3 s: Lua may have been reloaded, or loaded after this app)
+  function hello(on) { lua('if rallyRaid_core and rallyRaid_core.appHello then rallyRaid_core.appHello(' + q(APP) + ', ' + (on ? 'true' : 'false') + ') end') }
   // the recce quick-pick (rallyRaid/recce.lua M.QUICK)
   var QUICK = ['jump', 'crest', 'bump', 'compression', 'dip', 'ditch', 'step_down', 'hole', 'ruts', 'undulations', 'twisty',
     'soft_sand', 'dunes', 'rocks', 'danger', 'keep_left', 'keep_right', 'narrow', 'water', 'climb', 'descent', 'sideslope_l',
@@ -51,7 +68,7 @@ angular.module('beamng.apps')
       bngApi.engineLua(code, function (r) { if (done) return; done = true; clearTimeout(t); resolve(r) })
     })
   }
-  function cmd(name) { if (window.bngApi) bngApi.engineLua('if rallyRaid_core then rallyRaid_core.cmd(\'' + name + '\') end') }
+  function cmd(name, arg) { lua(cmdCode(name, arg)) }
   async function readText(path) {
     var o = await callLua('readOpen', { path: path })
     if (!o || !o.ok) return null
@@ -74,10 +91,18 @@ angular.module('beamng.apps')
     '<div class="rpl" ng-style="{transform: \'scale(\' + k + \')\'}">',
     // the bar (always there): click (or PLANNER in the GPS app) opens / closes
     '<div class="rpl-bar" ng-click="toggle()" title="{{ kt(\'rallyRaid_plannerMenu\', \'Open / close the planner\') }}">',
-      '<span class="t">PLANNER</span><span class="nm">{{ v.name || \'no stage open\' }}{{ v.dirty ? \' *\' : \'\' }}</span>',
+      '<button class="rpl-btn rpl-open" ng-click="toggle(); $event.stopPropagation()">{{ g.open ? \'CLOSE\' : \'PLANNER\' }}</button><span class="nm">{{ barName() }}{{ v.dirty ? \' *\' : \'\' }}</span>',
       '<span title="Recording the driven line"><span class="rpl-dot" ng-class="{on: g.rec.on}"></span> {{ g.rec.on ? (g.rec.km.toFixed(2) + \' km\') : \'\' }}</span>',
       '<span class="k" ng-show="keys.rallyRaid_plannerMenu">{{ keys.rallyRaid_plannerMenu }}</span></div>',
+    // closed: what OPEN gives (never just an empty bar)
+    '<div class="rpl-hint" ng-show="!g.open">{{ g.game && g.game.stageName ? (\'The game has \' + g.game.stageName + \' loaded: PLANNER, then EDIT LOADED STAGE to change it.\') : \'PLANNER opens the planner: start a NEW STAGE HERE at the car, or open a stage file.\' }}</div>',
     '<div class="rpl-panel" ng-show="g.open">',
+    // no planner stage yet: the ways in (the game's loaded stage, a new one at the car, a file)
+    '<div class="rpl-start" ng-show="!v.hasStage">',
+      '<div class="rpl-dim">No stage open in the planner.</div>',
+      '<div class="rpl-row"><button class="rpl-btn go" ng-show="g.game && g.game.path" ng-click="openLoaded()" ng-disabled="busy">EDIT LOADED STAGE: {{ g.game.stageName }}</button>',
+        '<button class="rpl-btn go" ng-click="newHere()" ng-disabled="busy" title="a new stage, its start (DSS) at the car">NEW STAGE HERE</button>',
+        '<button class="rpl-btn" ng-click="tab(\'files\')">OPEN A FILE</button></div></div>',
       '<div class="rpl-row sp"><span class="rpl-gps" ng-class="{bad: !g.pose.ok}">{{ gpsText() }}</span>',
         '<button class="rpl-btn rec" ng-class="{on: g.rec.on}" ng-click="rec()" title="Record the driven line: the leg to the next point you add follows where you drove{{ keyText(\'rallyRaid_plannerRec\') }}">&#9679; REC</button></div>',
       '<div class="rpl-tabs"><button class="rpl-btn" ng-class="{on: ui.tab === \'route\'}" ng-click="tab(\'route\')">ROUTE</button>',
@@ -324,7 +349,30 @@ angular.module('beamng.apps')
       }
       scope.netText = function () { return D.net === null ? '' : D.net ? 'internet: yes' : 'internet: no (offline roadbook)' }
       scope.rec = function () { callLua('rec', { on: !scope.g.rec.on }).then(function (r) { apply(function () { scope.g.rec.on = r && r.on }) }).catch(function (e) { say(e.message, 'err') }) }
-      scope.toggle = function () { cmd('plannerMenu') }
+      // the bar / its button: opens or closes at once here, and tells Lua (which keeps it across the UI being reloaded)
+      scope.toggle = function () {
+        var open = !scope.g.open
+        scope.g.open = open
+        rlog('bar ' + (open ? 'OPEN' : 'CLOSE') + ' pressed' + (scope.g.game && scope.g.game.stageName ? ' (game stage: ' + scope.g.game.stageName + ')' : ''))
+        cmd(open ? 'plannerOpen' : 'plannerClose')
+        if (open) refresh()
+      }
+      scope.barName = function () {
+        if (scope.v.name) return scope.v.name
+        var gm = scope.g.game || {}
+        return gm.stageName ? 'game: ' + gm.stageName + ' (not open here)' : 'no stage open'
+      }
+      // the stage the GPS loaded, opened here (the same file list the GPS uses: rallyraid/stages)
+      scope.openLoaded = function () {
+        var gm = scope.g.game || {}
+        if (!gm.path) return say('No stage is loaded in the game.', 'err')
+        rlog('EDIT LOADED STAGE ' + gm.path)
+        callLua('list').then(function (r) {
+          var f = arr(r && r.stages).find(function (x) { return x.path === gm.path || String(x.path).replace(/\\/g, '/').toLowerCase() === String(gm.path).replace(/\\/g, '/').toLowerCase() })
+          return scope.open(f || { ok: true, path: gm.path, roadbook: null })
+        }).catch(function (e) { say('Could not open the loaded stage: ' + (e && e.message || e), 'err') })
+      }
+      scope.newHere = function () { rlog('NEW STAGE HERE'); scope.ui.addType = 'DSS'; scope.ui.tab = 'route'; scope.addHere() }
       scope.tab = function (t) { scope.ui.tab = t; if (t === 'files') scope.listFiles(); if (t === 'roadbook' && D.net === null) checkNet(); refresh() }
       function checkNet() { return PC.probeOnline(window.fetch && window.fetch.bind(window)).then(function (on) { D.net = on; apply(); return on }) }
       function ensureStage() {
@@ -517,13 +565,21 @@ angular.module('beamng.apps')
       }
 
       // ---------------------------------------------------------------- the game
-      scope.$on('RallyRaidPlanner', function (event, data) {
+      function onState(data) {
         if (!data) return
         scope.$evalAsync(function () {
-          var was = scope.g.open
-          scope.g = data; scope.g.pose = data.pose || { ok: false }; scope.g.rec = data.rec || { on: false, km: 0 }
+          var was = scope.g.open, before = (scope.g.game || {}).stageId
+          scope.g = data; scope.g.pose = data.pose || { ok: false }; scope.g.rec = data.rec || { on: false, km: 0 }; scope.g.game = data.game || {}
+          if (scope.g.game.stageId !== before) rlog('game stage: ' + (scope.g.game.stageName || 'none'))
           if (data.open && !was) refresh(); else drawMap()
         })
+      }
+      scope.$on('RallyRaidPlanner', function (event, data) { onState(data) })
+      // a stage loaded (or unloaded) in the GPS: the state again, so the bar and EDIT LOADED STAGE follow at once
+      var lastStageId
+      scope.$on('RallyRaidUpdate', function (event, data) {
+        var id = data && data.stageId
+        if (id !== lastStageId) { lastStageId = id; callLua('state').then(onState).catch(function () {}) }
       })
       // the player's keys (only actions that have one; none of the planner's by default)
       scope.keys = {}
@@ -548,8 +604,12 @@ angular.module('beamng.apps')
         if (PC) window.__rplCrypto = PC.installCryptoShim(window)
         apply(function () { scope.groups = ['quick'].concat(R && R.GROUPS ? Object.keys(R.GROUPS) : []); refresh() })
       })
+      rlog('app init (Planner)')
+      hello(true)
+      var helloTimer = setInterval(function () { hello(true) }, 3000)
       cmd('plannerAppHere')
-      scope.$on('$destroy', function () { clearInterval(timer); clearTimeout(draftT) })
+      callLua('state').then(onState).catch(function (e) { rlog('state request failed: ' + (e && e.message || e)) })
+      scope.$on('$destroy', function () { clearInterval(timer); clearInterval(helloTimer); clearTimeout(draftT); hello(false) })
       scope._D = D   // for the preview tests
     }
   }

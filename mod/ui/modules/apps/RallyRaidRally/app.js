@@ -6,8 +6,23 @@
 angular.module('beamng.apps')
 .directive('rallyRaidRally', [function () {
   var W = 380, H = 440
+  var APP = 'rally'
   function lua(cmd) { if (window.bngApi) bngApi.engineLua(cmd) }
-  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'" }
+  // a Lua string literal (quotes, backslashes and line breaks escaped)
+  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r') + "'" }
+  // a line in the game's console (~), "[rally.raid Earth] UI <app>: ..." (says so when rallyRaid_core is not loaded)
+  function rlog(msg) {
+    try { console.log('[rally.raid Earth] ' + APP + ': ' + msg) } catch (e) {}
+    lua('if rallyRaid_core and rallyRaid_core.uiLog then rallyRaid_core.uiLog(' + q(APP) + ', ' + q(msg) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + msg + ' -- rallyRaid_core is NOT loaded (mod off, or a Lua error when it loaded: see above)') + ') end')
+  }
+  // a command for rallyRaid_core.cmd (logged in Lua with this app's name)
+  function cmdCode(name, arg) {
+    return 'if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + ', ' + (arg !== undefined ? q(arg) : 'nil') + ', ' + q(APP) + ') else log(\'E\', \'rallyRaid\', ' +
+      q('[rally.raid Earth] UI ' + APP + ': ' + name + ' pressed, but rallyRaid_core is NOT loaded') + ') end'
+  }
+  // hello: the app is on screen (again every 3 s: Lua may have been reloaded, or loaded after this app)
+  function hello(on) { lua('if rallyRaid_core and rallyRaid_core.appHello then rallyRaid_core.appHello(' + q(APP) + ', ' + (on ? 'true' : 'false') + ') end') }
   function hms(s) { var neg = s < 0; s = Math.abs(Math.round(s || 0)); return (neg ? '-' : '') + Math.floor(s / 3600) + ':' + ('0' + Math.floor(s / 60) % 60).slice(-2) + ':' + ('0' + s % 60).slice(-2) }
   function hm(min) { min = Math.max(0, Math.round(min || 0)); return Math.floor(min / 60) + ':' + ('0' + min % 60).slice(-2) }
   function arr(x) { return Array.isArray(x) ? x : (x ? Object.keys(x).sort(function (a, b) { return a - b }).map(function (k) { return x[k] }) : []) }
@@ -81,7 +96,7 @@ angular.module('beamng.apps')
     link: function (scope, element) {
       scope.k = 1; scope.open = true; scope.st = { loaded: false }; scope.list = []; scope.days = []
       scope.hms = hms; scope.hm = hm
-      scope.cmd = function (name, arg) { scope.askRestart = false; lua('if rallyRaid_core then rallyRaid_core.cmd(' + q(name) + (arg !== undefined ? ', ' + q(arg) : '') + ') end') }
+      scope.cmd = function (name, arg) { scope.askRestart = false; lua(cmdCode(name, arg)) }
       scope.restart = function () { if (scope.askRestart) { scope.cmd('rallyRestart') } else scope.askRestart = true }
       scope.$on('RallyRaidRally', function (event, data) {
         scope.$evalAsync(function () {
@@ -101,8 +116,11 @@ angular.module('beamng.apps')
         if (isFinite(k) && k > 0 && Math.abs(k - scope.k) > 0.005) scope.$evalAsync(function () { scope.k = k })
       }
       var fitTimer = setInterval(fit, 500); fit()
+      rlog('app init (Rally, EXPERIMENTAL)')
+      hello(true)
+      var helloTimer = setInterval(function () { hello(true) }, 3000)
       scope.cmd('rallyAppHere')
-      scope.$on('$destroy', function () { clearInterval(fitTimer) })
+      scope.$on('$destroy', function () { clearInterval(fitTimer); clearInterval(helloTimer); hello(false) })
     }
   }
 }]);

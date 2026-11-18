@@ -43,15 +43,31 @@ local function newLedger()
     resumes = {}, stages = {}, bivouac = nil, bivouacs = {}, resetsOutsideStage = {}, retired = nil,
     gameResumes = {}, gameResumeDiscards = {} }
 end
+local function mkdirFor(path)
+  local dir = path:match('^(.*)/[^/]*$')
+  if not (dir and FS and FS.directoryCreate) then return end
+  if FS.directoryExists then local ok, e = pcall(function() return FS:directoryExists(dir) end); if ok and e then return end end
+  pcall(function() FS:directoryCreate(dir, true) end)
+end
 function M.saveLedger()
   local write = rawget(_G, 'jsonWriteFile')
-  if write and L then pcall(write, M.LEDGER_FILE, L, true) end
+  if not (write and L) then return false end
+  mkdirFor(M.LEDGER_FILE)
+  local ok, res = pcall(write, M.LEDGER_FILE, L, true)
+  if not ok or res == false then log_('W', 'rally ledger NOT written to ' .. M.LEDGER_FILE .. ': ' .. tostring(res)) return false end
+  return true
 end
 function M.loadLedger()
   local read = rawget(_G, 'jsonReadFile')
   local d
   if read then local ok, x = pcall(read, M.LEDGER_FILE); if ok and type(x) == 'table' and x.format == 'rallyraid-rally' then d = x end end
   L = d or newLedger()
+  if d then log_('I', 'rally ledger: rally ' .. tostring(L.id) .. ' (from ' .. M.LEDGER_FILE .. ')')
+  else
+    -- 17 Nov: a new ledger was only written when something changed in it, so after a game kill the next launch made a
+    -- NEW rally id, and the crash save (its file name has the rally id) was never looked up: no RESUME. Write it now.
+    log_('I', 'rally ledger: new rally ' .. tostring(L.id) .. (M.saveLedger() and (' (written to ' .. M.LEDGER_FILE .. ')') or ''))
+  end
   L.resumes, L.stages, L.bivouacs, L.resetsOutsideStage = arr(L.resumes), L.stages or {}, arr(L.bivouacs), arr(L.resetsOutsideStage)
   L.gameResumes, L.gameResumeDiscards = arr(L.gameResumes), arr(L.gameResumeDiscards)   -- game-crash resumes (gameResume.lua)
   return L
@@ -251,7 +267,10 @@ function M.openMenu()
   if M.mode() == 'none' then
     R.msg = (L and L.retired) and 'Retired from the rally.' or 'No repairs here: run a stage (mid-stage repairs) or finish one (bivouac).'
   else M.requestSurvey() end
-  if not R.appSeen then notify('rally.raid Earth: add the "rally.raid Earth Repair" app (UI Apps) to see the repair menu.', 6) end
+  local on = H.appOn and H.appOn('repair')
+  if on == nil then on = R.appSeen end
+  if not on then notify(H.appHint and H.appHint('repair') or 'rally.raid Earth: add the "rally.raid Earth Repair" app (UI Apps) to see the repair menu.', 8) end
+  log_('I', 'repair menu opened (' .. M.mode() .. ', Repair app ' .. (on and 'on screen' or 'NOT on screen') .. ')')
   M.push()
 end
 function M.closeMenu() R.open = false; M.push() end

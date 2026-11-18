@@ -83,7 +83,7 @@ core.cmd('plannerRec'); check(not planner._P().rec.on, 'plannerRec again: off')
 -- keys and the app ----------------------------------------------------------------------------------------------------
 ui = {}
 core.cmd('plannerWaypoint')
-check(ui.RallyRaidPlannerKey == nil and lastNote():match('rally.raid Earth Planner'), 'waypoint key without the app on the HUD: tells you to add it')
+check(lastNote():match('rally.raid Earth Planner') and lastNote():match('UI Apps'), 'waypoint key without the app on the HUD: tells you how to add it (1117: no longer refused, the app picks it up once added)')
 core.cmd('plannerMenu'); check(planner._P().open == false, 'menu key without the app: stays closed')
 core.cmd('plannerAppHere')
 check(ui.RallyRaidPlanner and ui.RallyRaidPlanner.schema == 1, 'app here: state pushed')

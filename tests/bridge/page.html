@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>rally.raid Earth apps on the real Lua (bridge harness)</title>
+<link rel="icon" href="data:,">
+<!-- BeamNG's UI hosts AngularJS 1.5.8 for ui/modules/apps (docs.beamng.com/modding/ui/app_creation) -->
+<script src="https://unpkg.com/angular@1.5.8/angular.min.js"></script>
+<style>body{background:#6d7a63;margin:0;font-family:sans-serif;width:1600px;height:1000px;position:relative}
+.slot{position:absolute} #gps{right:5px;top:10px;width:380px;height:340px} #rb{right:5px;top:360px;width:380px;height:490px}
+#repair{left:5px;top:10px;width:360px;height:300px} #planner{left:380px;top:10px;width:440px;height:640px} #rally{left:5px;top:330px;width:360px;height:440px}</style>
+<script>
+// bngApi as the game gives it: engineLua(code) runs GE Lua; engineLua(code, cb) returns the expression's value to cb
+var CALLS = []
+window.bngApi = { engineLua: function (code, cb) {
+  CALLS.push(code)
+  fetch('/lua', { method: 'POST', body: JSON.stringify({ code: code, ret: !!cb }) }).then(function (r) { return r.json() }).then(function (r) {
+    if (r.error) console.error('LUA ERROR: ' + r.error + ' IN ' + code)
+    if (cb) cb(r.value)
+  })
+} }
+angular.module('beamng.apps', [])
+// guihooks.trigger -> $rootScope.$broadcast (what the game's UI does with every hook)
+var LOGS = [], NOTES = []
+function pump() {
+  return fetch('/events').then(function (r) { return r.json() }).then(function (r) {
+    var root = angular.element(document.body).injector().get('$rootScope')
+    root.$apply(function () { r.events.forEach(function (e) { root.$broadcast(e[0], e[1]) }) })
+    LOGS = LOGS.concat(r.logs); NOTES = NOTES.concat(r.notes)
+  })
+}
+setInterval(pump, 100)
+</script>
+<script src="/ui/modules/apps/RallyRaidGPS/app.js"></script>
+<script src="/ui/modules/apps/RallyRaidRoadbook/app.js"></script>
+<script src="/ui/modules/apps/RallyRaidRepair/app.js"></script>
+<script src="/ui/modules/apps/RallyRaidPlanner/app.js"></script>
+<script src="/ui/modules/apps/RallyRaidRally/app.js"></script>
+</head>
+<body ng-app="beamng.apps">
+<div class="slot" id="gps"><rally-raid-gps></rally-raid-gps></div>
+<div class="slot" id="rb"><rally-raid-roadbook></rally-raid-roadbook></div>
+<div class="slot" id="repair"><rally-raid-repair></rally-raid-repair></div>
+<div class="slot" id="planner"><rally-raid-planner></rally-raid-planner></div>
+<div class="slot" id="rally"><rally-raid-rally></rally-raid-rally></div>
+</body></html>

@@ -2,7 +2,7 @@
 // stage menu (select / unselect rows, spare-wheel limit, REPAIR sends the ids), the bivouac menu (over-budget
 // warning, engine change penalty), "no repairs here". Screenshot repair_app.png. Prints PASS / FAIL lines.
 const puppeteer = require('puppeteer-core'), fs = require('fs'), http = require('http'), path = require('path')
-const ROOT = '/workspace/rallyraid'
+const ROOT = path.resolve(__dirname, '..', '..')
 const srv = http.createServer((q, r) => {
   let u = q.url.split('?')[0]
   let f = u.startsWith('/ui/') ? path.join(ROOT, 'mod', u) : path.join(ROOT, u)
@@ -20,14 +20,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
   await page.goto('http://127.0.0.1:8771/tests/repair_app_preview.html', { waitUntil: 'networkidle0' })
   await sleep(1000)
   const calls0 = await page.evaluate(() => calls.slice())
-  check(calls0.filter(c => c.includes("cmd('repairAppHere')")).length === 4, 'each app tells Lua it is on the HUD')
+  check(calls0.filter(c => c.includes("appHello('repair', true)")).length === 4, 'each app tells Lua it is on the HUD')
   // a: closed bar
   check(await page.$eval('#a .rrr-panel', e => getComputedStyle(e).display === 'none'), 'closed: no panel')
   const barA = await page.$eval('#a .rrr-bar', e => e.textContent)
   check(/REPAIR/.test(barA) && /SPARES 2\/2/.test(barA) && /RESETS 1\/3/.test(barA) && !/Ctrl\+Shift/.test(barA), 'bar: mode, spares, resets, no default key: ' + barA)
   await page.evaluate(() => { calls.length = 0 })
   await page.click('#a .rrr-bar')
-  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('repairMenu')")), 'clicking the bar toggles the menu')
+  check((await page.evaluate(() => calls)).some(c => c.includes("cmd('repairOpen'")), 'clicking the bar toggles the menu')
   // d: stage menu, one spare left
   const rows = await page.$$('#d .rrr-opt')
   check(rows.length === 9, '9 stage options (4 wheels, 4 suspension, radiator): ' + rows.length)
@@ -50,7 +50,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
   await page.evaluate(() => { calls.length = 0 })
   await page.click('#d .rrr-btn.go')
   const c2 = await page.evaluate(() => calls.slice())
-  check(c2.length === 1 && c2[0] === "if rallyRaid_core then rallyRaid_core.cmd('repairConfirm', 'wheel:FL,radiator') end", 'REPAIR sends the ids: ' + c2[0])
+  check(c2.length === 1 && c2[0].startsWith("if rallyRaid_core then rallyRaid_core.cmd('repairConfirm', 'wheel:FL,radiator', 'repair')"), 'REPAIR sends the ids: ' + c2[0])
   check((await page.$$eval('#d .rrr-opt.sel', e => e.length)) === 0, 'selection cleared after REPAIR')
   // disabled rows (no spares) cannot be picked
   await page.evaluate(() => send('d', Object.assign({}, STATES.d, { options: stageOpts(0), spares: { used: 2, max: 2 } })))

@@ -40,7 +40,7 @@ rally.raid Earth is a Dakar-style navigation pack for BeamNG.Earth. Plot a stage
 
 **Everything else is a button**, so nothing clashes with BeamNG's own keys: the GPS app's **MENU** has REPAIR, RECOVER (stuck or rolled car: press, then CONFIRM), RESUME after a game crash, and PLANNER. Recce has buttons in the Roadbook app, the planner in its own app. You can still bind any of these in Options → Controls.
 
-**Experimental / untested.** These are in the zip but have not been tested in game yet: Repair (the Repair app and repair menu), Recover car, crash resume, the Planner app, the GPS app's MENU panel, recce mode (the Roadbook app's RECCE panel), the apps showing your own key bindings, and whether a Ctrl+Shift key also fires BeamNG's own action for the plain key. The GPS and Roadbook apps have been driven on a full stage.
+**Experimental / untested.** These are in the zip but have not been tested in game yet: Repair (the Repair app and repair menu), Recover car, crash resume, the Planner app, the GPS app's MENU panel, recce mode (the Roadbook app's RECCE panel), and the apps showing your own key bindings. The Ctrl+Shift keys were checked in game (17 Nov): no side effects. The GPS and Roadbook apps have been driven on a full stage.
 
 A full key list and a longer how-to are on the [GitHub Releases page](https://github.com/wyans-r/rally.raid-earth/releases/latest) and in the project README.
 

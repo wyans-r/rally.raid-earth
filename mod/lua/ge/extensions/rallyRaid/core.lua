@@ -60,9 +60,24 @@ local nav = { cap = nil, heading = nil, speed = 0, lat = nil, lon = nil, fwd = 0
 local tickAcc, liveAcc = 0, 0
 local hold = { dir = 0, t = 0, rep = 0 }
 
-local function log_(level, msg) if log then log(level, 'rallyRaid', msg) else print('[rallyRaid] ' .. msg) end end
+-- every console line starts with "[rally.raid Earth]" (the in-game console, ~, and the log file): the sub-modules log
+-- through this too (their H.log hook)
+local function log_(level, msg)
+  msg = '[rally.raid Earth] ' .. tostring(msg)
+  if log then log(level or 'I', 'rallyRaid', msg) else print(msg) end
+end
 local function api() local a = rawget(_G, 'beamngEarth_api'); if a and a.version and a.version() == 1 then return a end end
-local function ui(name, data) if guihooks and guihooks.trigger then pcall(guihooks.trigger, name, data) end end
+-- Lua -> apps. A message that cannot be sent (guihooks / JSON encoding error) is logged once per name, then sent again
+-- cleaned (gameResume.jsonSafe: no NaN / inf, no functions, only dense arrays) so the app still gets it.
+local uiFailed = {}
+local function ui(name, data)
+  if not (guihooks and guihooks.trigger) then return end
+  local ok, err = pcall(guihooks.trigger, name, data)
+  if not ok then
+    if not uiFailed[name] then uiFailed[name] = true; log_('E', 'UI message ' .. tostring(name) .. ' could not be sent: ' .. tostring(err) .. ' (sent cleaned)') end
+    pcall(guihooks.trigger, name, gameResume.jsonSafe(data))
+  end
+end
 local function hook(name, info) if extensions and extensions.hook then pcall(extensions.hook, name, info) end end
 local function notify(text, secs)
   if not M.settings.notify then return end
@@ -104,7 +119,11 @@ end
 
 ------------------------------------------------------------------------------------------------------------------
 -- stage loading
-function M.listStages() return stagesMod.list() end
+function M.listStages()
+  local list = stagesMod.list()
+  log_('I', 'listStages: ' .. #list .. ' stage file(s)')
+  return list
+end
 
 function M.loadStage(path)
   local stage, errs = stagesMod.load(path)
@@ -463,7 +482,8 @@ end
 local function snapshot()
   local out = { v = M.VERSION, ok = nav.ok, why = nav.why, units = M.settings.units, tripStep = M.settings.tripStep,
     cap = nav.cap, speed = nav.speed * 3.6, fwd = nav.fwd,
-    trip = odo.trip / 1000, partial = odo.partial / 1000, total = odo.total / 1000, countDown = odo.countDown }
+    trip = odo.trip / 1000, partial = odo.partial / 1000, total = odo.total / 1000, countDown = odo.countDown,
+    apps = M.apps() }                                  -- which rally.raid Earth apps are on screen (the GPS MENU's hints)
   if not S then out.phase = 'idle' return out end
   local wps = S.stage.waypoints
   out.phase, out.stage, out.stageId = S.phase, S.stage.name, S.stage.id
@@ -659,7 +679,7 @@ function M.recceCmd(sub, arg)
   M.requestState()
 end
 
-function M.cmd(name, arg)
+local function dispatch(name, arg)
   local step = tonumber(arg) or tonumber(M.settings.tripStep) or 10
   if name == 'tripPlus' then odo.trip = odo.trip + step; tripChanged('plus')
   elseif name == 'tripMinus' then odo.trip = odo.trip - step; tripChanged('minus')
@@ -729,19 +749,113 @@ function M.cmd(name, arg)
   elseif name:sub(1, 5) == 'rally' then rally.cmd(name:sub(6), arg)   -- RALLY MODE (rallyList, rallyLoad, rallyDrive, ...)
   elseif name == 'keys' then M.pushKeys(true)
   elseif name == 'liveFile' then M.settings.liveFile = not M.settings.liveFile; saveSettings(); M.requestState()
+  elseif name == 'hello' then M.requestState(); resume.push(); gameResume.push(); repair.push()   -- an app just opened
+  elseif name == 'appsRally' then M.showApps('rally')
+  elseif name == 'appsPlanner' then M.showApps('planner')
+  elseif name == 'appsBack' then M.showApps('back')
   else log_('W', 'unknown command ' .. tostring(name)) end
 end
 
+-- every command from an app button or a key: logged ("[rally.raid Earth] cmd repairMenu (gps)"), run, and an error in
+-- it is logged with its traceback and shown, instead of being lost in the UI bridge. src: the app that sent it.
+local QUIET = { tripPlus = true, tripMinus = true }        -- (a held trip button repeats them: logged once, by tripHold)
+local function traceback(e) return (debug and debug.traceback) and debug.traceback(tostring(e), 2) or tostring(e) end
+function M.cmd(name, arg, src)
+  if type(name) ~= 'string' then log_('W', 'cmd without a name (' .. tostring(name) .. ')') return end
+  if not (QUIET[name] and src == 'hold') then
+    log_('I', 'cmd ' .. name .. (arg ~= nil and (' "' .. tostring(arg) .. '"') or '') .. (src and src ~= 'hold' and (' (' .. tostring(src) .. ')') or ''))
+  end
+  local ok, err = xpcall(function() return dispatch(name, arg) end, traceback)
+  if not ok then
+    log_('E', 'cmd ' .. name .. ' failed: ' .. tostring(err))
+    notify('rally.raid Earth: ' .. name .. ' failed: ' .. tostring(err):match('^[^\n]*'):sub(1, 140) .. ' (details in the console, ~)', 8)
+  end
+end
+
 -- held trip buttons / keys repeat (as a real rally computer's remote)
-function M.tripHold(dir) hold.dir, hold.t, hold.rep = dir or 0, 0, 0; if dir and dir ~= 0 then M.cmd(dir > 0 and 'tripPlus' or 'tripMinus') end end
+function M.tripHold(dir)
+  hold.dir, hold.t, hold.rep = dir or 0, 0, 0
+  if dir and dir ~= 0 then M.cmd(dir > 0 and 'tripPlus' or 'tripMinus', nil, 'hold'); log_('I', 'trip ' .. (dir > 0 and '+' or '-') .. ' held') end
+end
+
+------------------------------------------------------------------------------------------------------------------
+-- which rally.raid Earth apps are on screen: every app says hello when it opens and every 3 s after (the same as
+-- BeamNG.Earth's HUD apps: after a Lua reload, or a hello sent before this extension was loaded, the mod would
+-- otherwise never know). An app not heard from for APP_TTL s is taken as closed.
+local APP_TTL = 8
+local uptime = 0
+local appSeen = {}
+M.APP_TITLES = { gps = 'rally.raid Earth GPS', roadbook = 'rally.raid Earth Roadbook', repair = 'rally.raid Earth Repair',
+  planner = 'rally.raid Earth Planner', rally = 'rally.raid Earth Rally', event = 'rally.raid Earth Event' }
+function M.appOn(name) local t = appSeen[name]; return t ~= nil and uptime - t <= APP_TTL end
+function M.apps() local o = {} for k in pairs(M.APP_TITLES) do o[k] = M.appOn(k) end return o end
+function M.appHello(name, on)
+  name = tostring(name)
+  if on == false then
+    if appSeen[name] then log_('I', 'app closed: ' .. name); appSeen[name] = nil; M.requestState() end
+    return false
+  end
+  local first = not M.appOn(name)
+  appSeen[name] = uptime
+  if first then
+    log_('I', 'app on screen: ' .. name)
+    if name == 'repair' then repair.cmd('AppHere'); resume.push(); gameResume.push()
+    elseif name == 'planner' then planner.cmd('AppHere')
+    elseif name == 'gps' then resume.push(); gameResume.push() end
+    M.requestState()                        -- the GPS reads s.apps to know if REPAIR / PLANNER can open on screen
+  end
+  return true
+end
+-- the hint for an app that is not on screen (BeamNG has no call to add one app to the player's layout)
+function M.appHint(name)
+  return 'rally.raid Earth: the "' .. (M.APP_TITLES[name] or name) .. '" app is not on your screen. Add it: ESC > UI Apps > Add app > ' ..
+    (M.APP_TITLES[name] or name) .. ', or press MENU > ' .. (name == 'planner' and 'PLANNER LAYOUT' or 'RALLY LAYOUT') .. ' in the GPS app.'
+end
+
+-- the mod's two app layouts (settings/ui_apps/originalLayouts/default/*.uilayout.json, the way BeamNG.Earth ships its
+-- ".Earth" layout): 'rally' = GPS, Roadbook, Repair, Rally; 'planner' = GPS, Roadbook, Planner. core_gamestate.setGameState's
+-- second argument picks the layout (the same call BeamNG.Earth makes after its level loads). 'back': the layout before.
+M.LAYOUTS = { rally = 'rallyRaidEarth', planner = 'rallyRaidEarthPlanner' }
+local layoutBefore
+function M.showApps(which)
+  local gs = rawget(_G, 'core_gamestate')
+  local st = gs and type(gs.state) == 'table' and gs.state or {}
+  local layout = which == 'back' and (layoutBefore or 'freeroam') or M.LAYOUTS[which or 'rally'] or M.LAYOUTS.rally
+  if not (gs and type(gs.setGameState) == 'function') then
+    log_('W', 'cannot switch the app layout: core_gamestate.setGameState not found')
+    notify('rally.raid Earth: the app layout could not be switched. Add the apps by hand: ESC > UI Apps > Add app.', 8)
+    return false
+  end
+  if which ~= 'back' and st.appLayout and st.appLayout ~= M.LAYOUTS.rally and st.appLayout ~= M.LAYOUTS.planner then layoutBefore = st.appLayout end
+  local state = type(st.state) == 'string' and st.state or 'freeroam'
+  local menu = st.menuItems ~= nil and st.menuItems or state
+  local ok, err = pcall(gs.setGameState, state, layout, menu)
+  log_(ok and 'I' or 'E', 'app layout -> ' .. tostring(layout) .. ' (was ' .. tostring(st.appLayout) .. ', state ' .. state .. ')' .. (ok and '' or (': ' .. tostring(err))))
+  if ok then
+    notify(which == 'back' and 'rally.raid Earth: back to your app layout.' or
+      ('rally.raid Earth: app layout "' .. (which == 'planner' and 'rally.raid Earth Planner' or 'rally.raid Earth') .. '". ESC > UI Apps to move or change it; MENU > MY LAYOUT in the GPS app goes back.'), 6)
+  else notify('rally.raid Earth: the app layout could not be switched (' .. tostring(err) .. '). Add the apps by hand: ESC > UI Apps > Add app.', 8) end
+  return ok
+end
+
+-- a line from an app (button presses, init, JS errors) into the game's console (~), at most 30 per app per 10 s
+local uiLogN, uiLogT = {}, {}
+function M.uiLog(app, msg)
+  app = tostring(app)
+  if not uiLogT[app] or uptime - uiLogT[app] > 10 then uiLogT[app], uiLogN[app] = uptime, 0 end
+  uiLogN[app] = uiLogN[app] + 1
+  if uiLogN[app] <= 30 then log_('I', 'UI ' .. app .. ': ' .. tostring(msg))
+  elseif uiLogN[app] == 31 then log_('I', 'UI ' .. app .. ': (more lines in the next 10 s not shown)') end
+end
 
 ------------------------------------------------------------------------------------------------------------------
 -- game hooks
 function M.onUpdate(dtReal, dtSim)
   dtReal, dtSim = dtReal or 0, dtSim or dtReal or 0
+  uptime = uptime + dtReal
   if hold.dir ~= 0 then
     hold.t = hold.t + dtReal
-    if hold.t > 0.4 then hold.rep = hold.rep + dtReal; while hold.rep >= 0.08 do hold.rep = hold.rep - 0.08; M.cmd(hold.dir > 0 and 'tripPlus' or 'tripMinus') end end
+    if hold.t > 0.4 then hold.rep = hold.rep + dtReal; while hold.rep >= 0.08 do hold.rep = hold.rep - 0.08; dispatch(hold.dir > 0 and 'tripPlus' or 'tripMinus') end end
   end
   -- the stage clock stops while a car recovery runs (its penalty is added as time instead), while a game-crash resume
   -- puts the car back, and after it until the car moves
@@ -824,13 +938,22 @@ function M.repairState() return repair.state() end
 function M.rallyState() return rally.state() end
 function M.recceVeh(wheel, throttle) recce.vehData(wheel, throttle) end
 -- the in-game planner app (rallyRaid/planner.lua): plannerCall(name, argsJson, text)
+local PLANNER_QUIET = { state = true, pose = true, readChunk = true, writeChunk = true }
 function M.plannerCall(name, argsJson, text)
+  if not PLANNER_QUIET[name] then log_('I', 'plannerCall ' .. tostring(name)) end
   if official.active() and name ~= 'state' then return { error = 'official run: the planner is off (no route on the map)' } end
   return planner.call(name, argsJson, text)
 end
 function M.officialState() return official.state() end
 function M.loadOfficial(path) return official.load(path) end
-function M.onExtensionLoaded() loadSettings(); log_('I', 'rally.raid Earth ' .. M.VERSION .. ' loaded') end
+function M.onExtensionLoaded()
+  loadSettings()
+  log_('I', 'rally.raid Earth ' .. M.VERSION .. ' loaded (rally mode ' .. (rallyOk and 'in' or 'not in') .. ' this build, async events ' ..
+    (officialOk and 'in' or 'not in') .. ' this build); commands are logged as "cmd <name> (<app>)"')
+  gameResume.startupScan()                       -- crash saves left on disk: logged, and offered in the GPS MENU
+end
+-- a level finished loading (also after a relaunch; the hook BeamNG.Earth uses): the crash saves on disk again, for the GPS MENU
+function M.onClientPostStartMission() gameResume.startupScan() end
 
 -- for tests
 function M._debug() return S, odo, nav end
@@ -840,7 +963,8 @@ rally.init({ api = api, notify = notify, ui = ui, log = log_, repair = repair, S
   loadStage = function(p) return M.loadStage(p) end, teleportToStart = function() return M.teleportToStart() end })
 repair.init({ S = function() return S end, nav = function() return nav end, addPenalty = addPenalty, notify = notify,
   ui = ui, hook = hook, log = log_, retireStage = function(reason) retireStage(reason) end,
-  km = function() return odo.trip / 1000 end, resumeBusy = function() return resume.busy() or gameResume.busy() end })
+  km = function() return odo.trip / 1000 end, resumeBusy = function() return resume.busy() or gameResume.busy() end,
+  appOn = function(n) return M.appOn(n) end, appHint = function(n) return M.appHint(n) end })
 resume.init({ S = function() return S end, nav = function() return nav end, api = api, addPenalty = addPenalty,
   notify = notify, ui = ui, hook = hook, log = log_, retireStage = function(reason) retireStage(reason) end,
   tripKm = function() return odo.trip / 1000 end,
@@ -853,6 +977,7 @@ gameResume.init({ S = function() return S end, nav = function() return nav end, 
 planner.init({ api = api, ui = ui, notify = notify, log = log_, listStages = function() return stagesMod.list() end,
   loadStage = function(path) return M.loadStage(path) end, teleport = function() return M.teleportToStart() end,
   reloadRoadbook = function() M.cmd('reloadRoadbook') end,
+  appOn = function(n) return M.appOn(n) end, appHint = function(n) return M.appHint(n) end,
   stageInfo = function() if not S then return {} end return { id = S.stage.id, name = S.stage.name, phase = S.phase, path = S.stage.path } end })
 
 official.init({ log = log_, notify = notify, ui = ui, modVersion = M.VERSION,

@@ -40,3 +40,5 @@ rb_harness.js serves stage-builder/ on a free port and answers elevation tiles a
 the roadbook tests run offline (an Overpass query that is not cached gets a 504, as a busy server would).
 Run with NODE_PATH=/workspace/rr-tools/node_modules.
 - `render_legend.js`: renders the roadbook symbol legend to `roadbook/fim_symbol_legend.png` and checks every symbol (and alias) parses as a standalone SVG and draws something.
+
+- `bridge_test.js`: all apps with AngularJS 1.5.8 (the game version), with every `bngApi.engineLua` call running the real mod Lua in LuaJIT (`tests/bridge/bridge_server.py`, needs `.venv` with lupa). Covers the 17 Nov in-game bugs: GPS MENU buttons, the Repair app, the Planner start panel, layouts, crash save > kill > RESUME, and the `[rally.raid Earth]` log lines. Run: `NODE_PATH=<puppeteer-core dir> node tests/browser/bridge_test.js`.

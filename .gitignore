@@ -49,3 +49,9 @@ stage-builder/overpass-extracts/*.gz
 stage-builder/overpass-extracts/index.json
 tools/.cache/
 rallies/build/
+
+# Local Python env for the Lua tests (lupa)
+.venv/
+# Browser test screenshots
+tests/browser/screens/
+tests/browser/bridge_test.png

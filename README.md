@@ -38,7 +38,7 @@ The MIT text covers only this project's own code and artwork. It does not cover 
 
 The public zip is `rallyraid_earth.zip` on the [GitHub Releases page](https://github.com/wyans-r/rally.raid-earth/releases/latest) (published 17 Nov 2026 with wyans' OK; rrearth.wyans.net/mod redirects there). The GPS and Roadbook apps have been driven on a full stage in game.
 
-**Experimental / untested.** These are in the public zip but have not been tested in game yet: Repair (the Repair app and repair menu), Recover car, crash resume, the Planner app, the GPS app's MENU panel, recce mode (the Roadbook app's RECCE panel), the apps showing your own key bindings, and whether a Ctrl+Shift key also fires BeamNG's own action for the plain key. The GPS and Roadbook apps have been driven on a full stage. Do not submit to BeamNG.com without wyans' OK.
+**Experimental / untested.** These are in the public zip but have not been tested in game yet: Repair (the Repair app and repair menu), Recover car, crash resume, the Planner app, the GPS app's MENU panel, recce mode (the Roadbook app's RECCE panel), and the apps showing your own key bindings. The Ctrl+Shift keys were checked in game (17 Nov): no side effects. The GPS and Roadbook apps have been driven on a full stage. Do not submit to BeamNG.com without wyans' OK.
 
 ## 1. Install the mod
 

@@ -251,14 +251,18 @@ function M.push() ui('RallyRaidPlanner', M.state()) end
 function M.update(dt)
   P.t = P.t + (dt or 0)
   P.pushAcc = P.pushAcc + (dt or 0)
-  if P.pushAcc >= (P.open and 0.25 or 1.0) then P.pushAcc = 0; if P.appSeen then M.push() end end
+  if P.pushAcc >= (P.open and 0.25 or 1.0) then P.pushAcc = 0; if P.appSeen or (H.appOn and H.appOn('planner')) then M.push() end end
 end
+-- the Planner app not on screen: a hint (the command still runs: the planner opens as soon as the app is added)
 local function needApp()
-  if not P.appSeen then notify('rally.raid Earth: add the "rally.raid Earth Planner" app (UI Apps) to plan stages in game.', 6) return true end
+  local on = H.appOn and H.appOn('planner')
+  if on == nil then on = P.appSeen end
+  if not on then notify(H.appHint and H.appHint('planner') or 'rally.raid Earth: add the "rally.raid Earth Planner" app (UI Apps) to plan stages in game.', 8) end
+  return false
 end
 -- keys and buttons: rallyRaid_core.cmd('planner<Sub>')
 function M.cmd(sub, arg)
-  if sub == 'Menu' then if needApp() then return end; P.open = not P.open; M.push()
+  if sub == 'Menu' then if needApp() then return end; P.open = not P.open; log_('I', 'planner ' .. (P.open and 'opened' or 'closed')); M.push()
   elseif sub == 'Open' then P.open = true; M.push()
   elseif sub == 'Close' then P.open = false; M.push()
   elseif sub == 'Rec' then

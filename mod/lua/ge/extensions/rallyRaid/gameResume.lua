@@ -74,18 +74,36 @@ M.hms, M.ago = hms, ago
 -- files (replaced in tests). BeamNG: writeFile / readFile / FS:renameFile / FS:removeFile / FS:fileExists /
 -- jsonEncode / jsonDecode, all on the game's virtual file system (the user folder)
 local function fs() return rawget(_G, 'FS') end
+-- io.open (BeamNG maps it onto the same virtual file system) when writeFile / readFile are missing or fail
+local function ioWrite(path, text)
+  if not (io and io.open) then return false end
+  local ok, f = pcall(io.open, path, 'wb')
+  if not ok or not f then return false end
+  local okW = pcall(function() f:write(text) end)
+  pcall(function() f:close() end)
+  return okW
+end
+local function ioRead(path)
+  if not (io and io.open) then return nil end
+  local ok, f = pcall(io.open, path, 'rb')
+  if not ok or not f then return nil end
+  local okR, t = pcall(function() return f:read('*a') end)
+  pcall(function() f:close() end)
+  if okR and type(t) == 'string' then return t end
+end
 M.io = {
   write = function(path, text)
     local w = rawget(_G, 'writeFile')
-    if not w then return false end
-    local ok = pcall(w, path, text)
-    return ok                       -- (writeFile's return value differs between versions: the caller reads it back)
+    if w and pcall(w, path, text) then return true end   -- (writeFile's return value differs between versions: the caller reads it back)
+    return ioWrite(path, text)
   end,
   read = function(path)
     local r = rawget(_G, 'readFile')
-    if not r then return nil end
-    local ok, t = pcall(r, path)
-    if ok and type(t) == 'string' then return t end
+    if r then
+      local ok, t = pcall(r, path)
+      if ok and type(t) == 'string' then return t end
+    end
+    return ioRead(path)
   end,
   exists = function(path)
     local f = fs()
@@ -99,7 +117,18 @@ M.io = {
     return M.io.exists(b)
   end,
   remove = function(path) local f = fs(); if f and f.removeFile then pcall(f.removeFile, f, path) end end,
-  mkdir = function(dir) local f = fs(); if f and f.directoryCreate then pcall(f.directoryCreate, f, dir, true) end end,
+  mkdir = function(dir)
+    local f = fs()
+    if f and f.directoryExists then local ok, r = pcall(f.directoryExists, f, dir); if ok and r then return true end end
+    if f and f.directoryCreate then local ok = pcall(f.directoryCreate, f, dir, true); if not ok then pcall(f.directoryCreate, f, dir) end end
+    return true
+  end,
+  list = function(dir)                 -- the .json files in dir (FS:findFiles, as stages.lua lists the stages)
+    local f = fs()
+    if not (f and f.findFiles) then return {} end
+    local ok, files = pcall(function() return f:findFiles(dir, '*.json', 0, false, false) end)
+    return ok and type(files) == 'table' and files or {}
+  end,
   encode = function(t) local e = rawget(_G, 'jsonEncode'); if not e then return nil end local ok, s = pcall(e, t); return ok and s or nil end,
   decode = function(s) local d = rawget(_G, 'jsonDecode'); if not d then return nil end local ok, r = pcall(d, s); if ok then return r end end,
   time = function() return os.time() end,
@@ -186,10 +215,8 @@ function M.invalid(d, rallyId, stage)
   return nil
 end
 
--- the newest good save: { doc, used = 1 (newest) | 2 | 3, file, skipped = { { file, why } } }
-function M.loadSave(rallyId, stage)
-  local base = M.basePath(rallyId, stage.id)
-  local skipped = {}
+-- the newest good save: { doc, used = 1 (newest) | 2 | 3, file, skipped = { { file, why } }, base, otherRally }
+local function tryBase(base, rallyId, stage, skipped)
   for i, f in ipairs(M.paths(base)) do
     local text = M.io.read(f)
     if text then
@@ -200,6 +227,33 @@ function M.loadSave(rallyId, stage)
       log_('W', 'game-crash save ' .. f .. ' not used: ' .. why)
     end
   end
+end
+-- the save files on disk (the newest file of each rally + stage): { base, file, rallyId, stageId }
+function M.saveBases()
+  local out = {}
+  for _, p in ipairs(M.io.list and M.io.list(C().dir) or {}) do
+    local name = tostring(p):match('([^/\\]+)$') or ''
+    local r, st = name:match('^([^_.]+)_([^.]+)%.json$')            -- <rallyId>_<stageId>.json (not .1.json / .beat.json)
+    if r then out[#out + 1] = { base = C().dir .. name:sub(1, -6), file = C().dir .. name, rallyId = r, stageId = st } end
+  end
+  return out
+end
+function M.loadSave(rallyId, stage)
+  local base = M.basePath(rallyId, stage.id)
+  local skipped = {}
+  log_('I', 'crash save: looking for ' .. base .. '.json (stage ' .. tostring(stage.id) .. ', rally ' .. tostring(rallyId) .. ')')
+  local found = tryBase(base, rallyId, stage, skipped)
+  if found then return found end
+  -- not under this rally's id (the rally ledger was not kept, or the rally was restarted since): the newest save of the
+  -- same stage under any rally id. The stage is matched by its id and its waypoints (M.invalid).
+  local best
+  for _, b in ipairs(M.saveBases()) do
+    if b.base ~= base and b.stageId == safeName(stage.id) then
+      local f = tryBase(b.base, nil, stage, skipped)
+      if f and (not best or (tonumber(f.doc.savedEpoch) or 0) > (tonumber(best.doc.savedEpoch) or 0)) then best = f end
+    end
+  end
+  if best then best.otherRally = best.doc.rallyId; log_('I', 'crash save: found ' .. best.file .. ' (saved under rally ' .. tostring(best.doc.rallyId) .. ')') return best end
   return nil, skipped
 end
 function M.readBeat(base)
@@ -209,6 +263,7 @@ function M.readBeat(base)
 end
 function M.clearFiles(base)
   if not base then return end
+  if R and R.pending then for i = #R.pending, 1, -1 do if R.pending[i].file == base .. '.json' then table.remove(R.pending, i) end end end
   for _, f in ipairs(M.paths(base)) do M.io.remove(f) end
   M.io.remove(base .. '.json.tmp')
   M.io.remove(beatPath(base))
@@ -306,6 +361,15 @@ local function signature(s)
   return table.concat({ s.target or 0, ok, miss, #(s.penalties or {}), rp.spares or 0, rp.resumes or 0, #(rp.log or {}),
     #(s.gameResumeLog or {}) }, '|')
 end
+-- why canSave() says no (for the log)
+function M.whyNoSave()
+  local s, n = S(), nav()
+  if not C().enabled then return 'switched off (repairConfig gameCrashResume.enabled)' end
+  if not (s and s.phase == 'running') then return 'no running stage' end
+  if R.busy then return 'a resume is running' end
+  if not (n.ok and n.lat) then return 'no position yet' end
+  return 'a recovery / repair is running or the world is rebasing'
+end
 local function canSave()
   local s, n = S(), nav()
   if not (C().enabled and s and s.phase == 'running') then return false end
@@ -340,9 +404,11 @@ local function writeSave(p, car, carFresh)
   if ok then
     R.savesWritten = R.savesWritten + 1
     R.lastSaveAt, R.lastSaveClock, R.lastSaveEpoch, R.lastSaveReason = doc.savedAt, p.stage.clock, now, p.reason
+    log_('I', string.format('crash save %d written: %s.json (%s, stage clock %s, car damage %s)', R.savesWritten, tostring(p.base),
+      tostring(p.reason), hms(p.stage and p.stage.clock), car and (carFresh and 'fresh' or 'last known') or 'none'))
   else
     R.saveFails = R.saveFails + 1
-    log_('W', 'game-crash save failed: ' .. tostring(why))
+    log_('W', 'crash save FAILED (' .. R.saveFails .. '): ' .. tostring(p.base) .. '.json: ' .. tostring(why))
   end
   return ok, why
 end
@@ -350,7 +416,10 @@ end
 -- a save: the stage as it is now; the car is asked for its damage and the file is written when it answers (or after
 -- carAnswerS with the last damage it sent)
 function M.requestSave(reason)
-  if not canSave() then return false end
+  if not canSave() then
+    if reason ~= 'timer' and reason ~= 'event' then log_('I', 'crash save (' .. tostring(reason) .. ') not possible now: ' .. M.whyNoSave()) end
+    return false
+  end
   local s = S()
   R.req = R.req + 1
   R.pendingSave = { reqId = R.req, reason = reason, t = R.t, base = base(), pos = pose(), stage = jsonSafe(H.captureStage()),
@@ -394,6 +463,7 @@ function M.stageLoaded()
   if not (C().enabled and s and H.rallyId) then M.push(); return nil end
   local found, skipped = M.loadSave(H.rallyId(), s.stage)
   if not found then
+    log_('I', 'crash save: none for stage ' .. tostring(s.stage.id) .. ((skipped and #skipped > 0) and (' (' .. #skipped .. ' file(s) not usable: ' .. tostring(skipped[1].why) .. ')') or ''))
     if skipped and #skipped > 0 then
       R.msg, R.msgAt = 'A saved stage was found but could not be used (' .. skipped[1].why .. ').', R.t
       notify('rally.raid Earth: ' .. R.msg, 6)
@@ -420,9 +490,28 @@ function M.stageLoaded()
   o.policy = M.policy(d)
   o.text = string.format('Resume from last save (%s elapsed, saved %s ago)', hms(o.elapsedS), ago(agoS))
   R.offer = { doc = d, found = found, beat = beat, o = o }
+  log_('I', 'crash save OFFERED: ' .. found.file .. ' (' .. o.text .. ')')
   notify('rally.raid Earth: ' .. o.text .. '? RESUME in the GPS or Repair app' .. keys.hint('rallyRaid_gameResume', ' (or %s twice)') .. '; DISCARD in the Repair app starts the stage again.', 10)
   M.push()
   return o
+end
+
+-- crash saves on disk at startup / after a level loaded: logged, and listed in the GPS MENU (LOAD -> the offer)
+function M.startupScan()
+  local out = {}
+  local now = M.io.time()
+  for _, b in ipairs(M.saveBases()) do
+    local d = M.io.decode(M.io.read(b.file) or '')
+    if type(d) == 'table' and d.format == M.FORMAT then
+      out[#out + 1] = { stageId = d.stageId, stageName = d.stageName, stagePath = d.stagePath, savedAt = d.savedAt,
+        agoS = now - (tonumber(d.savedEpoch) or now), clock = type(d.stage) == 'table' and tonumber(d.stage.clock) or nil, file = b.file }
+    end
+  end
+  table.sort(out, function(a, b) return (a.agoS or 0) < (b.agoS or 0) end)
+  R.pending = out
+  log_('I', 'crash saves on disk (' .. C().dir .. '): ' .. #out .. (#out > 0 and (', newest: ' .. tostring(out[1].stageName) .. ' saved ' .. ago(out[1].agoS) .. ' ago') or ''))
+  M.push()
+  return out
 end
 
 -- what the rules say for this save: { penaltyS, rallyCount, stageCount, retire, reason }
@@ -570,6 +659,8 @@ local function commit(after)
     if H.repair.saveLedger then H.repair.saveLedger() end
   end
   R.lastFlag = e
+  if b.found and b.found.base and b.found.base ~= base() then M.clearFiles(b.found.base) end   -- (saved under another rally id)
+  log_('I', 'crash save resumed at ' .. hms(s.clock) .. ' stage time')
   R.offer, R.busy = nil, nil
   R.hold = { since = R.t, clock = s.clock }
   R.seq = math.max(R.seq, tonumber(d.seq) or 0)
@@ -793,6 +884,12 @@ function M.state()
   local st = { key = keys.get('rallyRaid_gameResume'), keyArmed = (R.offer and R.keyT and R.t - R.keyT <= C().confirmS) and true or nil, enabled = C().enabled and true or false, msg = R.msg,
     busy = R.busy and { phase = R.busy.phase } or nil, hold = R.hold and true or nil, askDiscard = R.askDiscard or nil,
     offer = R.offer and R.offer.o or nil }
+  if not R.offer and not (s and s.phase == 'running') and R.pending and #R.pending > 0 then
+    st.pending = {}
+    for i = 1, math.min(3, #R.pending) do local p = R.pending[i]
+      st.pending[i] = { stageId = p.stageId, stageName = p.stageName, stagePath = p.stagePath, ago = ago(p.agoS), elapsed = hms(p.clock),
+        loaded = (s and s.stage.id == p.stageId) or nil } end
+  end
   if s and s.phase == 'running' then
     st.saves = R.savesWritten
     st.lastSaveAgeS = R.lastSaveClock and round(s.clock - R.lastSaveClock, 0) or nil

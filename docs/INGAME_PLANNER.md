@@ -111,3 +111,13 @@ The browser test (`tests/browser/planner_app_test.js`) runs the real app against
 6. Speed of the full roadbook generation inside the game (a long stage can take tens of seconds; the bar fills).
 7. The app's size and scaling on your screen; the map is drawn without tiles (lines and points only).
 8. BeamNG.Earth's `pose()` heights being ground height (they are used for climbs / crests offline).
+
+## Opening the planner (17 Nov 2026 fixes)
+
+- The Planner app no longer waits for a one-time "app here" message before opening. Every app re-sends a hello every
+  3 s (`rallyRaid_core.appHello`), so after a Lua or UI reload the game knows again which apps are on screen.
+- With no stage open, the panel shows **EDIT LOADED STAGE** (the stage loaded in the GPS), **NEW STAGE HERE** (a DSS at
+  the car) and **OPEN A FILE**. On start the app asks for the planner state, and it asks again whenever the GPS stage changes.
+- GPS **MENU** > **PLANNER LAYOUT** switches to the bundled layout `rallyRaidEarthPlanner` (GPS, Roadbook, Planner).
+  **RALLY LAYOUT** switches to `rallyRaidEarth` (GPS, Roadbook, Repair, Rally), and **MY LAYOUT** goes back. The layout files
+  are in `mod/settings/ui_apps/originalLayouts/default/`.
