@@ -21,10 +21,15 @@ test('way classes: tracks, paths and unpaved lanes in; paved / major roads out; 
   assert.strictEqual(TR.wayCost({ highway: 'unclassified', surface: 'dirt' }), 1);
   assert.ok(TR.wayCost({ highway: 'unclassified' }) > 1);
   assert.ok(TR.wayCost({ highway: 'service', surface: 'gravel' }) > 0);
-  assert.strictEqual(TR.wayCost({ highway: 'service', surface: 'asphalt' }), null);
+  assert.ok(TR.wayCost({ highway: 'service', surface: 'asphalt' }) > 1.5, 'paved service: a connector only (1.1.0)');
   assert.strictEqual(TR.wayCost({ highway: 'service', service: 'parking_aisle' }), null);
   assert.strictEqual(TR.wayCost({ highway: 'primary' }), null);
-  assert.strictEqual(TR.wayCost({ highway: 'tertiary' }), null);
+  // 1.1.0: village streets and tertiary / secondary roads connect track networks (dearer than tracks, cheaper than a gap)
+  assert.ok(TR.wayCost({ highway: 'tertiary' }) > 1.5 && TR.wayCost({ highway: 'tertiary' }) < TR.DEFAULTS.gapCost);
+  assert.ok(TR.wayCost({ highway: 'residential' }) > 1.2 && TR.wayCost({ highway: 'residential' }) < TR.DEFAULTS.gapCost);
+  assert.ok(TR.wayCost({ highway: 'secondary', surface: 'asphalt' }) < TR.DEFAULTS.gapCost);
+  assert.strictEqual(TR.wayCost({ highway: 'trunk' }), null);
+  assert.ok(TR.wayCost({ highway: 'path' }) >= 1.5, 'paths are not built in BeamNG.Earth: a real track is preferred');
   assert.ok(TR.wayCost({ highway: 'tertiary', surface: 'gravel' }) > 0);
   assert.strictEqual(TR.wayCost({ highway: 'footway' }), null);
   assert.ok(TR.wayCost({ highway: 'footway', surface: 'dirt' }) > TR.wayCost({ highway: 'path' }));
@@ -77,7 +82,7 @@ test('prefers a track to a path, and a path to an unpaved footway', async () => 
   assert.ok(r.wayM > 5400, 'took the path (5.6 km) over the footway (5 km): ' + r.wayM);
   const els2 = [way({ highway: 'path' }, [[0, 0], [5000, 0]], [1, 2]), way({ highway: 'track' }, [[0, 0], [0, 200], [5000, 200], [5000, 0]], [1, 3, 4, 2])];
   const r2 = TR.findPath(TR.buildGraph([answer(els2)], LAT0), ll(0, 0), ll(5000, 0));
-  assert.ok(r2.wayM > 5300, 'a 5.4 km track beats a 5 km path (path costs 1.25 x): ' + r2.wayM);
+  assert.ok(r2.wayM > 5300, 'a 5.4 km track beats a 5 km path (path costs 1.6 x): ' + r2.wayM);
 });
 
 test('partial network: the covered part is routed, the rest is a flagged straight gap', async () => {
@@ -162,4 +167,20 @@ test('a leg inside an area already loaded asks nothing new', async () => {
   await R.route(ll(0, 0), ll(9000, 0));
   await R.route(ll(3000, 0), ll(5000, 0));
   assert.strictEqual(calls, 1);
+});
+
+test('1.1.0: two track networks joined by a paved village street are routed through it (no straight gap)', () => {
+  // track A 0..3 km, a 1.5 km paved residential street 3..4.5 km (shared nodes), track B 4.5..8 km, offset 2 km north
+  const els = [
+    way({ highway: 'track', tracktype: 'grade3' }, [[0, 0], [1500, 300], [3000, 2000]], [1, 2, 3]),
+    way({ highway: 'residential', surface: 'asphalt' }, [[3000, 2000], [3700, 2600], [4500, 2000]], [3, 4, 5]),
+    way({ highway: 'track' }, [[4500, 2000], [6000, 300], [8000, 0]], [5, 6, 7])];
+  const r = TR.findPath(TR.buildGraph([answer(els)], LAT0), ll(0, 0), ll(8000, 0));
+  assert.ok(r.gapM < 1, 'no gap: ' + r.gapM);
+  assert.ok(r.wayM > 9000, 'along the tracks and the street: ' + r.wayM);
+  // a primary road is still not used: the same link as primary = a gap
+  els[1].tags = { highway: 'primary', surface: 'asphalt' };
+  const r2 = TR.findPath(TR.buildGraph([answer(els)], LAT0), ll(0, 0), ll(8000, 0));
+  assert.ok(r2.gapM > 500, 'primary is road mode only: gap ' + r2.gapM);
+  assert.match(TR.overpassQuery([31, -4.1, 31.1, -4]), /residential\|living_street\|tertiary\|tertiary_link\|secondary/);
 });

@@ -126,7 +126,7 @@
       <div class="types" id="typebtns"></div>
       <div class="row">
         <div><label>New leg follows</label>
-          <select id="legmode"><option value="road" title="Routed by OSRM on roads big enough for cars (asphalt and main gravel roads). Most small tracks are skipped.">roads (car routing)</option><option value="track" title="Follows small OpenStreetMap ways: tracks, paths, unpaved lanes. Gaps with no mapped track are drawn straight and flagged.">tracks &amp; paths (OpenStreetMap)</option><option value="gpx" title="Follows the GPX track you loaded in the File tab.">my loaded GPX track</option><option value="direct" title="A straight line: open off-piste terrain.">straight line (off-piste)</option></select></div>
+          <select id="legmode"><option value="road" title="Routed by OSRM on roads big enough for cars (asphalt and main gravel roads). OSRM never uses highway=track, so tracks are skipped: use tracks &amp; paths for those.">roads (car routing)</option><option value="track" title="Follows small OpenStreetMap ways: tracks, unpaved lanes, paths (less: the game does not build paths), using village streets and minor roads only to link them. Gaps with no mapped way are drawn straight and flagged.">tracks &amp; paths (OpenStreetMap)</option><option value="gpx" title="Follows the GPX track you loaded in the File tab.">my loaded GPX track</option><option value="direct" title="A straight line: open off-piste terrain.">straight line (off-piste)</option></select></div>
         <div class="nf" style="padding-top:18px"><label style="display:inline;text-transform:none"><input type="checkbox" id="snap" style="width:auto" checked> snap clicks to road</label></div>
       </div>
       <div class="row" style="margin-top:6px">
@@ -509,6 +509,11 @@ function computeLeg(k) {
   return routeRoad(a, b).then(function (pts) {
     var q = st.points[k]; if (!q || q.id !== id) return
     q.leg = { mode:'road', points:pts }
+    // road mode is OSRM's car profile: it never uses highway=track (nor private / farm / forestry ways), so where the
+    // only short way is a track it drives a long way round. Say so, and point at the other mode.
+    var len = 0; for (var n = 1; n < pts.length; n++) len += dist(pts[n - 1], pts[n])
+    var straight = dist(a, b)
+    if (straight > 500 && len > straight * 1.8) status('Leg to ' + legName(k) + ': road routing went ' + (len / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight. Road routing never uses tracks; try "tracks & paths" for this leg.', 'warn')
     render()
   }).catch(function (e) {
     var q = st.points[k]; if (!q || q.id !== id) return
@@ -614,7 +619,7 @@ function render() {
   scheduleForestCheck()
   scheduleAutoMeta()
 }
-var LEG_CHOICES = [['road', 'roads', 'Routed by OSRM on roads big enough for cars. Most small tracks are skipped.'], ['track', 'tracks & paths', 'Along small OpenStreetMap ways: tracks, paths, unpaved lanes. Parts with no mapped track are drawn straight (dotted red).'],
+var LEG_CHOICES = [['road', 'roads', 'Routed by OSRM on roads big enough for cars. Most small tracks are skipped.'], ['track', 'tracks & paths', 'Along small OpenStreetMap ways: tracks, unpaved lanes, paths; village streets and minor roads only to link them. Parts with no mapped way are drawn straight (dotted red).'],
   ['gpx', 'my GPX track', 'Follows the GPX track loaded in the File tab.'], ['direct', 'straight', 'A straight line: open off-piste terrain.']]
 function legCoverText(leg) {
   if (!leg || legUi(leg) !== 'track' || !leg.cover || leg.pending) return ''

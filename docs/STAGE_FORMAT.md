@@ -137,7 +137,7 @@ The roadbook project can add fields to a box; readers must ignore fields they do
 ```
 
 `mode`: `road` (routed on OpenStreetMap roads with OSRM's car profile, which skips most small tracks), `direct` (off-piste: straight, or, with `planned: true`, the roadbook planner's driven line through several points, see ROADBOOK_FORMAT.md), `track`
-(along a track: in the web builder, "tracks & paths" = small OpenStreetMap ways (highway=track, path, bridleway, unclassified, unpaved service / lanes) found through Overpass,
+(along a track: in the web builder, "tracks & paths" = small OpenStreetMap ways (highway=track, unclassified, unpaved service / lanes, path and bridleway at a higher cost since BeamNG.Earth does not build them, and since 18 Nov 2026 (track-router 1.1.0) village streets, residential, tertiary and secondary roads of any surface at a higher cost still, only to link track networks; primary and bigger never) found through Overpass,
 or, with `"via": "gpx"`, "my loaded GPX track" = along an imported GPX track; in the in-game planner, the driven line). One leg per consecutive pair of points, roadbook-only boxes included.
 
 Optional leg fields written by the builder (readers ignore them; older files without them still load, and an older `track` leg keeps its saved points until one of its ends moves):

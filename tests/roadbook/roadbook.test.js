@@ -143,7 +143,7 @@ test('off-piste crossing a track, a fence and a dry river; point hazards on a tr
   const [t1, t2] = at(1500, 500), [f1, f2] = at(3000, 500), [r1, r2] = at(4500, 500);
   const osm = osmFor({ 1: t1, 2: t2, 3: f1, 4: f2, 5: r1, 6: r2 }, [
     { tags: { highway: 'track', name: 'Old Pad' }, nodes: [1, 2] },
-    { tags: { barrier: 'fence' }, nodes: [3, 4] },
+    { tags: { barrier: 'fence', fence_type: 'chain_link' }, nodes: [3, 4] },   // 0.4.0: the game builds chain-link fences only
     { tags: { waterway: 'river', intermittent: 'yes', name: 'Uniab' }, nodes: [5, 6] }]);
   const rb = await RB.generate(st, { heightFn: () => 0, osm, planOffPiste: false, density: 10 });
   const find = k => rb.boxes.find(b => b.features.some(f => f.kind === k));
@@ -564,7 +564,8 @@ test('landmarks: a ruin and a mast near the line are named with side and distanc
   const off = (m, side) => dest(dest(p0, 0, m), side < 0 ? 270 : 90, Math.abs(side));
   const ruin = off(2300, -60), mast = off(5000, 250), tree1 = off(7000, -20), tree2 = off(7000, 20), farAway = off(8000, 3000);
   const landmarks = [
-    { type: 'node', id: 1, lat: ruin[0], lon: ruin[1], tags: { historic: 'ruins' } },
+    // 0.4.0: a ruin is named only when it is a building (an area): a ruin node is not built in the game
+    { type: 'way', id: 1, tags: { historic: 'ruins', building: 'ruins' }, geometry: [[-8, -8], [-8, 8], [8, 8], [8, -8], [-8, -8]].map(([n, e]) => { const p = dest(dest(ruin, 0, n), 90, e); return { lat: p[0], lon: p[1] }; }) },
     { type: 'node', id: 2, lat: mast[0], lon: mast[1], tags: { man_made: 'mast' } },
     { type: 'node', id: 3, lat: tree1[0], lon: tree1[1], tags: { natural: 'tree' } },
     { type: 'node', id: 4, lat: tree2[0], lon: tree2[1], tags: { natural: 'tree' } },
@@ -624,7 +625,7 @@ test('track codes: P / PP / RO shorthand in the notes', () => {
   assert.strictEqual(RB.TRACK_CODE.gravel, 'PP'); assert.strictEqual(RB.TRACK_CODE.tarmac, 'RO'); assert.strictEqual(RB.TRACK_CODE.offpiste, 'HP');
   assert.strictEqual(RB.junctionNote({ instr: 'KEEP LEFT', tulip: { exit: { track: 'gravel' }, branches: [{ track: 'track' }] } }), 'kpL FPP');
   assert.strictEqual(RB.junctionNote({ instr: 'STRAIGHT ON', outName: 'B1', tulip: { exit: { track: 'tarmac' }, branches: [{ track: 'gravel' }] } }), 'kpS FRO (B1)');
-  assert.strictEqual(RB.junctionNote({ instr: 'TURN LEFT', tulip: { exit: { track: 'twotrack' }, branches: [] } }), 'TURN L ON P -V');
+  assert.strictEqual(RB.junctionNote({ instr: 'TURN LEFT', tulip: { exit: { track: 'twotrack' }, branches: [] } }), 'TURN L ON TRACES');
   assert.match(RB.describe({ kind: 'leave_track', from: 'gravel', to: 'offpiste' }).note, /^QT PP, HP/);
   assert.match(RB.describe({ kind: 'dunes', lenKm: 3, size: 'medium', amp: 12, maxAmp: 20 }).note, /^DNX 3 KM L2/);
   // every symbol the generator can emit is in the renderer's library

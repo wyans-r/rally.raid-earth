@@ -1,8 +1,13 @@
 /* Rally Raid track router: the stage builder's "Leg to here = tracks & paths" mode.
  *
  * Routes a leg along small OpenStreetMap ways that OSRM's driving profile ignores: highway=track (any tracktype),
- * path, bridleway, unclassified / road, unpaved service / residential / tertiary, and (lowest preference) unpaved
- * footway / cycleway. Big paved roads are what the 'road' mode is for, so they are not used here.
+ * unclassified / road, unpaved service / residential / tertiary, paths and bridleways (less: BeamNG.Earth does not
+ * build them, so in the game a path is bare ground), and (lowest preference) unpaved footway / cycleway.
+ * 1.1.0 (18 Nov 2026): village streets, residential, tertiary and secondary roads of any surface are in the graph too,
+ * at a higher cost, only to CONNECT tracks: before, a track network that met the world through an untagged village
+ * street or a paved tertiary road was an island, so the router drew a straight "gap" or skipped the tracks, while
+ * 'road' mode (OSRM, which never uses highway=track) went another way: the two modes disagreed. Primary and bigger
+ * roads stay out (that is the 'road' mode).
  *
  *   1. data   : one Overpass query per tile (fixed 0.2 degree world grid, only the tiles the leg's corridor touches;
  *               short legs ask one bbox rounded out to 0.02 degree;
@@ -22,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -49,12 +54,15 @@
     var hw = t.highway, sf = t.surface || '', unp = UNPAVED.test(sf), pav = PAVED.test(sf);
     var f = null;
     if (hw === 'track') f = /^grade[45]$/.test(t.tracktype || '') ? 1.08 : 1.0;
-    else if (hw === 'unclassified' || hw === 'road') f = unp ? 1.0 : pav ? 2.0 : 1.15;
-    else if (hw === 'path') f = pav ? null : 1.25;
-    else if (hw === 'bridleway') f = pav ? null : 1.3;
-    else if (hw === 'service') f = unp ? 1.1 : pav ? null : (t.service ? null : 1.6);
-    else if (hw === 'residential' || hw === 'tertiary' || hw === 'tertiary_link') f = unp ? 1.15 : null;
-    else if (hw === 'footway' || hw === 'cycleway') f = unp ? 2.5 : null;
+    else if (hw === 'unclassified' || hw === 'road') f = unp ? 1.0 : pav ? 1.8 : 1.15;
+    // paths / bridleways: not built in the game (bare ground there), so a real track is preferred clearly
+    else if (hw === 'path') f = pav ? null : 1.6;
+    else if (hw === 'bridleway') f = pav ? null : 1.65;
+    else if (hw === 'service') f = unp ? 1.1 : /^(driveway|parking_aisle|drive-through|emergency_access)$/.test(t.service || '') ? null : pav ? 1.9 : (t.service ? 1.9 : 1.6);
+    // connectors (1.1.0): any surface; dearer than a track, cheaper than a straight gap (gapCost 2.0)
+    else if (hw === 'residential' || hw === 'living_street') f = unp ? 1.15 : pav ? 1.8 : 1.45;
+    else if (/^(tertiary|secondary)(_link)?$/.test(hw)) f = unp ? 1.15 : 1.9;
+    else if (hw === 'footway' || hw === 'cycleway') f = unp ? 3.0 : null;
     if (f == null) return null;
     if (t.access === 'private' || t.access === 'no' || t.motor_vehicle === 'no' || t.vehicle === 'no') f *= 1.3;
     return f;
@@ -66,8 +74,9 @@
     var B = '(' + b.map(function (x) { return (+x).toFixed(4) }).join(',') + ')';
     return '[out:json][timeout:' + (timeoutS || DEFAULTS.overpassTimeoutS) + '];(' +
       'way[highway~"^(track|path|bridleway|unclassified|road)$"]' + B + ';' +
-      'way[highway~"^(service|residential|tertiary|tertiary_link|footway|cycleway)$"][surface~"^(' + UNPAVED_Q + ')$"]' + B + ';' +
-      'way[highway=service][!surface][!service]' + B + ';' +
+      'way[highway~"^(residential|living_street|tertiary|tertiary_link|secondary|secondary_link)$"]' + B + ';' +
+      'way[highway~"^(service|footway|cycleway)$"][surface~"^(' + UNPAVED_Q + ')$"]' + B + ';' +
+      'way[highway=service][!service]' + B + ';' +
       ');out body geom qt;';
   }
 
@@ -320,7 +329,7 @@
     var loaded = []; // [box, answer] already in memory, for "inside a loaded box" hits
     var inside = function (b, c) { return b[0] >= c[0] && b[1] >= c[1] && b[2] <= c[2] && b[3] <= c[3] };
     function tile(box, o) {
-      var key = 'tr1:' + box.join(',');
+      var key = 'tr2:' + box.join(',');   // tr2 = 1.1.0 query (connector roads); tr1 answers lack them
       if (mem.has(key)) return Promise.resolve(mem.get(key));
       for (var i = 0; i < loaded.length; i++) if (inside(box, loaded[i][0])) return Promise.resolve(loaded[i][1]);
       if (inflight.has(key)) return inflight.get(key);

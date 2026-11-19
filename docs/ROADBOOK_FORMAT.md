@@ -137,8 +137,8 @@ Everything below comes from data; nothing is made up. With no landmark / land-co
   per 2 km. A crest box where the line turns >= 25 degrees gets `over_crest` ("L OVER CREST").
 - **Ground**: a box that would only say CAP gets the ground class symbol (`flat` / `rolling` / `broken`) when it
   changed since the last box that said it (or 5 km on).
-- **Shorthand**: track kinds as `RO` (tarmac / dual), `PP` (gravel, principal track), `P` (track), `P -V` (two-track),
-  `P SA` (sand track), `P E3` (path), `HP` (off-piste). Junctions: `kpL` / `kpR` / `kpS` (+ `keep_left` / `keep_right`
+- **Shorthand**: track kinds as `RO` (tarmac / dual), `PP` (gravel, principal track), `P` (track), `TRACES` (a grade 4/5
+  two-track or a path: not a real piste; was `P -V` / `P E3` before 0.4), `P SA` (sand track), `HP` (off-piste). Junctions: `kpL` / `kpR` / `kpS` (+ `keep_left` / `keep_right`
   symbols), `TURN L on P (name)`, `FPP` / `FRO` when you stay on the biggest road. `QT PP, HP` leaving a track,
   `RP P (track)` joining one, `END RO, PP (gravel road)` at a surface change, fillers `FRO` / `FPP` / `FOLLOW P`,
   dunes `DNX 3.2 km, L2 (~12 m, max 20 m)` (L1 small, L2 medium, L3 big).
@@ -169,6 +169,36 @@ next to the slider: "now: N boxes, median gap X km, longest Y km".
 
 Notes are stored in upper case except the FIM mixed-case abbreviations `onL onR kpL kpR kpS`, which the renderer,
 editor, PDF and in-game app keep as written (`RoadbookRender.noteCase`).
+
+### Notes that match the game (0.4, 18 Nov 2026)
+
+Wyans: "let's match up roadbook notes to things beamng earth actually populates". Source of truth: BeamNG.Earth's
+own code (v1.10.1-beta330), written up in `BEAMNG_EARTH_DATA_1118.txt` (box) / `docs/ROADBOOK_DATA.md`.
+
+- **Rocks** (`rocks`, `auto-landcover`): BeamNG.Earth scatters rocks from the same ESA WorldCover tiles: bare ground only
+  on slopes (none under 2 %, full at 10 %, slope over +-40 m), shrubland a steady 4 %, nothing on built roads, near
+  towns or on beaches; ground over 35 degrees is rock. So off-piste (and on paths, which the game does not build):
+  bare 5 %+ `STONY`, 10 %+ `ROCKY, SLOW !`, shrub `STONES IN VG`, over 70 % `ROCK, STEEP !`; on a track over bare 10 %+
+  ground `ROCKS BOTH SIDES`; `surface=rock|rocky|bedrock` on the way `ROCKY P 400 M` (`rocky_track`). The same ground
+  once per 3 km unless it gets worse. OSM scree / bare rock areas (`EMP (STONY)`) only where WorldCover is bare / shrub.
+- **Valleys, wadis, rivers**: `FOLLOW VALLEY 1.2 KM` (DEM: both sides >= 4 m higher for 400 m+) off-piste and on tracks
+  (not on tarmac); `ALONG RIVER onL (DRAA) 2.0 KM`, `FOLLOW WADI`, `IN WADI BED` (`along_water`: an OSM river / stream /
+  canal / wadi within 150 m running the same way for 600 m+; a dry wadi needs the route in its bed or the valley in
+  the DEM); `ON RIDGE` on tracks too. Named lakes / reservoirs: `LAKE <NAME>`.
+- **Ambient notes**: rocks, valleys, rivers, ridges, rocky track and TRACES do not get a box of their own on a sparse
+  roadbook; when theirs was pruned they ride on the next box that is there anyway (200 m before .. 1.5 km in, at most
+  4 note parts / 5 symbols). No extra boxes: spacing, merging and density are unchanged (`stats.enrich.ambient`).
+- **Dropped (not in the game)**: gates, chains, bollards, cattle grids (border posts and tolls stay); fences other than
+  chain-link, and hedges / ditches / embankments as barriers (walls stay); wells, springs, cairns, survey points,
+  sign posts, windpumps, monuments, milestones, border stones, mapped boulders; ruins / mosques / forts / cemeteries /
+  storage tanks mapped only as a point (as a building or area they stay: Overture builds the footprint).
+- **Bridges**: only where the route's own way (matched within 12 m, running within 30 degrees) is a bridge and is a
+  class the game builds (not path / footway / bridleway). Before, an overpass the route ran under could give BRIDGE.
+- **DEM bumps / crests**: the DEM is a surface model (houses, bridge decks, trees in it) and the game grades built
+  roads (grading.py: residential 14 m .. primary+ 40 m smoothing; tracks 6 m + a 10 m median, so they keep small
+  bumps). `bump` / `ditch` only off-piste / on tracks, not in built-up cover, not within 80 m of a bridge or crossing;
+  steps not on graded roads; crests / dips not on secondary+ unless blind; a jump on a graded road is a crest;
+  `BAD P` (smoothness) only on tracks. `stats.enrich.terrainDropped` counts what was dropped.
 
 ### Spacing, junction complexes and wording (0.3)
 

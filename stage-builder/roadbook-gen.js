@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.3.0';
+  const VERSION = '0.4.0';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -316,13 +316,10 @@
     if (/^(mast|tower|communications_tower|antenna)$/.test(mm || '')) return { k: 'mast', sym: 'antenna', word: mm === 'tower' ? 'TOWER' : 'MAST', r: 450, prom: 3.5 };
     if (mm === 'chimney') return { k: 'mast', sym: 'antenna', word: 'CHIMNEY', r: 450, prom: 3 };
     if (/^(water_tower|storage_tank|silo|reservoir_covered)$/.test(mm || '')) return { k: 'tank', sym: 'tanks', word: mm === 'water_tower' ? 'WATER TOWER' : mm === 'silo' ? 'SILO' : 'TANK', r: 300, prom: 3.5 };
-    if (/^(windmill|windpump)$/.test(mm || '')) return { k: 'windpump', sym: 'well', word: 'WINDPUMP', r: 300, prom: 3.5 };
-    if (mm === 'water_well' || am === 'water_point' || t.natural === 'spring') return { k: 'well', sym: 'well', word: t.natural === 'spring' ? 'SPRING' : 'WELL', r: 150, prom: 3 };
-    if (mm === 'cairn') return { k: 'cairn', sym: 'cairn', word: 'CAIRN', r: 150, prom: 3 };
-    if (mm === 'survey_point') return { k: 'marker', sym: 'post', word: 'SURVEY MARKER', r: 100, prom: 1.5 };
-    if (/^(monument|memorial)$/.test(h || '')) return { k: 'monument', sym: 'post', word: 'MONUMENT', r: 200, prom: 2.5 };
-    if (/^(boundary_stone|milestone)$/.test(h || '')) return { k: 'marker', sym: 'post', word: h === 'milestone' ? 'MILESTONE' : 'BORDER STONE', r: 100, prom: 1.5 };
-    if (t.information === 'guidepost') return { k: 'sign', sym: 'sign_post', word: 'SIGN POST', r: 100, prom: 2 };
+    // 0.4.0: windpumps, wells, springs, cairns, survey points, monuments, milestones, border stones and sign posts are
+    // not built by BeamNG.Earth (no object for them in the game), so a box must not name them
+    if (/^(windmill|windpump|water_well|cairn|survey_point)$/.test(mm || '') || am === 'water_point' || t.natural === 'spring' || t.information === 'guidepost' ||
+        /^(monument|memorial|boundary_stone|milestone|wayside_cross|wayside_shrine)$/.test(h || '')) return null;
     if (t.highway === 'construction') return { k: 'works', sym: 'road_works', word: 'ROAD WORKS', r: 150, prom: 3, line: true };
     const nat = t.natural;
     const latinName = () => { const n = t['name:en'] || t.int_name || t['name:latin'] || t.name; return n && /^[\x20-\u024f]+$/.test(n) ? ' ' + String(n).toUpperCase().slice(0, 24) : ''; };
@@ -334,10 +331,10 @@
     if (/^(scree|shingle|bare_rock)$/.test(nat || '')) return { k: 'stony', sym: 'rocks', word: nat === 'bare_rock' ? 'ROCK SLAB' : 'EMP', inWord: nat === 'bare_rock' ? 'ON BARE ROCK' : 'EMP (STONY)', r: 60, prom: 2.2, area: true, ground: true };
     if (t.landuse === 'salt_pond' || (nat === 'water' && /salt/.test(t.water || '')) || (nat === 'wetland' && /salt|saltmarsh|tidalflat/.test(t.wetland || ''))) return { k: 'salt', sym: 'water', word: 'SALT PAN', r: 400, prom: 3, area: true };
     if (nat === 'wetland') return { k: 'marsh', sym: 'water', word: 'MARSH', r: 250, prom: 2.5, area: true };
-    if (nat === 'water') return { k: 'water', sym: 'water', word: /^(river|canal|stream)$/.test(t.water || '') ? 'RIVER' : t.intermittent === 'yes' ? 'PAN' : 'WATER', r: 300, prom: 2.8, area: true };
+    if (nat === 'water') { const w = /^(river|canal|stream)$/.test(t.water || '') ? 'RIVER' : t.intermittent === 'yes' ? 'PAN' : t.water === 'reservoir' || t.landuse === 'reservoir' ? 'RESERVOIR' : /^(lake|lagoon|oxbow)$/.test(t.water || '') || t.name ? 'LAKE' : 'WATER'; return { k: 'water', sym: 'water', word: w + (w === 'LAKE' || w === 'RESERVOIR' ? latinName() : ''), r: w === 'LAKE' || w === 'RESERVOIR' ? 600 : 300, prom: w === 'WATER' ? 2.8 : 3.4, area: true }; }
     if (t.natural === 'tree') { const palm = PALM.test([t.species, t.genus, t.taxon, t['species:en'], t.name, t.leaf_type === 'palm' ? 'palm' : ''].join(' ')); return { k: palm ? 'palm' : 'tree', sym: palm ? 'palm_tree' : 'tree', word: palm ? 'PALM' : 'TREE', r: 120, prom: 2.2 }; }
     if (t.natural === 'tree_row') return { k: 'treerow', sym: 'trees', word: 'TREE LINE', r: 150, prom: 2, line: true };
-    if (t.natural === 'rock' || t.natural === 'stone') return { k: 'rock', sym: 'rocks', word: t.natural === 'stone' ? 'BOULDER' : 'ROCK', r: 120, prom: 2 };
+    if (t.natural === 'rock' || t.natural === 'stone') return null;   // 0.4.0: a mapped boulder is not placed in the game (its rocks are random, from land cover + slope)
     if (t.landuse === 'orchard') return { k: 'orchard', sym: 'trees', word: 'ORCHARD', r: 80, prom: 2, area: true };
     if (t.landuse === 'farmland') return { k: 'fields', sym: 'vegetation', word: 'FIELDS', r: 80, prom: 1.2, area: true };
     if (t.building) return { k: 'building', sym: 'buildings', word: 'HOUSE', r: 220, prom: 2 };
@@ -349,6 +346,9 @@
     const out = [], bld = [], trees = [];
     for (const e of elements || []) {
       const L = landmarkKind(e.tags); if (!L) continue;
+      // 0.4.0: BeamNG.Earth builds buildings (Overture footprints), not points: a ruin, mosque, fort, cemetery or storage
+      // tank mapped only as a point has nothing to see in the game (a water tower point does: it is a world prop)
+      if (e.type === 'node' && (/^(ruin|fort|worship|cemetery)$/.test(L.k) || (L.k === 'tank' && L.word !== 'WATER TOWER'))) continue;
       L.id = e.type + '/' + e.id;
       if (e.type === 'node') L.pts = [P.xy([e.lat, e.lon])];
       else if (e.geometry && e.geometry.length) { L.pts = e.geometry.filter(g => g && g.lat != null).map(g => P.xy([g.lat, g.lon])); L.closed = L.pts.length > 3 && e.geometry[0].lat === e.geometry[e.geometry.length - 1].lat && e.geometry[0].lon === e.geometry[e.geometry.length - 1].lon; if (!L.line && !L.area && !L.closed) L.pts = [L.pts[Math.floor(L.pts.length / 2)]]; else if (!L.line && !L.area) { const c = L.pts.reduce((a, p) => [a[0] + p[0] / L.pts.length, a[1] + p[1] / L.pts.length], [0, 0]); L.pts = [c]; } }
@@ -417,6 +417,138 @@
     }
     return F;
   }
+  /**
+   * 0.4.0: stones and rocks where the game puts them. BeamNG.Earth (vegetation.py) scatters rocks per 6 m cell from ESA
+   * WorldCover, the same tiles we read: bare ground (60) gets rocks only on slopes (2 % none .. 10 % full, slope over
+   * +-40 m), shrub (20) a steady 4 %, nothing on roads, within 60 m of built-up land or on beaches; ground over 35 deg
+   * is ROCK material. So: off-piste (and on paths, which the game does not build) on bare ground 5 %+ = STONY,
+   * 10 %+ = ROCKY, in shrub = STONES IN VG, over 70 % = ROCK; on a track over bare 10 %+ ground = rocks both sides.
+   */
+  function rockFeatures(S, H, hl, hr, cov, cls, o, dunes) {
+    const N = S.length, step = o.step, F = [];
+    if (!cov || !H || N < 5) return F;
+    // in a dune field the game's bare-ground rule puts stones on the dune flanks too, but the box says DNX: not repeated
+    const inDune = new Uint8Array(N); for (const d of dunes || []) { const e = d.end != null ? d.end : d.i + Math.round((d.lenKm || 0) * 1000 / step); for (let k = Math.max(0, d.i); k <= Math.min(N - 1, e); k++) inDune[k] = 1; }
+    const k = Math.max(1, Math.round(40 / step)), D = 2 * o.sideOffset;
+    const slope = i => { const a = Math.max(0, i - k), b = Math.min(N - 1, i + k); const al = b > a ? (H[b] - H[a]) / ((b - a) * step) : 0;
+      const xs = hl && hr && Number.isFinite(hl[i]) && Number.isFinite(hr[i]) ? (hl[i] - hr[i]) / D : 0; return Math.hypot(al, xs); };
+    const lvl = new Array(N).fill(0);
+    for (let i = 0; i < N; i++) {
+      const c = cov[i], unbuilt = S[i].mode === 'direct' || cls[i] === 'offpiste' || cls[i] === 'path', sl = slope(i);
+      if (!c || !Number.isFinite(sl) || inDune[i]) continue;
+      if (unbuilt && sl >= 0.7) lvl[i] = 4;
+      else if (unbuilt && c === 'bare') lvl[i] = sl >= 0.10 ? 3 : sl >= 0.05 ? 2 : 0;
+      else if (unbuilt && c === 'bush') lvl[i] = 1;
+      else if (!unbuilt && /^(track|twotrack|sand|gravel)$/.test(cls[i] || '') && c === 'bare' && sl >= 0.10) lvl[i] = 5;   // edges
+    }
+    const gap = Math.round(100 / step);
+    let lastKm = -1e9, lastL = 0;
+    for (let i = 0; i < N;) {
+      if (!lvl[i]) { i++; continue; }
+      const kind5 = lvl[i] === 5; let j = i, miss = 0, mx = lvl[i], q = i;
+      while (q + 1 < N && miss <= gap) { q++; if (lvl[q] && (lvl[q] === 5) === kind5) { j = q; miss = 0; if (!kind5) mx = Math.max(mx, lvl[q]); } else miss++; }
+      const len = (j - i) * step;
+      const level = kind5 ? 1 : mx === 4 ? 3 : mx === 3 ? 2 : 1;
+      const minM = kind5 ? 400 : mx === 4 ? 40 : mx === 1 ? 400 : 200;
+      // the same stony ground again within 3 km: once (unless it gets worse)
+      if (len >= minM && (S[i].km - lastKm > 3 || level > lastL)) { F.push({ i, kind: 'rocks', level, edges: kind5, vg: mx === 1, len, danger: level >= 2 ? (level >= 3 ? 2 : 1) : 0 }); lastKm = S[j].km; lastL = level; }
+      i = j + 1;
+    }
+    return F;
+  }
+  /**
+   * 0.4.0: following a river or a wadi: an OSM waterway within 150 m, running the same way, for 600 m or more.
+   * Rivers / streams / canals are built as water in the game; a dry wadi is not, so it needs the route in its bed
+   * (< 40 m) or the valley in the DEM.
+   */
+  function alongWaterFeatures(S, ways, valleyDepth, o) {
+    const N = S.length, step = o.step, F = [];
+    if (!ways || !ways.length || N < 5) return F;
+    const P = projector(S[0].lat), q = S.map(s => P.xy([s.lat, s.lon])), G = 200, grid = new Map();
+    const seen = new Set();
+    for (const w of ways) {
+      if (seen.has(w.id) || !w.geometry) continue; seen.add(w.id);
+      if (!/^(river|stream|wadi|canal)$/.test((w.tags && w.tags.waterway) || '')) continue;
+      const pts = w.geometry.filter(g => g && g.lat != null).map(g => P.xy([g.lat, g.lon]));
+      for (let k = 1; k < pts.length; k++) { const a = pts[k - 1], b = pts[k];
+        for (const c of new Set([Math.floor(a[0] / G) + ',' + Math.floor(a[1] / G), Math.floor(b[0] / G) + ',' + Math.floor(b[1] / G), Math.floor((a[0] + b[0]) / 2 / G) + ',' + Math.floor((a[1] + b[1]) / 2 / G)])) { if (!grid.has(c)) grid.set(c, []); grid.get(c).push([w, a, b]); } }
+    }
+    if (!grid.size) return F;
+    const hit = new Array(N).fill(null);
+    for (let i = 0; i < N; i++) {
+      const [x, y] = q[i]; let best = null;
+      for (let gx = Math.floor(x / G) - 1; gx <= Math.floor(x / G) + 1; gx++) for (let gy = Math.floor(y / G) - 1; gy <= Math.floor(y / G) + 1; gy++) for (const [w, a, b] of (grid.get(gx + ',' + gy) || [])) {
+        const [d, t] = distToSeg(q[i], a, b); if (d > 150) continue;
+        const sb = (deg(Math.atan2(b[0] - a[0], b[1] - a[1])) + 360) % 360, al = Math.abs(rel(S[i].hdg, sb));
+        if (Math.min(al, 180 - al) > 35) continue;
+        if (!best || d < best.d) { const np = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; best = { w, d, side: rel(S[i].hdg, (deg(Math.atan2(np[0] - x, np[1] - y)) + 360) % 360) < 0 ? 'L' : 'R' }; }
+      }
+      hit[i] = best;
+    }
+    const gap = Math.round(80 / step);
+    for (let i = 0; i < N;) {
+      if (!hit[i]) { i++; continue; }
+      let j = i, miss = 0, qq = i; const list = [hit[i]];
+      while (qq + 1 < N && miss <= gap) { qq++; if (hit[qq]) { j = qq; miss = 0; list.push(hit[qq]); } else miss++; }
+      const len = (j - i) * step;
+      if (len >= 600) {
+        const cnt = new Map(); for (const h of list) cnt.set(h.w, (cnt.get(h.w) || 0) + 1);
+        const w = [...cnt.entries()].sort((a, b) => b[1] - a[1])[0][0], t = w.tags || {};
+        const dry = t.intermittent === 'yes' || t.seasonal === 'yes' || t.waterway === 'wadi';
+        let deep = 0; if (valleyDepth) for (let k = i; k <= j; k++) if (valleyDepth[k] >= 2) deep++;
+        const ds = list.map(h => h.d).sort((a, b) => a - b), med = ds[Math.floor(ds.length / 2)];
+        const sides = list.filter(h => h.side === 'L').length;
+        // a dry wadi is not water in the game, but its bed is in the terrain (the DEM): in the bed, or a valley we see
+        if (!dry || med < 40 || (valleyDepth && deep >= 0.4 * (j - i + 1))) F.push({ i, kind: 'along_water', len, dry, inBed: dry && med < 15, what: { river: 'RIVER', canal: 'CANAL' }[t.waterway] || 'STREAM',
+          side: sides * 2 >= list.length ? 'L' : 'R', name: latinName(t), danger: 0 });
+      }
+      i = j + 1;
+    }
+    return F;
+  }
+  /**
+   * 0.4.0: keep only the terrain notes the game's ground can have. BeamNG.Earth grades the ground under a built road
+   * (grading.py: residential 14 m .. primary+ 40 m gaussian, tracks 6 m + a 10 m median; paths are not built), and the
+   * DEM is a surface model (buildings, bridges and trees in it), so a DEM bump on a built road or in a town is mostly not
+   * there in the game.
+   */
+  function gateTerrain(fs, S, grade, cls, cov, others) {
+    const near = (i, kinds, m) => others.some(f => kinds.test(f.kind) && Math.abs(S[f.i].d - S[i].d) < m);
+    return fs.filter(f => {
+      const g = grade ? grade[f.i] || 0 : 0, c = cls ? cls[f.i] : null, built = cov && cov[f.i] === 'built';
+      if (f.kind === 'bump' || f.kind === 'ditch') return g <= 6 && !built && !near(f.i, /^(bridge|cross_road|cross_railway|level_crossing|cross_water)$/, 80);
+      if (/^step_/.test(f.kind)) return g <= 8 && !built;
+      if (/^(crest|dip|compression|jump)$/.test(f.kind)) { if (g >= 25 && !f.blind) return false; if (f.kind === 'jump' && g >= 12) f.kind = 'crest'; return true; }
+      if (f.kind === 'undulations') return g < 20;
+      if ((f.kind === 'valley' || f.kind === 'ridge') && f.onWay) return !/^(tarmac|dual)$/.test(c || '');
+      return true;
+    });
+  }
+  /**
+   * 0.4.0: the lie of the land (stony ground, a valley or wadi being followed, a ridge, rocky track, traces) is not worth a
+   * box of its own on a sparse roadbook, so the density pruning used to drop it. When its own box was pruned, the note
+   * rides on the next box that is there anyway (from 200 m before it to 1.5 km into it): no new boxes, so the spacing,
+   * merge and density rules are unchanged; at most 4 note parts and 5 symbols per box, as in enrichBoxes.
+   */
+  function ambientNotes(boxes, S, feats) {
+    let n = 0;
+    const have = new Set(); for (const b of boxes) for (const f of b.features || []) have.add(f.kind + '@' + f.km);
+    for (const f of feats) {
+      const km = S[Math.max(0, Math.min(S.length - 1, f.i))].km, key = f.kind + '@' + km;
+      if (boxes.some(b => (b.features || []).some(g => g.kind === f.kind && Math.abs((g.km != null ? g.km : b.km) - km) < 0.1))) continue;
+      const d = describe(f), to = km + Math.min(1.5, Math.max(0.3, (f.len || 0) / 1000));
+      const host = boxes.find(b => !b.pinned && !b.deleted && b.km >= km - 0.2 && b.km <= to && (b.notes ? b.notes.split('. ').length : 0) < 4 && (b.symbols || []).length + d.sym.length <= 5 &&
+        !(b.notes || '').toUpperCase().includes(d.note.toUpperCase().split(' ')[0] + ' ' + (d.note.toUpperCase().split(' ')[1] || '')));
+      if (!host) continue;
+      host.notes = host.notes ? host.notes + '. ' + d.note : d.note;
+      for (const y of d.sym) if (y && !host.symbols.includes(y)) host.symbols.push(y);
+      const src = featureSource(f.kind); if (host.sources && !host.sources.includes(src)) host.sources.push(src);
+      const cf = cleanFeature(f); cf.km = +km.toFixed(2); cf.ambient = true; (host.features = host.features || []).push(cf);
+      if ((f.danger || 0) > (host.danger || 0)) host.danger = f.danger;
+      have.add(key); n++;
+    }
+    return n;
+  }
   const COVER_TEXT = { bush: ['vegetation', 'VG (BUSH)'], grass: ['camel_grass', 'GRASS TUFTS'], trees: ['trees', 'TREES'], crop: ['vegetation', 'FIELDS'], built: ['buildings', 'BUILT-UP'], water: ['water', 'WATER'], wet: ['water', 'MARSH'] };
   const TERRAIN_SYM = { flat: ['flat', 'FAST'], rolling: ['rolling', 'ROLLING'], broken: ['broken', 'BROKEN GROUND'], dunes: ['dunes', 'IN DUNES'] };
   /**
@@ -448,7 +580,7 @@
       if (lms.length && !(b.features || []).some(f => f.kind === 'landmark_pass' || f.kind === 'landmark_cross')) {
         const cands = [];
         for (const L of (grid.get(Math.floor(p[0] / G) + ',' + Math.floor(p[1] / G)) || [])) {
-          if (seen(L, b.km) || saidNear(L.far ? 'far:' + L.k : L.word, b.km) || (L.town && !b.offPiste) || (zone && L.k === 'building') || (L.ground && !b.offPiste)) continue;
+          if (seen(L, b.km) || saidNear(L.far ? 'far:' + L.k : L.word, b.km) || (L.town && !b.offPiste) || (zone && L.k === 'building') || (L.ground && !b.offPiste) || (L.k === 'stony' && ctx.cover && ctx.cover[si] && !/^(bare|bush)$/.test(ctx.cover[si]))) continue;
           const { d, np, inside } = landmarkNear(L, p); if (d > L.r) continue;
           const a = inside ? 0 : rel(cap, (deg(Math.atan2(np[0] - p[0], np[1] - p[1])) + 360) % 360);
           if (Math.abs(a) > 120 && d > 40) continue;                         // behind you
@@ -703,10 +835,11 @@
       const D = 2 * o.sideOffset;
       const xs = i => (L[i] - R[i]) / D * 100;                   // + = left side higher: falls away to the right
       const ridge = i => H[i] - Math.max(L[i], R[i]), valley = i => Math.min(L[i], R[i]) - H[i];
-      const runs = (test, minM, emit) => {
+      const runs = (test, minM, emit, any) => {
+        const ok = i => any ? !inDunes(i) : off(i);
         for (let i = 0; i < N;) {
-          if (!off(i) || !test(i)) { i++; continue; }
-          let j = i; while (j + 1 < N && off(j + 1) && test(j + 1)) j++;
+          if (!ok(i) || !test(i)) { i++; continue; }
+          let j = i; while (j + 1 < N && ok(j + 1) && test(j + 1) && off(j + 1) === off(i)) j++;
           if ((j - i) * step >= minM) emit(i, j);
           i = j + 1;
         }
@@ -715,8 +848,10 @@
         let m = 0; for (let q = i; q <= j; q++) if (Math.abs(xs(q)) > Math.abs(m)) m = xs(q);
         F.push({ i, kind: 'sideslope', side: m > 0 ? 'R' : 'L', grade: Math.round(Math.abs(m)), len: (j - i) * step, danger: Math.abs(m) >= 30 ? 2 : 1 });
       });
-      runs(i => ridge(i) >= o.ridgeRelief, 300, (i, j) => F.push({ i, kind: 'ridge', len: (j - i) * step, danger: 1 }));
-      runs(i => valley(i) >= o.ridgeRelief && Math.abs(xs(i)) < o.sideSlope, 400, (i, j) => F.push({ i, kind: 'valley', len: (j - i) * step, danger: 0 }));
+      // 0.4.0: ridges and valleys on tracks too (generate() drops them on tarmac): a crew reads "FOLLOW VALLEY" on any way
+      runs(i => ridge(i) >= o.ridgeRelief, 300, (i, j) => F.push({ i, kind: 'ridge', len: (j - i) * step, onWay: !off(i), danger: off(i) ? 1 : 0 }), true);
+      runs(i => valley(i) >= o.ridgeRelief && Math.abs(xs(i)) < o.sideSlope, 400, (i, j) => { let dm = 0; for (let q = i; q <= j; q++) dm = Math.max(dm, valley(q)); F.push({ i, kind: 'valley', len: (j - i) * step, depth: Math.round(dm), onWay: !off(i), danger: 0 }); }, true);
+      F.valleyDepth = Array.from({ length: N }, (_, i) => valley(i));
     }
     // terrain character (off-piste): fast flat, rolling, broken; announced when it changes for at least 1 km
     {
@@ -1103,6 +1238,17 @@
     return 'gravel';
   }
   const CLASS_WORD = { dual: 'dual carriageway', tarmac: 'tarmac', gravel: 'gravel road', track: 'track', twotrack: 'two-track', sand: 'sand track', path: 'path', offpiste: 'off-piste' };
+  // highway classes BeamNG.Earth does not build (roads.py STYLE): driving one in the game is driving the bare ground
+  const NOT_BUILT_HW = /^(path|footway|bridleway|cycleway|steps|pedestrian|corridor|via_ferrata)$/;
+  /** BeamNG.Earth grading.py: how wide (m, gaussian sigma) the game smooths the ground under this way; 0 = not built */
+  function gradeSigma(t) {
+    const hw = (t && t.highway || '').replace('_link', '');
+    if (!hw || NOT_BUILT_HW.test(hw)) return 0;
+    const sf = t.surface, unpaved = sf ? !PAVED.has(sf) : hw === 'track';
+    if (hw === 'track' || (unpaved && /^(unclassified|service|residential|living_street|road)$/.test(hw))) return 6;   // + 10 m median: tracks keep their small real bumps
+    if (unpaved) return 8;
+    return { motorway: 40, trunk: 40, primary: 40, secondary: 25, tertiary: 20, unclassified: 16, residential: 14 }[hw] || 12;
+  }
   const ROAD_RANK = { motorway: 9, trunk: 8, primary: 7, secondary: 6, tertiary: 5, unclassified: 4, residential: 3, track: 2, service: 1, path: 0 };
 
   /** OSM features along the route: junctions (with tulips), crossings, point hazards, surface changes, villages. */
@@ -1130,7 +1276,7 @@
     const ways = osm.elements.filter(e => e.type === 'way' && e.geometry && e.tags);
     const roads = ways.filter(w => w.tags.highway && !IGNORE_HW.has(w.tags.highway) && !(w.tags.highway === 'service' && /driveway|parking_aisle|drive-through/.test(w.tags.service || '')) && w.tags.area !== 'yes');
     // which road the route is on at each sample (nearest road within 20 m, preferring one that runs the same way)
-    const onWay = new Array(N).fill(null);
+    const onWay = new Array(N).fill(null), onFit = new Array(N).fill(null);   // onFit: {d, al} of the raw match (bridges need a close, aligned one)
     { const wgrid = new Map();
       roads.forEach((w, wi) => w.geometry.forEach((g, k) => { if (k === 0) return; const a = P.xy([w.geometry[k - 1].lat, w.geometry[k - 1].lon]), b = P.xy([g.lat, g.lon]);
         for (const c of new Set([gk(a[0], a[1]), gk(b[0], b[1]), gk((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)])) { if (!wgrid.has(c)) wgrid.set(c, []); wgrid.get(c).push([wi, a, b]); } }));
@@ -1142,9 +1288,10 @@
           const [d] = distToSeg(q[i], a, b); if (d > 20) continue;
           const sb = (deg(Math.atan2(b[0] - a[0], b[1] - a[1])) + 360) % 360, al = Math.abs(rel(S[i].hdg, sb));
           const cost = d + (Math.min(al, 180 - al) > 30 ? 25 : 0);
-          if (!best || cost < best.c) best = { c: cost, wi };
+          if (!best || cost < best.c) best = { c: cost, wi, d, al: Math.min(al, 180 - al) };
         }
         onWay[i] = best ? roads[best.wi] : null;
+        if (best) onFit[i] = { w: roads[best.wi], d: best.d, al: best.al };
       }
       // mode filter (+-3 samples) so one stray match does not flip the surface
       const raw = onWay.slice();
@@ -1231,11 +1378,21 @@
       F.push({ i: si, kind: 'junction', lat: j.lat, lon: j.lon, instr, danger, outName: outName || null, choice,
         tulip: { entry: { track: trackClass(inTags) }, exit: { angle: Math.round(relExit), track: trackClass(outTags) }, branches: sides.sort((a, b) => a.angle - b.angle) } });
     }
+    // 0.4.0: a bridge only where the route really is on it: the raw match is that way, close (12 m) and running the same
+    // way (30 deg), and the way is one the game builds (paths, footways, bridleways are not built, so neither are their
+    // bridges). Before, an overpass the route ran under, or a footbridge beside it, could give "BRIDGE".
+    function bridgeAt(i) {
+      const w = onWay[i], f = onFit[i];
+      if (!w || !w.tags.bridge || w.tags.bridge === 'no' || !f || f.w !== w || f.d > 12 || f.al > 30) return false;
+      return !NOT_BUILT_HW.test(w.tags.highway || '');
+    }
     // ---- crossings: things the route line cuts through (tracks off-piste, rivers / wadis, fences, railways)
     const crossKinds = w => {
       const t = w.tags;
       if (t.waterway && /^(river|stream|wadi|canal|drain|ditch|brook|riverbank)$/.test(t.waterway)) return 'water';
-      if (t.barrier && /fence|wall|hedge|ditch|embankment/.test(t.barrier)) return 'fence';
+      // 0.4.0: BeamNG.Earth builds chain-link fences, walls (stone, noise) and nothing else: a field fence, hedge,
+      // ditch or embankment mapped in OSM is not there in the game
+      if (t.barrier && (/^(wall|city_wall|retaining_wall|noise_barrier)$/.test(t.barrier) || (t.barrier === 'fence' && /chain/.test(t.fence_type || '')))) return 'fence';
       if (t.railway && /^(rail|light_rail|narrow_gauge|disused|abandoned)$/.test(t.railway)) return 'railway';
       if (t.highway && roads.includes(w)) return 'road';
       return null;
@@ -1252,7 +1409,7 @@
           const hit = segIntersect(q[i], q[i + 1], pts[k], pts[k + 1]); if (!hit) continue;
           const si = hit[0] < 0.5 ? i : i + 1, offp = S[si].mode === 'direct';
           if (kind === 'road' && !offp) continue;                  // on a track, road crossings are junctions (or bridges)
-          const onBridge = onWay[si] && (onWay[si].tags.bridge && onWay[si].tags.bridge !== 'no');
+          const onBridge = bridgeAt(si);
           const xb = bearing([w.geometry[k].lat, w.geometry[k].lon], [w.geometry[k + 1].lat, w.geometry[k + 1].lon]);
           const ang = Math.round(rel(S[si].hdg, xb));
           // running alongside a line (route and way a few metres apart) makes fake crossings: need a real angle,
@@ -1274,21 +1431,28 @@
       const m = nearest(P.xy([e.lat, e.lon]), 20); if (!m) continue;
       const t = e.tags; let kind = null, danger = 1;
       if (t.ford || t.highway === 'ford') { kind = 'ford'; danger = 1; }
-      else if (t.barrier === 'cattle_grid') kind = 'cattle_grid';
-      else if (t.barrier && /gate|lift_gate|swing_gate|kissing_gate|chain|toll_booth|border_control|bollard|block|checkpoint/.test(t.barrier)) { kind = 'gate'; danger = t.barrier === 'border_control' || t.barrier === 'toll_booth' ? 2 : 1; }
+      // 0.4.0: cattle grids, gates, chains, bollards and blocks are not built in the game (a gate node only leaves a gap
+      // in a built fence): only a border post or toll (a real stop for the crew) is kept
+      else if (t.barrier === 'border_control' || t.barrier === 'toll_booth') { kind = 'gate'; danger = 2; }
       else if (t.railway === 'level_crossing') kind = 'level_crossing';
       else if (t.highway === 'stop' || t.highway === 'traffic_signals') { kind = 'stop'; }
       if (kind) F.push({ i: m.si, kind, tags: t, danger });
     }
     // ---- runs along the route way: bridges, fords, surface / track changes
     const runOf = (test) => { const r = []; for (let i = 0; i < N;) { if (!test(i)) { i++; continue; } let j = i; while (j + 1 < N && test(j + 1)) j++; r.push([i, j]); i = j + 1; } return r; };
-    for (const [a, b] of runOf(i => onWay[i] && onWay[i].tags.bridge && onWay[i].tags.bridge !== 'no')) if ((b - a) * step >= 10) F.push({ i: a, kind: 'bridge', len: (b - a) * step, tags: onWay[a].tags, danger: 0 });
+    for (const [a, b] of runOf(i => bridgeAt(i))) if ((b - a) * step >= 10) F.push({ i: a, kind: 'bridge', len: (b - a) * step, tags: onWay[a].tags, danger: 0 });
     for (const [a] of runOf(i => onWay[i] && (onWay[i].tags.ford === 'yes' || onWay[i].tags.ford === 'stepping_stones'))) F.push({ i: a, kind: 'ford', tags: onWay[a].tags, danger: 1 });
     // rough stretches the mappers flagged (smoothness=bad and worse), at least 300 m
     { const ROUGH = { bad: 1, very_bad: 2, horrible: 3, very_horrible: 4, impassable: 5 };
-      for (const [a, b] of runOf(i => S[i].mode !== 'direct' && onWay[i] && ROUGH[onWay[i].tags.smoothness])) if ((b - a) * step >= 300) {
+      for (const [a, b] of runOf(i => S[i].mode !== 'direct' && onWay[i] && ROUGH[onWay[i].tags.smoothness] && !/^(tarmac|dual)$/.test(trackClass(onWay[i].tags)))) if ((b - a) * step >= 300) {
         const sm = onWay[a].tags.smoothness; F.push({ i: a, kind: 'rough', smoothness: sm, track: trackClass(onWay[a].tags), len: (b - a) * step, danger: ROUGH[sm] >= 3 ? 1 : 0 });
       } }
+    // rocky surface (surface=rock / rocky / bedrock: the game lays its ROCK ground material), at least 60 m
+    for (const [a, b] of runOf(i => S[i].mode !== 'direct' && onWay[i] && /^(rock|rocky|bedrock)$/.test(onWay[i].tags.surface || ''))) if ((b - a) * step >= 60) F.push({ i: a, kind: 'rocky_track', len: (b - a) * step, track: trackClass(onWay[a].tags), danger: 1 });
+    // how the game grades the way under each sample (BeamNG.Earth grading.py smoothing width, m; 0 = not built)
+    F.grade = onWay.map((w, i) => S[i].mode === 'direct' || !w ? 0 : gradeSigma(w.tags));
+    // waterways (OSM ways in the route query: within ~50 m) for FOLLOW WADI / ALONG RIVER
+    F.waterways = ways.filter(w => /^(river|stream|wadi|canal)$/.test(w.tags.waterway || ''));
     { const cls = onWay.map((w, i) => S[i].mode === 'direct' ? 'offpiste' : w ? trackClass(w.tags) : null);
       // fill unknown (no OSM match) with the previous class
       for (let i = 1; i < N; i++) if (cls[i] === null) cls[i] = cls[i - 1];
@@ -1303,6 +1467,9 @@
       }
       F.trackClass = cls;
     }
+    // 0.4.0: "BRIDGE, BRIDGE OVER OUED ZGUID": the bridge run and the river under it are one thing, said once
+    { const over = F.filter(f => f.kind === 'cross_water' && f.onBridge);
+      for (let k = F.length - 1; k >= 0; k--) { const f = F[k]; if (f.kind === 'bridge' && over.some(w => S[w.i].d >= S[f.i].d - 20 && S[w.i].d <= S[f.i].d + (f.len || 0) + 20)) F.splice(k, 1); } }
     // ---- villages and towns near the route
     for (const e of osm.elements) {
       if (e.type !== 'node' || !e.tags || !e.tags.place || !/^(city|town|village|hamlet)$/.test(e.tags.place)) continue;
@@ -1338,14 +1505,14 @@
       case 'cover': { const t = COVER_TEXT[f.to]; return t ? { sym: [t[0]], note: (f.to === 'bush' || f.to === 'grass' ? 'VG: ' : 'IN ') + t[1], pr: 22 } : { sym: [], note: 'END VG', pr: 18 }; }
       case 'dunes_end': return { sym: ['dunes_end'], note: 'END DUNES', pr: 50 };
       case 'sideslope': return { sym: ['sideslope_' + f.side.toLowerCase()], note: 'SIDE SLOPE ' + pctS(f.grade) + ', DROPS ' + f.side, pr: 35 };
-      case 'ridge': return { sym: ['ridge'], note: 'ON RIDGE, DROPS BOTH SIDES', pr: 30 };
-      case 'valley': return { sym: ['valley'], note: 'IN WASH', pr: 15 };
+      case 'ridge': return { sym: ['ridge'], note: f.onWay ? 'ON RIDGE ' + lenS(f.len) : 'ON RIDGE, DROPS BOTH SIDES', pr: 30 };
+      case 'valley': return { sym: ['valley'], note: 'FOLLOW VALLEY ' + lenS(f.len), pr: 26 };
       case 'terrain': return { sym: [f.terrain], note: { flat: 'FLAT, FAST', rolling: 'ROLLING', broken: 'BROKEN, SLOW' }[f.terrain], pr: 20 };
       case 'junction': return { sym: /^KEEP LEFT/.test(f.instr) ? ['junction', 'keep_left'] : /^KEEP RIGHT/.test(f.instr) ? ['junction', 'keep_right'] : ['junction'], note: junctionNote(f), pr: f.choice === false ? 35 : 80 };
       case 'cross_water': {
         const t = f.tags, nm = latinName(t), dry = t.intermittent === 'yes' || t.waterway === 'wadi';
         const what = dry ? 'WADI' : ({ river: 'RIVER', canal: 'CANAL' }[t.waterway] || 'STREAM');
-        return f.onBridge ? { sym: ['bridge'], note: 'BRIDGE OVER ' + (nm || what), pr: 40 } : { sym: [dry ? 'wadi' : 'ford'], note: 'CROSS ' + what + (nm ? ' (' + nm + ')' : ''), pr: 60 };
+        return f.onBridge ? { sym: ['bridge'], note: 'BRIDGE OVER ' + (nm || what), pr: 46 } : { sym: [dry ? 'wadi' : 'ford'], note: 'CROSS ' + what + (nm ? ' (' + nm + ')' : ''), pr: 60 };
       }
       case 'cross_fence': return { sym: [f.tags.barrier === 'wall' ? 'wall' : /barbed/.test(f.tags.fence_type || '') ? 'barbed_wire' : 'fence'], note: (f.tags.barrier === 'wall' ? 'WALL' : 'FENCE') + ', FIND GAP', pr: 65 };
       case 'cross_railway': return f.oldRail ? { sym: ['railway'], note: 'CROSS OLD RAILWAY', pr: 40 } : { sym: ['railway'], note: 'CROSS RAILWAY !', pr: 65 };
@@ -1356,7 +1523,13 @@
       case 'level_crossing': return { sym: ['railway'], note: 'LEVEL CROSSING !', pr: 70 };
       case 'stop': return { sym: ['stop'], note: f.tags.highway === 'stop' ? 'STOP' : 'TRAFFIC LIGHTS', pr: 65 };
       case 'bridge': return { sym: ['bridge'], note: 'BRIDGE' + (f.len > 60 ? ' ' + Math.round(f.len / 10) * 10 + ' M' : ''), pr: 45 };
-      case 'surface': return { sym: ['surface'], note: 'END ' + TRACK_CODE[f.from] + ', ' + TRACK_CODE[f.to], pr: 40 };
+      case 'surface': { const tr = TRACK_CODE[f.to] === 'TRACES', fromTr = TRACK_CODE[f.from] === 'TRACES';
+        if (tr && fromTr) return { sym: [], note: 'FOLLOW TRACES', pr: 12 };
+        return { sym: ['surface'], note: 'END ' + TRACK_CODE[f.from] + ', ' + (tr ? 'FOLLOW TRACES' : TRACK_CODE[f.to]), pr: 40 }; }
+      case 'rocky_track': return { sym: ['rocks'], note: 'ROCKY ' + (TRACK_CODE[f.track] || 'P') + ' ' + lenS(f.len), pr: 48 };
+      case 'rocks': return { sym: ['rocks'], note: f.level >= 3 ? 'ROCK, STEEP !' : f.level === 2 ? 'ROCKY, SLOW !' : f.edges ? 'ROCKS BOTH SIDES' : f.vg ? 'STONES IN VG' : 'STONY', pr: f.level >= 3 ? 56 : f.level === 2 ? 44 : f.edges ? 26 : 34 };
+      case 'along_water': { const nm = f.name ? ' (' + f.name + ')' : '';
+        return { sym: [f.dry ? 'wadi' : 'water'], note: (f.dry ? (f.inBed ? 'IN WADI BED' : 'FOLLOW WADI') : 'ALONG ' + f.what + ' on' + f.side) + nm + ' ' + lenS(f.len), pr: 36 }; }
       case 'leave_track': return { sym: ['offpiste'], note: 'QT ' + TRACK_CODE[f.from] + ', HP', pr: 70 };
       case 'join_track': return { sym: ['join_track'], note: 'RP ' + TRACK_CODE[f.to], pr: 70 };
       case 'village': { const nm = latinPart(f.name) || 'VILLAGE'; return { sym: ['village'], note: f.off < 300 ? 'THROUGH ' + nm + (f.zone ? '' : ', SLOW') : nm + ' ' + (f.off / 1000).toFixed(1) + ' KM on' + f.side, pr: 45 }; }
@@ -1379,7 +1552,9 @@
       .replace('ALONG FENCE TO A GAP,', 'ALONG FENCE TO GAP').replace('GO ROUND HIGH GROUND', 'ROUND HIGH GROUND').replace(/ +/g, ' ').trim();
   }
   // FIM roadbook shorthand for the kind of way (docs/ROADBOOK_FORMAT.md, abbreviations)
-  const TRACK_CODE = { dual: 'RO', tarmac: 'RO', gravel: 'PP', track: 'P', twotrack: 'P -V', sand: 'P SA', path: 'P E3', offpiste: 'HP' };
+  // 0.4.0: a grade 4/5 track or a path (not a real piste; the game does not even build a path) is "TRACES" everywhere:
+  // "FOLLOW TRACES", "TURN R ON TRACES", "END P, FOLLOW TRACES", "RP TRACES"
+  const TRACK_CODE = { dual: 'RO', tarmac: 'RO', gravel: 'PP', track: 'P', twotrack: 'TRACES', sand: 'P SA', path: 'TRACES', offpiste: 'HP' };
   const TRACK_RANK = { dual: 6, tarmac: 5, gravel: 4, track: 3, sand: 3, twotrack: 2, path: 1, offpiste: 0 };
   /** "kpL FPP", "TURN R on P (D23)", "kpS, crossroads, FRO" */
   function junctionNote(f) {
@@ -1594,6 +1769,8 @@
       for (const t of lead) notes.push(t);
       for (const pt of out1) if (!notes.includes(pt.txt)) notes.push(pt.txt);
       if (b.wp && !b.items.length && b.wp.type !== 'ASS' && !notes.length) notes.push('CAP ' + pad3(capOut));
+      // 0.4.0: a waypoint box whose only items are the lie of the land (rocks, a river followed) still gives its CAP first
+      else if (b.wp && b.wp.type !== 'ASS' && b.items.length && b.items.every(it => /^(rocks|along_water|rocky_track)$/.test(it.f.kind)) && !notes.some(t => /^CAP /.test(t))) notes.unshift('CAP ' + pad3(capOut));
       if (b.filler) {
         if (b.filler === 'offpiste') { const t = terr[b.si]; notes.push('CAP ' + pad3(capOut) + (t && t !== 'dunes' ? ', ' + ({ flat: 'FLAT, FAST', rolling: 'ROLLING', broken: 'BROKEN, SLOW' }[t]) : t === 'dunes' ? ', IN DUNES' : '')); symbols.push('cap'); }
         else { const tc = tclass[b.si]; notes.push(tc === 'dual' || tc === 'tarmac' ? 'FRO' : tc === 'gravel' ? 'FPP' : 'FOLLOW ' + (TRACK_CODE[tc] || 'P')); symbols.push('continue'); }
@@ -1692,8 +1869,8 @@
     boxes.forEach((b, i) => { b.n = i + 1; b.partial = i ? +(b.km - boxes[i - 1].km).toFixed(2) : 0; });
     return n;
   }
-  const OSM_KINDS = new Set(['junction', 'cross_water', 'cross_fence', 'cross_railway', 'cross_road', 'ford', 'gate', 'cattle_grid', 'level_crossing', 'stop', 'bridge', 'surface', 'leave_track', 'join_track', 'village', 'landmark_cross', 'landmark_pass', 'rough']);
-  const featureSource = k => OSM_KINDS.has(k) ? 'auto-osm' : k === 'cover' ? 'auto-landcover' : 'auto-dem';
+  const OSM_KINDS = new Set(['junction', 'cross_water', 'cross_fence', 'cross_railway', 'cross_road', 'ford', 'gate', 'cattle_grid', 'level_crossing', 'stop', 'bridge', 'surface', 'leave_track', 'join_track', 'village', 'landmark_cross', 'landmark_pass', 'rough', 'along_water', 'rocky_track']);
+  const featureSource = k => OSM_KINDS.has(k) ? 'auto-osm' : k === 'cover' || k === 'rocks' ? 'auto-landcover' : 'auto-dem';
   function cleanFeature(f) { const o = {}; for (const k in f) if (!['i', 'tags', 'tulip', 'lat', 'lon'].includes(k)) o[k] = f[k]; if (f.tags) { o.osm = {}; for (const k of ['highway', 'surface', 'tracktype', 'waterway', 'intermittent', 'barrier', 'name', 'ref', 'bridge', 'ford', 'railway']) if (f.tags[k]) o.osm[k] = f.tags[k]; } return o; }
 
   /** bends on tracks with no junction (turn over ~80 m) */
@@ -1829,7 +2006,7 @@
   function landformQuery(boxes) {
     const f = b => '(' + b.map(x => x.toFixed(5)).join(',') + ')';
     let q = '[out:json][timeout:20];(';
-    for (const b of boxes) { const B = f(b); q += 'node[natural~"^(peak|hill|volcano|saddle)$"]' + B + ';way[natural~"^(coastline|beach|sand|dune|scree|shingle|bare_rock|wetland|water)$"]' + B + ';way[landuse=salt_pond]' + B + ';'; }
+    for (const b of boxes) { const B = f(b); q += 'node[natural~"^(peak|hill|volcano|saddle)$"]' + B + ';way[natural~"^(coastline|beach|sand|dune|scree|shingle|bare_rock|wetland|water)$"]' + B + ';way[landuse=salt_pond]' + B + ';way[waterway~"^(river|wadi)$"]' + B + ';'; }
     return q + ');out body geom;';
   }
   function landformBoxes(stage, o) {
@@ -2148,15 +2325,24 @@
       if (o.landCover) cov = coverAlong(S, o.landCover, o);
       else if (landCover) { await landCover.load(S.filter((_, i) => i % 2 === 0).map(s => [s.lat, s.lon]), (d, t) => progress('landcover', d, t)); if (landCover.loaded) cov = coverAlong(S, landCover.at, o); }
       const fCov = cov ? coverFeatures(S, cov, o) : [];
-      const features = fProf.concat(fOsm, fBend, fLm, fCov);
-      features.trackClass = fOsm.trackClass || S.map(s => s.mode === 'direct' ? 'offpiste' : null);
+      const tcls = fOsm.trackClass || S.map(s => s.mode === 'direct' ? 'offpiste' : null);
+      const fRock = rockFeatures(S, fProf.H, hl, hr, cov, tcls, o, fProf.filter(f => f.kind === 'dunes'));
+      const wways = (fOsm.waterways || []).concat(lmData && lmData.elements ? lmData.elements.filter(e => e.type === 'way' && e.tags && e.tags.waterway && e.geometry) : []);
+      const fAlong = alongWaterFeatures(S, wways, fProf.valleyDepth, o);
+      // a valley we already follow a river / wadi in: one note
+      const inAlong = i => fAlong.some(f => i >= f.i - 10 && S[i].d <= S[f.i].d + f.len);
+      const fTerr = gateTerrain(fProf, S, fOsm.grade, tcls, cov, fOsm).filter(f => !(f.kind === 'valley' && inAlong(f.i)));
+      const features = fTerr.concat(fOsm, fBend, fLm, fCov, fRock, fAlong);
+      features.trackClass = tcls;
       features.terrainClass = fProf.terrainClass;
       const res = assemble(st, S, features, o);
+      const amb = ambientNotes(res.boxes, S, fRock.concat(fAlong, fTerr.filter(f => f.kind === 'valley' || f.kind === 'ridge'), fOsm.filter(f => f.kind === 'rocky_track' || (f.kind === 'surface' && TRACK_CODE[f.to] === 'TRACES'))));
       const enr = enrichBoxes(res.boxes, S, { landmarks: lms, cover: cov, terrain: fProf.terrainClass }, o);
       const offB = res.boxes.filter(b => b.offPiste && !b.waypoint), bare = b => b.symbols.every(x => x === 'cap' || x === 'continue');
       res.stats.enrich = Object.assign(enr, { landmarkObjects: lms.length, landmarkPass: fLm.filter(f => f.kind === 'landmark_pass').length, powerLineCrossings: fLm.filter(f => f.kind === 'landmark_cross').length,
         coverChanges: fCov.length, coverKnownPct: cov ? Math.round(cov.filter(Boolean).length / cov.length * 100) : 0,
-        bumps: fProf.filter(f => f.kind === 'bump').length, ditches: fProf.filter(f => f.kind === 'ditch').length, steps: fProf.filter(f => /^step_/.test(f.kind)).length,
+        bumps: fTerr.filter(f => f.kind === 'bump').length, ditches: fTerr.filter(f => f.kind === 'ditch').length, steps: fTerr.filter(f => /^step_/.test(f.kind)).length,
+        terrainDropped: fProf.length - fTerr.length, rocks: fRock.length, alongWater: fAlong.length, ambient: amb,
         offPisteCapOnlyPct: offB.length ? Math.round(offB.filter(bare).length / offB.length * 100) : null });
       const migrated = o.migrateStageNotes === false ? 0 : migrateStageNotes(res.boxes, stage, S, o);
       if (migrated) { res.stats.boxes = res.boxes.length; res.stats.migratedFromStage = migrated; }
@@ -2356,6 +2542,6 @@
     return n;
   }
 
-  return { VERSION, GENERATOR, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
+  return { VERSION, GENERATOR, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
     geo: { dist, bearing, dest, rel, simplify, projector } };
 });
