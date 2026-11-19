@@ -218,3 +218,25 @@ test('1.1.2 real data (Wyans 18 Nov 2026, near Tan-Tan): the leg WPM -> WPS stor
   assert.ok(r.gapM < 1500, 'straight gaps: ' + Math.round(r.gapM) + ' m');
   assert.ok(r.points.every(p => p[1] > -12 && p[1] < -10), 'points in -180..180');
 });
+
+// 1.2.0 (Wyans 19 Nov 2026): a switchback path is ~1.5x the straight distance. At a flat gap cost of 2.0 per metre
+// (vs 1.6 for a path) the straight line won, so the trail could not be routed. Long gaps now cost 3.0 per metre past 300 m.
+test('1.2.0: a winding mountain path (1.5x the straight line) is followed, not cut straight across', async () => {
+  const pts = []; for (let i = 0; i <= 20; i++) pts.push([i % 2 ? 70 : -70, i * 125]); // 2.5 km as the crow flies, ~3.75 km of zigzag
+  const R = TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) });
+  const r = await R.route(ll(-70, 0), ll(-70, 2500));
+  assert.strictEqual(r.status, 'ok'); assert.ok(r.gapM < 1 && r.wayM > 2900, JSON.stringify({ way: r.wayM, gap: r.gapM }));
+  const r0 = await TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) }).route(ll(-70, 0), ll(-70, 2500), { gapLongM: Infinity });
+  assert.ok(r0.gapM > 1000, 'with the old flat gap cost the straight line wins: ' + r0.gapM);
+  // short hops cost the same as before (<= 300 m)
+  assert.strictEqual(TR.DEFAULTS.gapCost, 2.0); assert.strictEqual(TR.DEFAULTS.gapLongM, 300);
+});
+test('1.2.0 real data (Wyans 19 Nov 2026, Ourika valley, High Atlas): path 1461760015 is routed end to end, both ways', async () => {
+  const ans = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/tracks/ourika_path_1119.json'), 'utf8'));
+  const top = [31.3269459, -7.8426232], bottom = [31.3074737, -7.8296145];
+  for (const [a, b] of [[top, bottom], [bottom, top]]) {
+    const r = await TR.createRouter({ overpass: async () => ans }).route(a, b);
+    assert.strictEqual(r.status, 'ok', JSON.stringify({ way: r.wayM, gap: r.gapM }));
+    assert.ok(r.wayM > 3700 && r.gapM === 0, JSON.stringify({ way: r.wayM, gap: r.gapM }));
+  }
+});

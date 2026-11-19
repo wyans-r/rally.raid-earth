@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.1.2';
+  var VERSION = '1.2.0';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -39,6 +39,11 @@
     linkM: 300,           // longest hop from a leg end onto a way (drawn straight)
     linkCost: 1.3,        // cost per metre of such a hop
     gapCost: 2.0,         // cost per metre of a straight gap where no way connects (route ~2x longer on tracks still wins)
+    // 1.2.0: past gapLongM, each metre of a straight gap costs gapCostLong. In the mountains a track or path with
+    // switchbacks is 1.5-2x the straight distance, so at a flat 2.0 the router cut straight across the ridge instead
+    // (a 3.8 km path above Ourika, High Atlas, lost to a 2.5 km straight line). Hops up to 300 m cost the same as before.
+    gapLongM: 300,        // = linkM: hops up to 300 m cost what they did
+    gapCostLong: 3.0,
     jumpM: 2500,          // a gap jump from a dead end (or the leg start) may reach this far
     sideJumpM: 0,         // 1.1.2 (off by default: costly in towns): a gap jump from the middle of a way onto another piece
     overpassTimeoutS: 40
@@ -268,15 +273,16 @@
       addE(k, s[0], lu * f, lu, 'way'); addE(s[0], k, lu * f, lu, 'way'); addE(k, s[1], lv * f, lv, 'way'); addE(s[1], k, lv * f, lv, 'way');
       return k;
     }
+    var gapC = function (d) { return d * o.gapCost + Math.max(0, d - (o.gapLongM || Infinity)) * ((o.gapCostLong || o.gapCost) - o.gapCost); };
     var L = Math.hypot(B[0] - A[0], B[1] - A[1]);
-    addE(S, T, L * o.gapCost, L, 'gap');
+    addE(S, T, gapC(L), L, 'gap');
     snapsNear(G, A, o.linkM, 6).forEach(function (sn) { addE(S, snapNode(sn), sn.d * o.linkCost, sn.d, 'link'); });
     var endSnaps = snapsNear(G, B, o.linkM, 6).map(function (sn) { return [snapNode(sn), sn.d]; });
     // snap nodes next to the end can reach T with a link (added on expansion); the end snap nodes are joined to
     // the segments, and the segment ends must know about them too (done in snapNode)
     var toT = new Map(); endSnaps.forEach(function (e) { toT.set(e[0], e[1]); });
     // the start may jump straight onto any node within jumpM (when no way is within linkM)
-    portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], n[1] * o.gapCost, n[1], 'gap'); });
+    portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], gapC(n[1]), n[1], 'gap'); });
     var deg = function (k) { return k < N ? G.adj[k].length : 2; };
     var g = new Map(), from = new Map(), closed = new Set(), H = new Heap();
     var h = function (k) { var p = nodeXY(k); return Math.hypot(B[0] - p[0], B[1] - p[1]) * Math.min(1, o.linkCost); };
@@ -297,15 +303,15 @@
       if (u !== S) {
         var dT = Math.hypot(B[0] - pu[0], B[1] - pu[1]);
         if (toT.has(u)) relax(T, toT.get(u) * o.linkCost, toT.get(u), 'link');
-        else relax(T, dT * o.gapCost, dT, dT <= o.linkM ? 'link' : 'gap');
+        else relax(T, dT <= o.linkM ? dT * o.gapCost : gapC(dT), dT, dT <= o.linkM ? 'link' : 'gap');
         // a dead end may jump to another piece of the network
         if (u < N && deg(u) <= 1) portalsNear(G, pu, o.jumpM).forEach(function (n) {
-          if (G.comp[n[0]] !== G.comp[u]) relax(n[0], n[1] * o.gapCost, n[1], 'gap');
+          if (G.comp[n[0]] !== G.comp[u]) relax(n[0], gapC(n[1]), n[1], 'gap');
         });
         // 1.1.2: ... and so may any point of a way, onto a nearby other piece (a track that passes 1 km from another,
         // or from the leg start, with no junction between them: before, only dead ends could jump, so such tracks were ignored)
         else if (u < N && o.sideJumpM > 0) portalsNear(G, pu, o.sideJumpM).forEach(function (n) {
-          if (G.comp[n[0]] !== G.comp[u]) relax(n[0], n[1] * o.gapCost, n[1], 'gap');
+          if (G.comp[n[0]] !== G.comp[u]) relax(n[0], gapC(n[1]), n[1], 'gap');
         });
       }
     }
