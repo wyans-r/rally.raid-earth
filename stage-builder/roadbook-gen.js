@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.5.0';
+  const VERSION = '0.5.1';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -712,7 +712,7 @@
     overpassMaxPauseMs: 15000,
     junctionsInSpeedZones: 'turns', // 'all' | 'turns' (inside DZ..FZ only junctions where you turn / fork)
     // off-piste line planner (planOffPiste)
-    planOffPiste: true, planCell: 30, planWidthFrac: 0.18, planMinHalfWidth: 500, planMaxHalfWidth: 2500, planMinLegM: 400, planMinGapM: 150, planFollow: true, followMinM: 300, followRiseM: 8, followMaxTurn: 50,
+    planOffPiste: true, planCell: 30, planWidthFrac: 0.18, planMinHalfWidth: 500, planMaxHalfWidth: 2500, planMinLegM: 400, planMinGapM: 150, planFollow: true, followMinM: 300, followRiseM: 8, followMaxTurn: 50, planValleyCentre: true, valleyWallM: 10, valleyMaxHalfM: 600, valleySmoothM: 30, followDuneRoughM: 2,
     planNoise: 0.7, planNoiseCell: 450, planSlopeCost: 40, planCliff: 0.6, planClimbCost: 6, planDescentCost: 1.5,
     planMaxUp: 0.22, planMaxDown: 0.35, planFenceCost: 600, planSimplifyM: 45, planZeroIsSea: false, planMinSegM: 250,
     planMaxSegM: 1800, planMaxSegFlatM: 3000, planFlatSlope: 0.02, planJitterMinM: 50, planJitterMaxM: 140, planSeed: 0,
@@ -2291,11 +2291,18 @@
         const ci = p[0] + (q[0] - p[0]) * t, cj = p[1] + (q[1] - p[1]) * t, k0 = at(ci, cj), kl = at(ci + li * off, cj + lj * off), kr = at(ci - li * off, cj - lj * off);
         if (k0 < 0 || kl < 0 || kr < 0) continue;
         const kl2 = at(ci + li * off / 2, cj + lj * off / 2), kr2 = at(ci - li * off / 2, cj - lj * off / 2);
-        dl += H[kl] - H[k0]; dr += H[kr] - H[k0]; sl += Math.max(SL[kl], kl2 >= 0 ? SL[kl2] : 0); sr += Math.max(SL[kr], kr2 >= 0 ? SL[kr2] : 0); n++;
+        // the walls of a wide valley can be 300-600 m off the line: the highest of 150 / 300 / 600 m each side
+        let hl = H[kl], hr = H[kr];
+        for (const f of [2, 4]) { const a1 = at(ci + li * off * f, cj + lj * off * f), b1 = at(ci - li * off * f, cj - lj * off * f); if (a1 >= 0) hl = Math.max(hl, H[a1]); if (b1 >= 0) hr = Math.max(hr, H[b1]); }
+        dl += hl - H[k0]; dr += hr - H[k0]; sl += Math.max(SL[kl], kl2 >= 0 ? SL[kl2] : 0); sr += Math.max(SL[kr], kr2 >= 0 ? SL[kr2] : 0); n++;
       }
       if (n < 5) continue;
       dl /= n; dr /= n; sl /= n; sr /= n;
-      const dun = dunesNear([Math.round((p[0] + q[0]) / 2), Math.round((p[1] + q[1]) / 2)]);
+      // dunes: short ups and downs along the piece itself (heights minus their ~200 m running mean), not just
+      // ground that varies along the leg's axis (a winding valley does that too)
+      const hs = []; along(p, q, kk => { if (kk >= 0) hs.push(H[kk]); });
+      let rough = 0; if (hs.length > 9) { let s2 = 0, nn = 0; for (let m = 3; m < hs.length - 3; m++) { let mean = 0; for (let d = -3; d <= 3; d++) mean += hs[m + d]; mean /= 7; s2 += (hs[m] - mean) ** 2; nn++; } rough = Math.sqrt(s2 / nn); }
+      const dun = rough > o.followDuneRoughM && dunesNear([Math.round((p[0] + q[0]) / 2), Math.round((p[1] + q[1]) / 2)]);
       const hiL = dl > o.followRiseM, hiR = dr > o.followRiseM, side = dl > dr ? 'left' : 'right', sS = dl > dr ? sl : sr;
       let follow = null;
       if (dun && hiL && hiR) follow = 'follow dune corridor';
@@ -2304,9 +2311,83 @@
       if (!follow) continue;
       info[k] = Object.assign(info[k] || { reason: null }, { follow });
     }
+    // 6) 0.5.0 (Wyans, 18 Nov): along a valley floor, two candidate lines for the run: (a) the minimum-slope line
+    // (the cost-surface path above) and (b) the approximate centre of the valley (midway between the walls found on a
+    // cross-section every 60 m, smoothed). The shorter one is driven, if it keeps within the slope / obstacle limits;
+    // otherwise the other. The pick is simplified so it does not zig-zag.
+    const valleyRuns = [];
+    if (o.planValleyCentre !== false) {
+      const Hat = (i, j) => { i = Math.round(i); j = Math.round(j); return i < i0 || i > i1 || j < -J || j > J ? NaN : H[idx(i, j)]; };
+      const polyLen = Q => { let m = 0; for (let k = 1; k < Q.length; k++) m += segLen(Q[k - 1], Q[k]); return m; };
+      const grades = Q => { let up = 0, dn = 0, ok = true;   // along-line grades over 60 m steps, and blocked cells
+        for (let k = 1; k < Q.length; k++) { let last = null, lk = -1; along(Q[k - 1], Q[k], kk => { if (kk < 0 || CM[kk] === Infinity || OB[kk] === 6) { ok = false; return false; } if (lk < 0 || ++lk >= 2) { if (last !== null) { const g = (H[kk] - H[last]) / (2 * c); up = Math.max(up, g); dn = Math.max(dn, -g); } last = kk; lk = 0; } }); if (!ok) break; }
+        return { ok, up, dn, max: Math.max(up, dn) }; };
+      const dp = (Q, tol) => { if (Q.length < 3) return Q.slice(); let mx = 0, at = 0; const [p, q] = [Q[0], Q[Q.length - 1]], L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1e-9;
+        for (let k = 1; k < Q.length - 1; k++) { const d = Math.abs((q[0] - p[0]) * (p[1] - Q[k][1]) - (p[0] - Q[k][0]) * (q[1] - p[1])) / L; if (d > mx) { mx = d; at = k; } }
+        return mx <= tol ? [p, q] : dp(Q.slice(0, at + 1), tol).slice(0, -1).concat(dp(Q.slice(at), tol)); };
+      for (let a0 = 0; a0 + 1 < V.length; a0++) {
+        if (!(info[a0] && info[a0].follow === 'follow valley floor')) continue;
+        let b0 = a0 + 1; while (b0 + 1 < V.length && info[b0] && info[b0].follow === 'follow valley floor') b0++;
+        const run0 = V.slice(a0, b0 + 1), lenRun = polyLen(run0);
+        if (lenRun < o.followMinM) { a0 = b0 - 1; continue; }
+        // (a) minimum-slope line: A* between the run's ends over the run's box (+ 600 m), cost = length x (1 + 12 x
+        // terrain slope^2) + climbing; no noise, no doglegs. Smoothed and simplified like (b)
+        const pA0 = run0[0].map(Math.round), pB0 = run0[run0.length - 1].map(Math.round), pad = Math.round(o.valleyMaxHalfM / c);
+        const bi0 = Math.max(i0, Math.min(...run0.map(v => v[0])) - pad), bi1 = Math.min(i1, Math.max(...run0.map(v => v[0])) + pad);
+        const bj0 = Math.max(-J, Math.min(...run0.map(v => v[1])) - pad), bj1 = Math.min(J, Math.max(...run0.map(v => v[1])) + pad);
+        let minLine = null;
+        { g.fill(Infinity); from.fill(-1); closed.fill(0); heap.length = 0;
+          const sK = idx(pA0[0], pA0[1]), gK = idx(pB0[0], pB0[1]); g[sK] = 0; push(0, sK);
+          while (heap.length) { const [, k] = pop(); if (closed[k]) continue; closed[k] = 1; if (k === gK) break;
+            const i = Math.floor(k / NJ) + i0, j = (k % NJ) - J;
+            for (const [di, dj] of DIRS) { const ni = i + di, nj = j + dj; if (ni < bi0 || ni > bi1 || nj < bj0 || nj > bj1) continue; const nk = idx(ni, nj); if (closed[nk] || CM[nk] === Infinity || OB[nk] === 6) continue;
+              const d = Math.hypot(di, dj) * c, dh = H[nk] - H[k], sl = (SL[k] + SL[nk]) / 2, ng = g[k] + d * (1 + 12 * sl * sl) + 2 * Math.abs(dh);
+              if (ng < g[nk]) { g[nk] = ng; from[nk] = k; push(ng + Math.hypot(pB0[0] - ni, pB0[1] - nj) * c, nk); } } }
+          if (from[gK] >= 0 || sK === gK) { const cl = []; for (let k = gK; k >= 0; k = from[k]) { cl.push(cellIJ(k)); if (k === sK) break; } minLine = cl.reverse(); } }
+        const smoothLine = (Q, ends) => {
+          const W2 = 3, Sm = Q.map((q, m) => { if (m === 0 || m === Q.length - 1) return q; let si = 0, sj = 0, n = 0; for (let d = -W2; d <= W2; d++) { const r = Q[Math.max(0, Math.min(Q.length - 1, m + d))]; si += r[0]; sj += r[1]; n++; } return [si / n, sj / n]; });
+          Sm[0] = ends[0]; Sm[Sm.length - 1] = ends[1];
+          const out = dp(Sm, o.valleySmoothM / c);
+          for (let k = 1; k < out.length - 1; k++) if (segLen(out[k - 1], out[k]) < 150) { out.splice(k, 1); k--; }   // no zig-zag pieces
+          return out; };
+        const run = minLine && minLine.length > 2 ? smoothLine(minLine, [run0[0], run0[run0.length - 1]]) : run0, lenMin = polyLen(run);
+        // (b) the valley centre: samples every 2 cells along the min-slope line, a cross-section at each
+        const S2 = []; for (let k = 1; k < run.length; k++) { const n = Math.max(1, Math.round(segLen(run[k - 1], run[k]) / (2 * c))); for (let t = (k === 1 ? 0 : 1); t <= n; t++) S2.push([run[k - 1][0] + (run[k][0] - run[k - 1][0]) * t / n, run[k - 1][1] + (run[k][1] - run[k - 1][1]) * t / n]); }
+        const maxT = Math.round(o.valleyMaxHalfM / c), C2 = [];
+        for (let m = 0; m < S2.length; m++) {
+          const pA = S2[Math.max(0, m - 2)], pB = S2[Math.min(S2.length - 1, m + 2)], L = Math.hypot(pB[0] - pA[0], pB[1] - pA[1]) || 1, li = -(pB[1] - pA[1]) / L, lj = (pB[0] - pA[0]) / L;
+          const h0 = Hat(S2[m][0], S2[m][1]); let dL = 0, dR = 0;
+          for (let t = 1; t <= maxT && !dL; t++) { const h = Hat(S2[m][0] + li * t, S2[m][1] + lj * t); if (!Number.isFinite(h)) break; if (h - h0 >= o.valleyWallM) dL = t; }
+          for (let t = 1; t <= maxT && !dR; t++) { const h = Hat(S2[m][0] - li * t, S2[m][1] - lj * t); if (!Number.isFinite(h)) break; if (h - h0 >= o.valleyWallM) dR = t; }
+          const sh = dL && dR ? (dL - dR) / 2 : 0;   // + = towards the left wall
+          C2.push([S2[m][0] + li * sh, S2[m][1] + lj * sh]);
+        }
+        // smoothed (moving average over ~400 m), ends pinned to the run's ends, simplified
+        const cen = smoothLine(C2, [run0[0], run0[run0.length - 1]]);
+        const lenCen = polyLen(cen), gMin = grades(run), gCen = grades(cen), gOld = grades(run0);
+        const safe = g => g.ok && g.up <= o.planMaxUp && g.dn <= o.planMaxDown;
+        // the shorter of the two, if it keeps within the limits; else the other; neither: the planner's own line
+        const cands = [{ k: 'min-slope', Q: run, len: lenMin, g: gMin }, { k: 'centre', Q: cen, len: lenCen, g: gCen }].sort((x, y) => x.len - y.len);
+        let pick = cands.find(x => safe(x.g)), why;
+        if (pick === cands[0]) why = 'shorter, within limits';
+        else if (pick) why = cands[0].k + ' shorter but ' + (!cands[0].g.ok ? 'blocked' : 'grade ' + Math.round(cands[0].g.max * 100) + '%');
+        else { pick = { k: 'planner line', Q: run0 }; why = 'both over the limits'; }
+        const chosen = pick.k;
+        valleyRuns.push({ fromV: a0, toV: b0, plannerLineM: Math.round(lenRun), maxGradePlannerPct: Math.round(gOld.max * 100), lenMinSlopeM: Math.round(lenMin), lenCentreM: Math.round(lenCen), chosen, why, maxGradeMinSlopePct: Math.round(gMin.max * 100), maxGradeCentrePct: Math.round(gCen.max * 100), centreVertices: cen.length - 2, minSlopeVertices: run.length - 2,
+          ...(o.planDebug ? { centreLine: cen.map(v => P.ll(xyOf(v[0], v[1])).map(x => +x.toFixed(6))), minSlopeLine: run.map(v => P.ll(xyOf(v[0], v[1])).map(x => +x.toFixed(6))) } : {}) });
+        if (chosen !== 'planner line') {
+          const inner = pick.Q.slice(1, -1);
+          V.splice(a0 + 1, b0 - a0 - 1, ...inner);
+          info.splice(a0 + 1, b0 - a0 - 1, ...inner.map(() => ({ reason: null, follow: 'follow valley floor', valley: chosen })));
+          b0 = a0 + inner.length + 1;
+        }
+        a0 = b0 - 1;
+      }
+    }
     const pts = V.map((v, k) => k === 0 ? A : k === V.length - 1 ? B : P.ll(xyOf(v[0], v[1])).map(x => +x.toFixed(6)));
     const segs = []; for (let k = 1; k < pts.length; k++) segs.push(dist(pts[k - 1], pts[k]));
     return { points: pts, vertexInfo: info, stats: { straight: pts.length === 2, vertices: pts.length - 2, longestStraightM: Math.round(Math.max(...segs)), meanSegM: Math.round(segs.reduce((x, y) => x + y, 0) / segs.length),
+      valley: valleyRuns.length ? valleyRuns : undefined,
       straightLenM: Math.round(L), lineLenM: Math.round(segs.reduce((x, y) => x + y, 0)), fabricated: info.filter(x => x && x.fabricated).length, reasoned: info.filter(x => x && x.reason).length } };
   }
 
@@ -2466,6 +2547,8 @@
       const res = assemble(st, S, features, o);
       const amb = ambientNotes(res.boxes, S, fRock.concat(fAlong, fTerr.filter(f => f.kind === 'valley' || f.kind === 'ridge'), fOsm.filter(f => f.kind === 'rocky_track' || (f.kind === 'surface' && TRACK_CODE[f.to] === 'TRACES'))));
       // 0.5.0: a mapped wadi / valley said by the ambient note beats the planner's own terrain guess on the same box
+      // "GENERAL CAP 098" next to the box's own "CAP 098" says the same thing twice
+      for (const b of res.boxes) { const m = b.notes.match(/, GENERAL CAP (\d{3})/); if (m && new RegExp('(^|[^L] )CAP ' + m[1]).test(b.notes.replace(m[0], ''))) b.notes = b.notes.replace(m[0], ''); }
       for (const b of res.boxes) if (/FOLLOW WADI|IN WADI BED|FOLLOW VALLEY [A-Z]/.test(b.notes.replace(/FOLLOW VALLEY FLOOR/g, '')))
         b.notes = b.notes.replace(/,? ?(FOLLOW VALLEY FLOOR|FOLLOW DUNE CORRIDOR|SKIRT HIGH GROUND ON [LR]|FOLLOW FOOT OF ESCARPMENT ON [LR])( \d+\.\d KM)?(, GENERAL CAP \d{3})?/, '').replace(/^[,. ]+/, '');
       const enr = enrichBoxes(res.boxes, S, { landmarks: lms, cover: cov, terrain: fProf.terrainClass }, o);

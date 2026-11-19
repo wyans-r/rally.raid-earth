@@ -81,3 +81,29 @@ test('minimum spacing: no two boxes closer than minSpacingM unless a waypoint is
   }
   rb.boxes.forEach(x => { if (x.partial != null && x.partial < 0.3 && rb.boxes.indexOf(x) > 0) assert.ok(x.short, 'short flag at ' + x.km); });
 });
+
+test('0.5.1 valley runs: min-slope and centre candidates, the shorter safe one is driven, FOLLOW VALLEY FLOOR said once', async () => {
+  // a 6 km valley winding round a sine (amplitude 400 m, wavelength 3 km), walls rising 15 % either side
+  const a = P0, b = dest(P0, 90, 6000);
+  const curve = x => 400 * Math.sin(2 * Math.PI * x / 3000);
+  const hf = (lat, lon) => { const d = dist(a, [lat, lon]), brg = RB.geo.bearing(a, [lat, lon]) * Math.PI / 180, x = d * Math.sin(brg), y = d * Math.cos(brg); return 100 + 0.15 * Math.abs(y - curve(x)); };
+  const st = { format: 'rallyraid-stage', schemaVersion: 1, id: 'v', name: 'V',
+    waypoints: [{ id: 'a', n: 0, type: 'DSS', lat: a[0], lon: a[1], km: 0 }, { id: 'b', n: 1, type: 'ASS', lat: b[0], lon: b[1] }],
+    route: { legs: [{ from: 'a', to: 'b', mode: 'direct', points: [a, b] }] } };
+  const plan = RB.planOffPiste(st, hf, [], Object.assign({}, RB.DEFAULTS, { density: 10 }));
+  const runs = plan.stats[0].valley || [];
+  assert.ok(runs.length >= 1, 'a valley run: ' + JSON.stringify(plan.stats[0]));
+  for (const r of runs) {
+    assert.ok(['min-slope', 'centre', 'planner line'].includes(r.chosen));
+    if (r.chosen === 'min-slope' || r.chosen === 'centre') {
+      const other = r.chosen === 'min-slope' ? 'Centre' : 'MinSlope';
+      const mine = r.chosen === 'min-slope' ? r.lenMinSlopeM : r.lenCentreM, theirs = r['len' + other + 'M'];
+      assert.ok(mine <= theirs || /shorter but/.test(r.why), JSON.stringify(r));
+      assert.ok((r.chosen === 'min-slope' ? r.maxGradeMinSlopePct : r.maxGradeCentrePct) <= 22, JSON.stringify(r));
+    }
+  }
+  const rb = await RB.generate(st, { heightFn: hf, useOsm: false, density: 10 });
+  const fv = rb.boxes.filter(x => /FOLLOW VALLEY FLOOR/.test(x.notes));
+  assert.ok(fv.length >= 1 && fv.length <= 3, rb.boxes.map(x => x.notes).join(' | '));
+  for (let i = 1; i < rb.boxes.length; i++) if (!rb.boxes[i].waypoint && !rb.boxes[i - 1].waypoint) assert.ok(rb.boxes[i].partial >= 0.235, 'gap ' + rb.boxes[i].partial);
+});

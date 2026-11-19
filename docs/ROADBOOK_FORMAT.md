@@ -86,6 +86,17 @@ field, so it is deterministic per stage). The path is simplified to drivable pie
   segments are read as off-piste (CAP boxes, reasons), the rest as road / track. Pieces the builder already planned
   (a `leg.off` run of more than one segment) are kept as drawn. `planGaps: false` turns this off.
   `RoadbookGen.planLegGaps(leg, opts)` does the same for one leg (the builder calls it after routing a leg).
+- **Terrain to follow and valley runs (0.5.0 / 0.5.1)**: each piece of the planned line is labelled with what it
+  follows (`vertexInfo[k].follow`: `follow valley floor`, `follow dune corridor` (only where the ground is rough along
+  the piece itself), `follow foot of escarpment on L/R`, `skirt high ground on L/R`), from the ground 150 / 300 / 600 m
+  either side. A bend inside a run with the same guidance (under `followMaxTurn`, 50 deg) is no new box; the box where
+  the run starts says "FOLLOW VALLEY FLOOR 2.1 KM, GENERAL CAP 152". On a valley-floor run two candidate lines are
+  built: (a) the minimum-slope line (A* over the run's box, cost = length x (1 + 12 x slope^2) + climbing, no noise) and
+  (b) the approximate valley centre (midway between the walls, `valleyWallM` 10 m higher, up to `valleyMaxHalfM` 600 m
+  out, on a cross-section every 60 m); both smoothed (~400 m running mean, simplified to 30 m, no piece under 150 m).
+  The shorter one is driven if its along-line grade keeps within `planMaxUp` / `planMaxDown` (22 % / 35 %) and it
+  crosses nothing blocked; else the other; if neither, the planner's own line stays (`stats[].valley[]` lists both
+  lengths, grades and the pick; `planValleyCentre: false` turns it off).
 - All roadbook distances (`km`) are along this line. The stage file is not changed: the in-game GPS keeps the waypoint
   CAPs and the stage's km. Optionally `RoadbookGen.applyPlannedLine(stage, roadbook)` (or `RB_WRITE_STAGE=<file>
   node roadbook/tools/gen.js ...`) writes a copy of the stage whose `direct` legs carry the planned points
