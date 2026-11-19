@@ -1,0 +1,65 @@
+rally.raid Earth - UNLIMITED RECOVER + ROADBOOK DATA retest (18 Nov 2026)
+Zip: rallyraid_earth_rbdata1118_test.zip (TEST build, not a release; built with --include-events --include-rally --include-rally-events)
+Branch three-apps-1118 (local only, not pushed): commits b999abe (recover) and 4221c14 (roadbook + routing).
+The website is NOT changed (no deploy, no preview; see the end). The roadbook changes reach the game through the
+in-game Planner's copy of the generator (it is in this zip) and the website only after a deploy you OK.
+
+What changed (what you asked -> what was done):
+- "allow unlimited recoveries, keeping the time penalty for each one" + "drop the 1 km rule": RECOVER CAR has no
+  limit per rally, none per stage, and works anywhere, also near the ASS. Each one costs +15 min (the first) or
+  +30 min (every one after). The GPS bar shows "RESETS 3 +75 MIN" (count, then total penalty) instead of "RESETS 1/3".
+  Note: a reset you do with the game's own key (not our RECOVER) counts the same way: penalty, no limit, logged.
+  Game-crash resume (resuming after the game itself crashed) is a separate rule and is unchanged.
+- Roadbook (generator 0.4.0): notes only for things BeamNG.Earth really builds (written up in docs/ROADBOOK_DATA.md):
+  * rocks: STONY / ROCKY, SLOW ! / STONES IN VG / ROCKS BOTH SIDES / ROCKY P where the game scatters rocks (bare ground
+    on a slope, shrubland, surface=rock tracks). Flat bare desert gets none (the game puts none there either).
+  * gone: GATE, CATTLE GRID, plain FENCE (only chain-link fences and walls are built), WELL, CAIRN, SIGN POST, BOULDER,
+    MONUMENT, MILESTONE, a RUIN / MOSQUE / FORT that is only a map point; BRIDGE where the route only passes under
+    one, or on a footbridge; DEM bumps / ditches on graded roads and in towns; crests on main roads (unless blind).
+  * TRACES: a grade 4/5 track or a path is TRACES everywhere: FOLLOW TRACES, kpR ON TRACES, RP TRACES, QT TRACES.
+  * valleys and rivers: FOLLOW VALLEY, FOLLOW WADI, IN WADI BED, ALONG RIVER onL (NAME), ON RIDGE (now on tracks too),
+    LAKE <NAME>. These ride on boxes that are there anyway, so the box count / spacing is the same as before.
+- Stage builder routing (website only, needs a deploy to reach you): "tracks & paths" now links track networks
+  through village streets and minor roads, so it stops drawing straight gaps where a track meets a town street;
+  "roads" warns when OSRM drives a long way round (OSRM never uses tracks).
+
+Total: about 25 min (15-40).
+
+Before you start (2 min)
+1. Close the game. Remove the older rally.raid Earth zip from mods, put rallyraid_earth_rbdata1118_test.zip in.
+   Start the game, BeamNG.Earth, spawn a car, add the GPS app. Expected: no red rally.raid Earth errors (console ~).
+2. Load a stage, TP TO DSS, START, drive about 1 km.
+
+A. Unlimited recover (8 min)
+3. Roll or stop the car. GPS MENU > RECOVER. Expected: the line says "+15 min, recovery 1 (no limit)". CONFIRM.
+   The car is set upright on the route, damage kept. Bar: "RESETS 1 +15 MIN".
+4. Drive 200 m, RECOVER + CONFIRM again ON THE SAME STAGE. Expected: allowed (before: refused, 1 per stage).
+   "+30 min, recovery 2 (no limit)". Bar: "RESETS 2 +45 MIN".
+5. Do it a third and a fourth time. Expected: each allowed, +30 min each. Bar "RESETS 4 +105 MIN".
+6. Drive (or TP) to within 1 km of the ASS, RECOVER + CONFIRM. Expected: allowed (before: refused near the ASS).
+   Bar "RESETS 5 +135 MIN". Finish the stage: the stage time includes the 135 min.
+7. Optional: press the game's own reset key once. Expected: the message "reset not made by the repair menu: counts
+   as recovery / reset 6, +30 min", the bar count goes up by one with its penalty; never "STAGE RETIRED".
+8. Console (filter "rally.raid"): one "car recovery N done" line per recovery, no FAILED, no Lua errors.
+
+B. Roadbook in the in-game Planner (10 min)
+9. Open the Planner app on a Morocco desert stage of the event (for example SS2 Bouarfa loop) and GENERATE the
+   roadbook (or regenerate). Expected: boxes with STONY or ROCKY, SLOW ! where the ground is stony on a slope, and
+   TRACES instead of "P -V". No GATE, CATTLE GRID, WELL, CAIRN or SIGN POST notes.
+10. Drive to a box that says STONY / ROCKY. Expected: rocks on the ground there in the game (scattered, not on the
+    track itself). Drive to a flat bare stretch with no rock note. Expected: few or no rocks.
+11. Find a BRIDGE note (if the stage has one). Expected: there is a bridge you drive over. Tell me any BRIDGE or BUMP
+    note where the game has nothing.
+12. On a stage that follows a river or a valley (Examples: Skeleton Coast SS3 Hoanib, or M'Hamid - Iriki), look for
+    FOLLOW WADI / ALONG RIVER / FOLLOW VALLEY. Expected: you really are in or beside the valley / riverbed there.
+
+C. What to send back (2 min)
+13. Any note that names something not in the game (km + note text), any place with obvious rocks and no note, and
+    the beamng.log if anything failed (<BeamNG user folder>/current/beamng.log).
+
+Before / after roadbooks for 3 stages (same data, old vs new generator): /workspace/rb_compare_1118/*.compare.txt
+
+Website: NOT deployed and NO preview made. The "stagebuilder" Worker has workers_dev and preview_urls turned off
+(/workspace/cf/stagebuilder/wrangler.jsonc), so a preview version would have no URL; turning them on would be a
+Cloudflare settings change, so I stopped there. The website changes are committed locally and tested in a local
+browser (tracks & paths, examples, roadbook editor tests).
