@@ -36,7 +36,7 @@ test('flat off-piste: nothing happens, so only a CAP filler where the gap would 
   assert.ok(per10 >= 2 && per10 <= 5, 'per10 ' + per10);
   for (let i = 1; i < rb.boxes.length; i++) assert.ok(rb.boxes[i].partial <= 4.05, 'gap ' + rb.boxes[i].partial);
   assert.ok(rb.boxes.every(b => b.danger === 0));
-  assert.match(rb.boxes[1].notes, /^CAP 045, FLAT, FAST/);
+  assert.match(rb.boxes[1].notes, /^CAP 045 C, FLAT, FAST/);
   assert.strictEqual(rb.boxes[0].label, 'DSS'); assert.strictEqual(rb.boxes.at(-1).label, 'ASS');
   for (let i = 1; i < rb.boxes.length; i++) assert.ok(Math.abs(rb.boxes[i].partial - (rb.boxes[i].km - rb.boxes[i - 1].km)) < 0.011);
 });
@@ -267,7 +267,8 @@ function multi(p0, hops) { // stage with several direct legs: hops = [[bearing, 
 }
 const VALIDATE = { DSS: 200, WPV: 200, WPM: 90, WPN: 200, WPS: 30, WPC: 300, WPE: 90, ASS: 90 };
 // rolling terrain: hills ~600 m across, 25 m high
-const hilly = (lat, lon) => 25 * Math.sin(lat * 111320 / 600 * 2 * Math.PI) * Math.cos(lon * 104000 / 700 * 2 * Math.PI);
+// 0.6.0: longer-wave rolling hills (~2 km), so the height-reversal test does not treat this as a dune field (the 600 m version did).
+const hilly = (lat, lon) => 40 * Math.sin(lat * 111320 / 2000 * 2 * Math.PI) * Math.cos(lon * 104000 / 2200 * 2 * Math.PI);
 
 test('planner: deterministic, and different stages get different lines', () => {
   const st = multi([-20, 13], [[30, 8, 'WPM'], [300, 6, 'ASS']]);

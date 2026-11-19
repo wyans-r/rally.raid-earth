@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.5.3';
+  const VERSION = '0.6.0';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -720,7 +720,14 @@
     // scrub planScrubCost x (was 2.5x). lineHazards() says what a straight line crosses (hazardMinM of a kind counts).
     planTreeCost: 400, planScrubCost: 40, planWetCost: 8, hazardStepM: 20, hazardMinM: 60, hazardEndM: 60,
     planMaxSegM: 1800, planMaxSegFlatM: 3000, planFlatSlope: 0.02, planJitterMinM: 50, planJitterMaxM: 140, planSeed: 0,
-    planVertexShare: 0.6, planKeepTurn: 35
+    planVertexShare: 0.6, planKeepTurn: 35,
+    // 0.6.0 (Wyans 19 Nov 2026): in a dune field the roadbook path is a recce line (the CAP heading, maybe a broad
+    // interdune corridor that really runs along it). It does not weave round single dunes; steep faces are cautions.
+    // A field is OSM natural=sand/dune, or the same height-reversal test used for DNX notes.
+    duneRecce: true, duneFrac: 0.35, duneMinStretchM: 600,
+    recceStepM: 50, recceCorridorHalfM: 500, recceCorridorMinM: 1500, recceCorridorWallM: 12, recceMinOffsetM: 40,
+    recceSmoothM: 1200, recceSimplifyM: 250, recceMaxTurn: 25,
+    duneSpacingM: 800, duneDensity: 1, duneMaxGapKm: 25, duneFacePct: 35, duneFaceHardPct: 45
   };
 
   /**
@@ -773,6 +780,7 @@
         if (steep >= o.duneSteep) for (let i = ext[a][0]; i <= ext[b][0]; i++) duneAt[i] = 1;
       }
     }
+    if (S) for (let i = 0; i < N; i++) if (S[i] && S[i].inDune) duneAt[i] = 1;
     const dunes = [];
     for (let i = 0; i < N;) {
       if (!duneAt[i]) { i++; continue; }
@@ -791,6 +799,42 @@
       i = j + 1;
     }
     const inDunes = i => dunes.some(([a, b]) => i >= a && i <= b);
+
+    // 0.6.0: in a dune field, steep faces / drops and major cordon (ridge) crossings are cautions, not dodges
+    {
+      const face = o.duneFacePct, hard = o.duneFaceHardPct;
+      for (let i = 0; i < N;) {
+        if (!inDunes(i) || Math.abs(g[i]) < face) { i++; continue; }
+        const sign = Math.sign(g[i]);
+        let j = i, mx = Math.abs(g[i]);
+        while (j + 1 < N && inDunes(j + 1) && Math.sign(g[j + 1]) === sign && Math.abs(g[j + 1]) >= face * 0.7) {
+          j++; mx = Math.max(mx, Math.abs(g[j]));
+        }
+        const len = (j - i) * step;
+        if (len >= 40 && mx >= face) {
+          const danger = mx >= hard ? 2 : 1;
+          F.push({ i, kind: sign > 0 ? 'steep_face' : 'steep_drop', grade: Math.round(mx), len: Math.round(len), danger, end: j });
+        }
+        i = j + 1;
+      }
+      const kcC = Math.max(1, Math.round(80 / step)), sepC = Math.round(1500 / step);
+      for (let i = kcC; i < N - kcC; i++) {
+        if (!inDunes(i)) continue;
+        const before = (H[i] - H[i - kcC]) / (kcC * step) * 100, after = (H[i + kcC] - H[i]) / (kcC * step) * 100;
+        const convC = (before >= 6 && after <= -6) ? before - after : 0;
+        if (convC < 28) continue;
+        let isMax = true;
+        for (let j = Math.max(0, i - sepC); j <= Math.min(N - 1, i + sepC); j++) {
+          if (j === i || !inDunes(j)) continue;
+          const b2 = (H[j] - H[Math.max(0, j - kcC)]) / (kcC * step) * 100, a2 = (H[Math.min(N - 1, j + kcC)] - H[j]) / (kcC * step) * 100;
+          if ((b2 >= 4 && a2 <= -4) && (b2 - a2) > convC) { isMax = false; break; }
+        }
+        if (!isMax) continue;
+        const relief = Math.max(0, H[i] - Math.min(H[Math.max(0, i - kcC)], H[Math.min(N - 1, i + kcC)]));
+        if (relief < 20) continue;
+        F.push({ i, kind: 'cordon', relief: Math.round(relief), grade: Math.round(convC), danger: convC >= 40 || relief >= 40 ? 2 : 1 });
+      }
+    }
 
     // crests and dips: change of grade across the point
     const kc = Math.max(1, Math.round(50 / step));
@@ -1502,7 +1546,10 @@
       case 'dip': return { sym: ['dip'], note: 'DIP', pr: 25 + f.danger * 10 };
       case 'compression': return { sym: ['compression'], note: 'COMPRESSION', pr: 30 + f.danger * 10 };
       case 'wadi': return { sym: ['wadi'], note: 'WADI ' + Math.round(f.depth) + ' M DEEP', pr: 40 + f.danger * 10 };
-      case 'dunes': return { sym: ['dunes'], note: 'DNX ' + f.lenKm + ' KM ' + ({ small: 'L1', medium: 'L2', big: 'L3' }[f.size]) + ' (~' + f.amp + ' M)', pr: 60 };
+      case 'dunes': return { sym: ['dunes'], note: 'DNX ' + f.lenKm + ' KM ' + ({ small: 'L1', medium: 'L2', big: 'L3' }[f.size]) + ' (~' + f.amp + ' M)', pr: 70 };
+      case 'steep_face': return { sym: ['dunes', 'climb'], note: 'STEEP FACE ' + Math.round(f.grade) + '%, ' + (f.len >= 1000 ? (f.len / 1000).toFixed(1) + ' KM' : Math.round(f.len / 10) * 10 + ' M'), pr: 75 };
+      case 'steep_drop': return { sym: ['dunes', 'descent'], note: 'STEEP DROP ' + Math.round(f.grade) + '%, ' + (f.len >= 1000 ? (f.len / 1000).toFixed(1) + ' KM' : Math.round(f.len / 10) * 10 + ' M'), pr: 80 };
+      case 'cordon': return { sym: ['dunes', 'ridge'], note: 'CROSS CORDON' + (f.relief ? ' ' + f.relief + ' M' : ''), pr: 72 };
       case 'rough': return { sym: [f.danger ? 'ruts' : 'broken'], note: 'BAD ' + (TRACK_CODE[f.track] || 'P') + ' ' + lenS(f.len) + (f.danger ? ', 4x4' : ''), pr: 42 };
       case 'bump': return { sym: ['bump'], note: 'BUMP' + (f.danger ? ' !' : ''), pr: 32 + f.danger * 6 };
       case 'ditch': return { sym: ['ditch'], note: 'DITCH' + (f.danger ? ' !' : ''), pr: 40 + f.danger * 6 };
@@ -1547,10 +1594,10 @@
         if (f.follow) {   // 0.5.0: "CAP 140, FOLLOW VALLEY FLOOR 2.1 KM, GENERAL CAP 152"
           const g = f.followCap != null && Math.abs(rel(f.to, f.followCap)) >= 10 ? ', GENERAL CAP ' + pad3(f.followCap) : '';
           return { sym: f.obstacle ? ['cap', obstSym(f.obstacle)] : (/dune/.test(f.follow) ? ['cap', 'dunes'] : ['cap']),
-            note: 'CAP ' + pad3(f.to) + ', ' + capReason(f.follow) + (f.followKm >= 0.5 ? ' ' + f.followKm.toFixed(1) + ' KM' : '') + g + (f.reason ? ', ' + capReason(f.reason) : ''),
+            note: capLabel(f.to, f.offPiste || f.capType === 'C') + ', ' + capReason(f.follow) + (f.followKm >= 0.5 ? ' ' + f.followKm.toFixed(1) + ' KM' : '') + g + (f.reason ? ', ' + capReason(f.reason) : ''),
             pr: 28 + Math.min(45, t * 0.9) };
         }
-        return { sym: f.obstacle ? ['cap', obstSym(f.obstacle)] : (f.reason && /dune/.test(f.reason) ? ['cap', 'dunes'] : ['cap']), note: 'CAP ' + pad3(f.to) + (f.reason ? ', ' + capReason(f.reason) : ''),
+        return { sym: f.obstacle ? ['cap', obstSym(f.obstacle)] : (f.reason && /dune/.test(f.reason) ? ['cap', 'dunes'] : ['cap']), note: capLabel(f.to, f.offPiste || f.capType === 'C') + (f.reason ? ', ' + capReason(f.reason) : ''),
         pr: 20 + Math.min(45, t * 0.9) + (f.reason ? 8 : 0) - (f.fabricated ? 8 : 0) }; }
       case 'follow': return { sym: /dune/.test(f.follow) ? ['dunes'] : [], note: capReason(f.follow) + (f.followKm >= 0.5 ? ' ' + f.followKm.toFixed(1) + ' KM' : '') + ', GENERAL CAP ' + pad3(f.followCap), pr: 50 };
       default: return { sym: [], note: String(f.kind).toUpperCase(), pr: 10 };
@@ -1647,9 +1694,14 @@
     const MUST = /^(junction|gate|cattle_grid|leave_track|join_track|cross_fence|cross_road|cross_railway|level_crossing)$/;
     // straight on along the biggest road past smaller side tracks: a box worth having, but not a choice to make
     const obviousJunction = f => /^STRAIGHT/.test(f.instr) && f.tulip && f.tulip.exit && TRACK_RANK[f.tulip.exit.track] >= 3 && (f.tulip.branches || []).every(b => (TRACK_RANK[b.track] || 0) < TRACK_RANK[f.tulip.exit.track]);
+    const duneAt = i => !!(S[i] && S[i].inDune);
+    const DUNE_KEEP = /^(dunes|dunes_end|cordon|steep_face|steep_drop)$/;
     const importance = x => {
       if (x.wp) return Infinity;
-      if (x.items.some(i => i.danger >= 2 || (MUST.test(i.f.kind) && !(i.f.kind === 'junction' && (obviousJunction(i.f) || i.f.choice === false))) || (i.f.kind === 'cap' && i.f.planned && Math.abs(rel(i.f.from, i.f.to)) >= o.capKeepTurn))) return Infinity;   // a CAP change of the line itself: the line was thinned to the density already
+      if (x.items.some(i => DUNE_KEEP.test(i.f.kind))) return Infinity;
+      const DUNE_WEAVE = /^(cap|terrain|follow|crest|dip|undulations|compression|climb|descent|sideslope|bump|ditch|step_down|step_up|rocks)$/;
+      if (duneAt(x.si) && x.items.every(i => DUNE_WEAVE.test(i.f.kind) && (i.f.kind !== 'cap' || !i.f.follow))) return 5;
+      if (x.items.some(i => (i.danger >= 2 && !duneAt(x.si)) || (MUST.test(i.f.kind) && !(i.f.kind === 'junction' && (obviousJunction(i.f) || i.f.choice === false))) || (i.f.kind === 'cap' && i.f.planned && Math.abs(rel(i.f.from, i.f.to)) >= o.capKeepTurn && !duneAt(x.si)))) return Infinity;   // a CAP change of the line itself: the line was thinned to the density already
       return Math.max(0, ...x.items.map(i => i.pr)) + 3 * Math.max(0, x.items.length - 1);
     };
     boxes.forEach(x => { x.imp = importance(x); });
@@ -1660,13 +1712,17 @@
     // A must-keep box just before a waypoint keeps its own spot (the waypoint box cannot move back to it).
     const tcl = features.trackClass || [];
     const fastAt = i => /^(tarmac|dual|gravel)$/.test(tcl[i] || '');
-    const spacing = (i0, i1) => (!offAt(i0) && !offAt(i1) && fastAt(i0) && fastAt(i1)) ? o.fastSpacingM : o.minSpacingM;
+    const spacing = (i0, i1) => (duneAt(i0) && duneAt(i1)) ? o.duneSpacingM : ((!offAt(i0) && !offAt(i1) && fastAt(i0) && fastAt(i1)) ? o.fastSpacingM : o.minSpacingM);
     const worth = x => x.imp === Infinity || x.items.some(i => i.danger >= 1);
     let spacingKept = 0;
     for (let a = 0; a + 1 < boxes.length;) {
       const A = boxes[a], B = boxes[a + 1];
       if ((S[B.si].km - S[A.si].km) * 1000 >= spacing(A.si, B.si) || (A.wp && B.wp)) { a++; continue; }
       if (B.wp && worth(A) && (S[B.si].km - S[A.si].km) * 1000 >= o.wpShortM) { a++; spacingKept++; continue; }
+      const kindOf = x => (x.items || []).map(i => i.f && i.f.kind);
+      const duneEdge = x => kindOf(x).some(k => k === 'dunes' || k === 'dunes_end');
+      if (duneEdge(A) && duneEdge(B) && (S[B.si].km - S[A.si].km) * 1000 >= 200) { a++; spacingKept++; continue; }
+      if (duneAt(A.si) && duneAt(B.si) && worth(A) && worth(B) && duneEdge(A) !== duneEdge(B) && (S[B.si].km - S[A.si].km) * 1000 >= 200) { a++; spacingKept++; continue; }
       let host, guest;
       if (A.wp) { host = A; guest = B; } else if (B.wp) { host = B; guest = A; }
       else if (worth(A) && worth(B)) { host = A; guest = B; }
@@ -1683,7 +1739,8 @@
         const list = boxes.filter(x => offAt(x.si) === side);
         for (let a = 0; a < list.length && !worst; a++) {
           let b = a; while (b + 1 < list.length && S[list[b + 1].si].km - S[list[a].si].km < 10) b++;
-          if (b - a + 1 <= per) continue;
+          const duneWin = list.slice(a, b + 1).filter(x => duneAt(x.si)).length > (b - a + 1) / 2;
+          if (b - a + 1 <= (duneWin ? Math.max(1, o.duneDensity) : per)) continue;
           const cand = list.slice(a, b + 1).filter(x => x.imp !== Infinity);
           if (cand.length) worst = cand.reduce((p, x) => x.imp < p.imp ? x : p);
         }
@@ -1698,7 +1755,8 @@
       const i0 = boxes[a].si, i1 = boxes[a + 1].si, gap = S[i1].km - S[i0].km;
       let offN = 0; for (let i = i0; i <= i1; i++) if (offAt(i)) offN++;
       const off = offN > (i1 - i0 + 1) / 2;
-      const maxGap = off ? maxGapOff : maxGapOn;
+      let duneN = 0; for (let i = i0; i <= i1; i++) if (duneAt(i)) duneN++;
+      const maxGap = (duneN > (i1 - i0 + 1) / 2) ? o.duneMaxGapKm : (off ? maxGapOff : maxGapOn);
       if (gap <= maxGap) continue;
       const n = Math.ceil(gap / maxGap) - 1;
       for (let k = 1; k <= n; k++) { const si = sampleAtKm(S, S[i0].km + gap * k / (n + 1)); fill.push({ si, items: [], pr: 5, filler: off ? 'offpiste' : 'road' }); }
@@ -1763,7 +1821,7 @@
         if (k === 'cap' && it !== capMain) continue;
         if (k === 'surface' && jUse.length) continue;   // the junction already says which kind of road you go on to
         let txt = it.note;
-        if (k === 'cap') txt = txt.replace(/^CAP \d{3}/, 'CAP ' + pad3(capOut));   // same CAP as the box's CAP column
+        if (k === 'cap') txt = txt.replace(/^CAP \d{3}( C)?/, capLabel(capOut, s.mode === 'direct'));   // same CAP as the box's CAP column
         parts.push({ txt, grp: GRP(k), danger: it.danger, pr: it.pr, at: atOf(it), si: it.si });
       }
       parts.sort((x, y) => (y.danger >= 2) - (x.danger >= 2) || x.grp - y.grp || (x.grp === 1 ? x.at - y.at : y.pr - x.pr));
@@ -1784,11 +1842,12 @@
       }
       for (const t of lead) notes.push(t);
       for (const pt of out1) if (!notes.includes(pt.txt)) notes.push(pt.txt);
-      if (b.wp && !b.items.length && b.wp.type !== 'ASS' && !notes.length) notes.push('CAP ' + pad3(capOut));
+      if (duneAt(b.si) && s.mode === 'direct' && (!b.wp || b.wp.type !== 'ASS') && !notes.some(t => /^CAP /.test(t))) notes.unshift(capLabel(capOut, true));
+      if (b.wp && !b.items.length && b.wp.type !== 'ASS' && !notes.length) notes.push(capLabel(capOut, s.mode === 'direct'));
       // 0.4.0: a waypoint box whose only items are the lie of the land (rocks, a river followed) still gives its CAP first
-      else if (b.wp && b.wp.type !== 'ASS' && b.items.length && b.items.every(it => /^(rocks|along_water|rocky_track)$/.test(it.f.kind)) && !notes.some(t => /^CAP /.test(t))) notes.unshift('CAP ' + pad3(capOut));
+      else if (b.wp && b.wp.type !== 'ASS' && b.items.length && b.items.every(it => /^(rocks|along_water|rocky_track)$/.test(it.f.kind)) && !notes.some(t => /^CAP /.test(t))) notes.unshift(capLabel(capOut, s.mode === 'direct'));
       if (b.filler) {
-        if (b.filler === 'offpiste') { const t = terr[b.si]; notes.push('CAP ' + pad3(capOut) + (t && t !== 'dunes' ? ', ' + ({ flat: 'FLAT, FAST', rolling: 'ROLLING', broken: 'BROKEN, SLOW' }[t]) : t === 'dunes' ? ', IN DUNES' : '')); symbols.push('cap'); }
+        if (b.filler === 'offpiste') { const t = terr[b.si]; notes.push(capLabel(capOut, true) + (t && t !== 'dunes' ? ', ' + ({ flat: 'FLAT, FAST', rolling: 'ROLLING', broken: 'BROKEN, SLOW' }[t]) : t === 'dunes' ? ', IN DUNES' : '')); symbols.push('cap'); }
         else { const tc = tclass[b.si]; notes.push(tc === 'dual' || tc === 'tarmac' ? 'FRO' : tc === 'gravel' ? 'FPP' : 'FOLLOW ' + (TRACK_CODE[tc] || 'P')); symbols.push('continue'); }
       }
       const trIn = tclass[Math.max(0, b.si - 2)] || (s.mode === 'direct' ? 'offpiste' : 'track');
@@ -1812,7 +1871,7 @@
       while (used.has(id)) id += 'b'; used.set(id, 1);
       if (!b.wp) typeCount[kinds[0] || 'filler'] = (typeCount[kinds[0] || 'filler'] || 0) + 1;
       out.push({
-        n: n + 1, id, km: +s.km.toFixed(2), partial: 0, capIn: n360(capIn), capOut: n360(capOut), cap: n360(capOut),
+        n: n + 1, id, km: +s.km.toFixed(2), partial: 0, capIn: n360(capIn), capOut: n360(capOut), cap: n360(capOut), capType: s.mode === 'direct' ? 'C' : null,
         waypoint, label, lat: +s.lat.toFixed(6), lon: +s.lon.toFixed(6),
         offPiste: s.mode === 'direct', symbols, danger, notes: notes.join('. '),
         tulip, features: b.items.map(i => cleanFeature(i.f)),
@@ -2408,6 +2467,299 @@
    * `km` the new line's length and the waypoints' `km` re-summed. Waypoint `cap`s are left alone (the in-game GPS keeps
    * the waypoint CAP; the roadbook CAPs follow the line).
    */
+
+  // ------------------------------------------------------------------ 0.6.0 dune fields: recce line, not an A* weave
+  /** OSM natural=sand / natural=dune (ways and relation outers) as a point-in-polygon index. */
+  function isSandTag(tags) { return !!(tags && (tags.natural === 'sand' || tags.natural === 'dune')); }
+  function stitchRings(parts) {
+    const unused = parts.map(p => p.slice());
+    const rings = [];
+    while (unused.length) {
+      let ring = unused.pop();
+      if (!ring || ring.length < 2) continue;
+      let guard = 0;
+      while (guard++ < 4000) {
+        const a = ring[0], b = ring[ring.length - 1];
+        if (a[0] === b[0] && a[1] === b[1] && ring.length >= 4) { rings.push(ring); break; }
+        let found = -1, rev = false;
+        for (let i = 0; i < unused.length; i++) {
+          const q = unused[i], q0 = q[0], q1 = q[q.length - 1];
+          if (q0[0] === b[0] && q0[1] === b[1]) { found = i; rev = false; break; }
+          if (q1[0] === b[0] && q1[1] === b[1]) { found = i; rev = true; break; }
+        }
+        if (found < 0) { if (ring.length >= 4) { ring.push(ring[0]); rings.push(ring); } break; }
+        const add = unused.splice(found, 1)[0];
+        if (rev) add.reverse();
+        ring = ring.concat(add.slice(1));
+      }
+    }
+    return rings;
+  }
+  function ringsFromElement(e) {
+    if (!e) return [];
+    if (e.type === 'way' && e.geometry && e.geometry.length >= 4) {
+      const g = e.geometry.map(p => [p.lat, p.lon]);
+      const a = g[0], b = g[g.length - 1];
+      if (a[0] === b[0] && a[1] === b[1]) return [g];
+      return [];
+    }
+    if (e.type === 'relation' && e.members && e.members.length) {
+      const parts = [];
+      for (const m of e.members) {
+        if (m.role === 'inner') continue;
+        if (m.geometry && m.geometry.length >= 2) parts.push(m.geometry.map(p => [p.lat, p.lon]));
+        else if (m.type === 'way' && m.nodes && e.elements) continue;
+      }
+      return stitchRings(parts);
+    }
+    return [];
+  }
+  function latLonInRing(lat, lon, ring) {
+    return pointInRing([lon, lat], ring.map(p => [p[1], p[0]]));
+  }
+  function makeSandIndex(elements) {
+    const polys = [];
+    for (const e of elements || []) {
+      if (!isSandTag(e.tags || {})) continue;
+      for (const ring of ringsFromElement(e)) {
+        if (ring.length < 4) continue;
+        let s = 90, n = -90, w = 180, ea = -180;
+        for (const p of ring) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); ea = Math.max(ea, p[1]); }
+        polys.push({ ring, bb: [s, w, n, ea], name: (e.tags && (e.tags.name || e.tags['name:en'])) || null });
+      }
+    }
+    return {
+      count: polys.length,
+      at(lat, lon) {
+        for (const p of polys) {
+          if (lat < p.bb[0] || lat > p.bb[2] || lon < p.bb[1] || lon > p.bb[3]) continue;
+          if (latLonInRing(lat, lon, p.ring)) return p;
+        }
+        return null;
+      }
+    };
+  }
+  function sandQuery(bbox) {
+    const B = '(' + bbox.map(x => (+x).toFixed(5)).join(',') + ')';
+    return '[out:json][timeout:40];(way["natural"="sand"]' + B + ';way["natural"="dune"]' + B +
+      ';relation["natural"="sand"]' + B + ';relation["natural"="dune"]' + B + ';);out body geom;';
+  }
+  async function fetchSand(stage, o, log) {
+    if (o.sandIndex) return o.sandIndex;
+    const supplied = o.sand ? (Array.isArray(o.sand) ? o.sand : (o.sand.elements || [])) : null;
+    if (supplied) return makeSandIndex(supplied);
+    if (o.useOsm === false || o.osm === false) return makeSandIndex([]);
+    if (o.osm && o.osm.elements) {
+      const idx = makeSandIndex(o.osm.elements);
+      if (idx.count) return idx;
+    }
+    const S = resampleRoute(stage, 200); if (!S.length) return makeSandIndex([]);
+    const pad = 2000 / 111320;
+    let s = 90, n = -90, w = 180, e = -180;
+    for (const p of S) { s = Math.min(s, p.lat); n = Math.max(n, p.lat); w = Math.min(w, p.lon); e = Math.max(e, p.lon); }
+    const bbox = [s - pad, w - pad, n + pad, e + pad];
+    try {
+      const r = await askOverpass(sandQuery(bbox), o, log);
+      if (log) log('sand: ' + (r.elements || []).length + ' OSM sand/dune objects');
+      return makeSandIndex(r.elements || []);
+    } catch (err) {
+      if (log) log('sand: Overpass unavailable (' + (err && err.message) + ')');
+      return makeSandIndex([]);
+    }
+  }
+
+  /** height-reversal dune mask along samples S with heights h, same thresholds as analyseProfile (DNX notes). */
+  function heightReversalMask(S, h, o) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    const N = S.length, step = (S.length >= 2) ? Math.max(1, (S[N - 1].d - S[0].d) / (N - 1)) : o.step;
+    const mask = new Uint8Array(N);
+    if (N < 8) return mask;
+    const H = smooth(fillGaps(h), Math.max(1, Math.round(20 / step)));
+    const ext = [];
+    { let dir = 0, ei = 0;
+      for (let i = 1; i < N; i++) {
+        if (dir >= 0 && H[i] > H[ei]) { ei = i; if (dir === 0) dir = 1; }
+        else if (dir <= 0 && H[i] < H[ei]) { ei = i; if (dir === 0) dir = -1; }
+        if (dir === 1 && H[ei] - H[i] >= o.duneAmp) { ext.push([ei, H[ei], 1]); dir = -1; ei = i; }
+        else if (dir === -1 && H[i] - H[ei] >= o.duneAmp) { ext.push([ei, H[ei], -1]); dir = 1; ei = i; }
+      }
+    }
+    const k50 = Math.max(1, Math.round(40 / step));
+    const g = new Float64Array(N);
+    for (let i = 0; i < N; i++) { const a = Math.max(0, i - k50), b = Math.min(N - 1, i + k50); g[i] = b > a ? (H[b] - H[a]) / ((b - a) * step) * 100 : 0; }
+    const win = Math.round(1000 / Math.max(1, step));
+    for (let a = 0; a < ext.length; a++) {
+      let b = a; while (b + 1 < ext.length && ext[b + 1][0] - ext[a][0] <= win) b++;
+      const revs = b - a;
+      if (revs >= o.duneMinRev) {
+        let steep = 0; for (let i = ext[a][0]; i <= ext[b][0]; i++) steep = Math.max(steep, Math.abs(g[i]));
+        if (steep >= o.duneSteep) for (let i = ext[a][0]; i <= ext[b][0]; i++) mask[i] = 1;
+      }
+    }
+    const gap = Math.round(o.duneGapM / Math.max(1, step));
+    for (let i = 0; i < N;) {
+      if (!mask[i]) { i++; continue; }
+      let j = i;
+      while (j + 1 < N && (mask[j + 1] || (j + 1 + gap < N && mask.slice(j + 1, j + 1 + gap).some(Boolean)))) j++;
+      if ((j - i) * step < o.duneMinStretchM) for (let k = i; k <= j; k++) mask[k] = 0;
+      i = j + 1;
+    }
+    return mask;
+  }
+
+  /** samples along A->B every stepM, with height, sand, and reversal flags. */
+  function sampleLegLine(A, B, hfn, sandIndex, o, stepM) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    const L = dist(A, B), step = stepM || o.step || 20;
+    const n = Math.max(1, Math.round(L / step)), cap = bearing(A, B), out = [];
+    for (let i = 0; i <= n; i++) {
+      const p = i === 0 ? A : (i === n ? B : dest(A, cap, (i / n) * L));
+      const h = hfn ? hfn(p[0], p[1]) : 0;
+      out.push({ lat: p[0], lon: p[1], d: (i / n) * L, h: Number.isFinite(h) ? h : NaN, sand: !!(sandIndex && sandIndex.at(p[0], p[1])) });
+    }
+    const mask = heightReversalMask(out, out.map(s => s.h), o);
+    for (let i = 0; i < out.length; i++) out[i].rev = !!mask[i];
+    return out;
+  }
+
+  function legInDuneField(A, B, hfn, sandIndex, o) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    const S = sampleLegLine(A, B, hfn, sandIndex, o);
+    if (S.length < 2) return { yes: false, fracSand: 0, fracRev: 0, frac: 0, samples: S };
+    const fracSand = S.filter(s => s.sand).length / S.length;
+    const fracRev = S.filter(s => s.rev).length / S.length;
+    const frac = S.filter(s => s.sand || s.rev).length / S.length;
+    // dense height reversals (real dunes), not a few mountain ridges joined by the 800 m gap fill
+    const extD = [];
+    { let dir = 0, ei = 0;
+      for (let i = 1; i < S.length; i++) {
+        const H = S[i].h, He = S[ei].h;
+        if (!Number.isFinite(H) || !Number.isFinite(He)) continue;
+        if (dir >= 0 && H > He) { ei = i; if (dir === 0) dir = 1; }
+        else if (dir <= 0 && H < He) { ei = i; if (dir === 0) dir = -1; }
+        if (dir === 1 && S[ei].h - H >= o.duneAmp) { extD.push(S[ei].d); dir = -1; ei = i; }
+        else if (dir === -1 && H - S[ei].h >= o.duneAmp) { extD.push(S[ei].d); dir = 1; ei = i; }
+      }
+    }
+    const spacings = [];
+    for (let i = 1; i < extD.length; i++) spacings.push(extD[i] - extD[i - 1]);
+    spacings.sort((a, b) => a - b);
+    const medSp = spacings.length ? spacings[Math.floor(spacings.length / 2)] : Infinity;
+    const km = Math.max(0.001, (S[S.length - 1].d - S[0].d) / 1000);
+    const denseRev = extD.length >= 6 && medSp <= 600 && (extD.length / km) >= 3;
+    // OSM sand, or a genuinely rippled dune field. A sparse ridge / valley is not a sand sea.
+    const yes = fracSand >= o.duneFrac * 0.8 || (denseRev && fracRev >= o.duneFrac);
+    return { yes, fracSand, fracRev, frac, denseRev, medSp: Number.isFinite(medSp) ? Math.round(medSp) : null, samples: S };
+  }
+
+  /**
+   * Recce line for a dune-field leg: stay on the CAP heading, or drift into a broad interdune corridor that really
+   * runs along that heading for a long stretch. Never weave around single dunes. Ends stay on the waypoints.
+   */
+  function planLegRecce(A, B, hfn, o) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    const L = dist(A, B);
+    if (L < (o._gap ? o.planMinGapM : o.planMinLegM)) return { points: [A, B], vertexInfo: [null, null], stats: { recce: true, straight: true, reason: 'short' } };
+    const P = projector(A[0]), a = P.xy(A), b = P.xy(B);
+    const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L, nx = -uy, ny = ux;
+    const step = o.recceStepM, n = Math.max(2, Math.round(L / step));
+    const half = o.recceCorridorHalfM, wall = o.recceCorridorWallM;
+    const raw = new Float64Array(n + 1); // preferred offset (m, + = left), NaN if none
+    const hAt = (i, off) => {
+      const x = a[0] + ux * (i / n) * L + nx * off, y = a[1] + uy * (i / n) * L + ny * off;
+      const ll = P.ll([x, y]); const v = hfn(ll[0], ll[1]); return Number.isFinite(v) ? v : NaN;
+    };
+    for (let i = 0; i <= n; i++) {
+      const offs = [];
+      for (let off = -half; off <= half; off += 30) offs.push({ off, h: hAt(i, off) });
+      let best = null, bestScore = Infinity;
+      for (let k = 2; k < offs.length - 2; k++) {
+        const h0 = offs[k].h; if (!Number.isFinite(h0)) continue;
+        let left = -Infinity, right = -Infinity;
+        for (let j = 0; j < k; j++) if (Number.isFinite(offs[j].h)) left = Math.max(left, offs[j].h);
+        for (let j = k + 1; j < offs.length; j++) if (Number.isFinite(offs[j].h)) right = Math.max(right, offs[j].h);
+        if (!(left - h0 >= wall && right - h0 >= wall)) continue;
+        const score = Math.abs(offs[k].off) + (h0 - Math.min(left, right)) * 0.25;
+        if (score < bestScore) { bestScore = score; best = offs[k].off; }
+      }
+      raw[i] = best == null ? NaN : best;
+    }
+    // fill tiny gaps, then smooth
+    let last = 0;
+    for (let i = 0; i <= n; i++) if (Number.isFinite(raw[i])) { if (last < i) { /* leave NaN */ } last = i; }
+    const win = Math.max(1, Math.round(o.recceSmoothM / step));
+    const sm = new Float64Array(n + 1);
+    for (let i = 0; i <= n; i++) {
+      let s = 0, c = 0;
+      for (let k = i - win; k <= i + win; k++) {
+        const j = Math.max(0, Math.min(n, k));
+        if (Number.isFinite(raw[j])) { s += raw[j]; c++; }
+      }
+      sm[i] = c ? s / c : 0;
+    }
+    // only keep a corridor offset if it holds on one side for recceCorridorMinM and stays near the heading
+    const need = Math.max(2, Math.round(o.recceCorridorMinM / step));
+    const use = new Float64Array(n + 1);
+    for (let i = 0; i <= n;) {
+      const side = sm[i] >= o.recceMinOffsetM ? 1 : (sm[i] <= -o.recceMinOffsetM ? -1 : 0);
+      if (!side) { use[i] = 0; i++; continue; }
+      let j = i; while (j + 1 <= n && Math.sign(sm[j + 1]) === side && Math.abs(sm[j + 1]) >= o.recceMinOffsetM * 0.6) j++;
+      const runM = (j - i) * step;
+      const used = runM >= o.recceCorridorMinM;
+      for (let k = i; k <= j; k++) use[k] = used ? sm[k] : 0;
+      i = j + 1;
+    }
+    // pin ends to 0, build the line, simplify
+    use[0] = 0; use[n] = 0;
+    const fade = Math.max(1, Math.round(200 / step));
+    for (let k = 1; k <= fade && k < n; k++) { use[k] *= k / fade; use[n - k] *= k / fade; }
+    const xy = [];
+    for (let i = 0; i <= n; i++) xy.push([a[0] + ux * (i / n) * L + nx * use[i], a[1] + uy * (i / n) * L + ny * use[i]]);
+    const keep = new Uint8Array(xy.length); keep[0] = keep[xy.length - 1] = 1;
+    const tol = o.recceSimplifyM;
+    const st = [[0, xy.length - 1]];
+    while (st.length) {
+      const [p, q] = st.pop();
+      let md = 0, mi = -1;
+      for (let k = p + 1; k < q; k++) { const d = distToSeg(xy[k], xy[p], xy[q])[0]; if (d > md) { md = d; mi = k; } }
+      if (mi >= 0 && md > tol) { keep[mi] = 1; st.push([p, mi], [mi, q]); }
+    }
+    const V = [], vIdx = [];
+    for (let i = 0; i < xy.length; i++) if (keep[i]) { V.push(xy[i]); vIdx.push(i); }
+    const points = V.map((q, i) => i === 0 ? A : (i === V.length - 1 ? B : P.ll(q)));
+    const info = points.map(() => null);
+    let corridorM = 0; for (let i = 1; i <= n; i++) if (use[i] && use[i - 1]) corridorM += step;
+    // a follow flag at the start of a long corridor run
+    for (let i = 1; i + 1 < vIdx.length; i++) {
+      const ia = vIdx[i];
+      if (Math.abs(use[ia]) >= o.recceMinOffsetM) {
+        const side = use[ia] > 0 ? 'left' : 'right';
+        info[i] = { reason: null, follow: 'along interdune corridor ' + side, recce: true };
+        break;
+      }
+    }
+    for (let i = 1; i + 1 < points.length; i++) if (!info[i]) info[i] = { reason: null, recce: true };
+    const len = points.reduce((s, p, k) => k ? s + dist(points[k - 1], p) : 0, 0);
+    return { points, vertexInfo: info, stats: { recce: true, corridorM: Math.round(corridorM), vertices: points.length - 2, longestStraightM: Math.round(Math.max(...points.slice(1).map((p, k) => dist(points[k], p)))), recceLenM: Math.round(len) } };
+  }
+
+  function capLabel(cap, offPiste) { return 'CAP ' + pad3(cap) + (offPiste ? ' C' : ''); }
+
+  /**
+   * Suggested waypoint type. Never overrides a type the user already set (opts.userSet).
+   * In a dune field, the next type after DSS / FZ (and a blank mid-stage type) is WPN.
+   */
+  function suggestWpType(opts) {
+    opts = opts || {};
+    if (opts.userSet) return opts.current || opts.prevType;
+    const prev = opts.prevType, cur = opts.current;
+    if (prev === 'DZ') return 'FZ';
+    if (opts.inDune && (prev === 'DSS' || prev === 'FZ' || cur === 'WPM' || cur === 'WPV' || !cur) && !/^(DSS|ASS|DZ|FZ|WPS)$/.test(cur || '')) return 'WPN';
+    if (prev === 'DSS' || prev === 'FZ') return cur || 'WPM';
+    return cur || prev;
+  }
+
+
   function planOffPiste(stage, hfn, obstacles, o) {
     o = Object.assign({}, DEFAULTS, o || {});
     const st = JSON.parse(JSON.stringify(stage)), legs = (st.route && st.route.legs) || [], stats = [];
@@ -2421,8 +2773,11 @@
       let at = 0;
       for (const pc of pcs.sort((a, b) => a.i0 - b.i0)) {
         for (let k = at + 1; k <= pc.i0; k++) { pts.push(P0[k]); info.push(null); }
-        const r = pc.kept ? { points: P0.slice(pc.i0, pc.i1 + 1), vertexInfo: P0.slice(pc.i0, pc.i1 + 1).map(() => null), stats: { kept: true } }
-          : planLeg(P0[pc.i0], P0[pc.i1], hfn, obstacles, Object.assign({}, o, { _gap: true }), (stage.id || '') + ':' + key + ':gap' + pc.i0 + ':' + (o.planSeed || 0));
+        let r;
+        if (pc.kept) r = { points: P0.slice(pc.i0, pc.i1 + 1), vertexInfo: P0.slice(pc.i0, pc.i1 + 1).map(() => null), stats: { kept: true } };
+        else if (o.duneRecce !== false && legInDuneField(P0[pc.i0], P0[pc.i1], hfn, o.sandIndex, o).yes)
+          r = planLegRecce(P0[pc.i0], P0[pc.i1], hfn, Object.assign({}, o, { _gap: true }));
+        else r = planLeg(P0[pc.i0], P0[pc.i1], hfn, obstacles, Object.assign({}, o, { _gap: true }), (stage.id || '') + ':' + key + ':gap' + pc.i0 + ':' + (o.planSeed || 0));
         // the piece's first point is a road / track point: it keeps no CAP, only what the first piece follows
         if (r.vertexInfo[0] && r.vertexInfo[0].follow) info[info.length - 1] = { reason: null, follow: r.vertexInfo[0].follow, gapStart: true };
         for (let k = 1; k < r.points.length; k++) { pts.push(r.points[k]); info.push(k < r.points.length - 1 ? Object.assign({ gap: true }, r.vertexInfo[k] || {}) : null); offSegs.push(pts.length - 1); }
@@ -2443,8 +2798,12 @@
         const pts = ov.map(p => [+p[0], +p[1]]); pts[0] = A; pts[pts.length - 1] = B;
         r = { points: pts, vertexInfo: pts.map((_, k) => (k && k < pts.length - 1) ? { reason: null, edited: true } : null), stats: { edited: true, vertices: pts.length - 2, longestStraightM: 0 } };
         leg.edited = true;
+      } else if (o.duneRecce !== false && legInDuneField(A, B, hfn, o.sandIndex, o).yes) {
+        r = planLegRecce(A, B, hfn, o);
+        leg.duneField = true; leg.recce = true;
       } else r = planLeg(A, B, hfn, obstacles, o, (stage.id || '') + ':' + key + ':' + (o.planSeed || 0) + (seed ? ':' + seed : ''));
       if (seed) leg.seed = seed;
+      if (r && r.stats && r.stats.recce) { leg.duneField = true; leg.recce = true; }
       leg.points = r.points; leg.vertexInfo = r.vertexInfo; leg.planned = true;
       const L = r.points.reduce((s, p, k) => k ? s + dist(r.points[k - 1], p) : 0, 0);
       leg.km = +(L / 1000).toFixed(3);
@@ -2567,7 +2926,7 @@
     let km = 0;
     for (const leg of st.route.legs) {
       const p = byKey.get(leg.from + '>' + leg.to);
-      if (p && p.planned) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km; leg.planned = true; }
+      if (p && p.planned) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km; leg.planned = true; if (p.recce) leg.recce = true; if (p.duneField) leg.duneField = true; }
       else if (p) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km != null ? p.km : +(leg.points.reduce((m, q, i) => i ? m + dist(leg.points[i - 1], q) : 0, 0) / 1000).toFixed(3); leg.off = offRuns(p.offSegs); delete leg.cover; }
       km += leg.km;
       const w = st.waypoints.find(x => x.id === leg.to); if (w) w.km = +km.toFixed(3);
@@ -2599,6 +2958,10 @@
     // land cover only with the real DEM (a supplied heightFn means a test / offline run: keep it deterministic)
     const landCover = !o.landCover && dem && o.useLandCover !== false ? createLandCover({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, maxFailures: 30 }) : null;
     let lmData = o.landmarks ? (Array.isArray(o.landmarks) ? { elements: o.landmarks, supplied: true } : Object.assign({ supplied: true }, o.landmarks)) : null;
+    if (planning || o.duneRecce !== false) {
+      progress('sand', 0, 1, 'sand and dune areas');
+      o.sandIndex = await fetchSand(stage, o, log);
+    }
 
     // one full pass: plan the off-piste line (with the obstacles known so far), sample, analyse, assemble
     async function pass(obstacles, osm, osmInfo, obstInfo, lmData) {
@@ -2609,7 +2972,7 @@
         if (!coverAt && landCover) { if (!landCover._corridor) { await landCover.load(corridorSamplePoints(stage, o)); landCover._corridor = true; } if (landCover.loaded) coverAt = landCover.at; }
         plan = planOffPiste(stage, hfn, obstacles || [], Object.assign({}, o, { planZeroIsSea: zeroIsSea, coverAt }));
         st = plan.stage;
-        log('planner: ' + plan.stats.map(x => x.from + '>' + x.to + ' ' + x.vertices + ' bends, longest ' + x.longestStraightM + ' m').join('; '));
+        log('planner: ' + plan.stats.map(x => x.from + '>' + x.to + ' ' + (x.recce ? 'recce' : (x.vertices + ' bends')) + ', longest ' + x.longestStraightM + ' m').join('; '));
       }
       const S = resampleRoute(st, o.step);
       const side = S.map(s => [dest([s.lat, s.lon], s.hdg - 90, o.sideOffset), dest([s.lat, s.lon], s.hdg + 90, o.sideOffset)]);
@@ -2621,6 +2984,11 @@
       const h = S.map(s => hfn(s.lat, s.lon)), hl = side.map(p => hfn(p[0][0], p[0][1])), hr = side.map(p => hfn(p[1][0], p[1][1]));
       const anchorsZ = (() => { const z = []; let d = null; for (const w of st.waypoints) { const si = sampleAtKm(S, typeof w.km === 'number' ? w.km : 0); if (w.type === 'DZ') d = si; else if (w.type === 'FZ' && d !== null) { z.push([d, si]); d = null; } } return z; })();
       const isZone = i => anchorsZ.some(([a, b]) => i >= a && i <= b);
+      const hmask = heightReversalMask(S, h, o);
+      for (let i = 0; i < S.length; i++) {
+        const leg = st.route && st.route.legs && st.route.legs[S[i].leg];
+        S[i].inDune = !!(hmask[i] || (o.sandIndex && o.sandIndex.at(S[i].lat, S[i].lon)) || (leg && leg.duneField));
+      }
       const fProf = analyseProfile(S, h, hl, hr, o);
       const fOsm = osm ? analyseOsm(S, osm, o, isZone) : [];
       const fBend = bends(S, o, st).filter(b => !fOsm.some(j => j.kind === 'junction' && Math.abs(S[j.i].km - S[b.i].km) < 0.08));
@@ -2671,7 +3039,7 @@
           landcover: cov ? (landCover ? { name: LANDCOVER.name, tiles: landCover.loaded, failures: landCover.failures, knownPct: res.stats.enrich.coverKnownPct } : { name: 'supplied' }) : null,
           attribution: 'OpenStreetMap contributors (ODbL)' + (demInfo ? '; ' + demInfo.attribution : '') + (cov && landCover ? '; ' + LANDCOVER.attribution : '') },
         stats: res.stats,
-        route: { legs: ((st.route && st.route.legs) || []).map(l => Object.assign({ from: l.from, to: l.to, mode: l.mode, km: l.km }, l.planned ? { planned: true, points: l.points, vertexInfo: l.vertexInfo, edited: l.edited || undefined, seed: l.seed || undefined } : l.gapsPlanned ? { gapsPlanned: true, points: l.points, offSegs: l.offSegs, vertexInfo: l.vertexInfo } : { points: l.points })) },
+        route: { legs: ((st.route && st.route.legs) || []).map(l => Object.assign({ from: l.from, to: l.to, mode: l.mode, km: l.km }, l.planned ? { planned: true, recce: l.recce || undefined, duneField: l.duneField || undefined, points: l.points, vertexInfo: l.vertexInfo, edited: l.edited || undefined, seed: l.seed || undefined } : l.gapsPlanned ? { gapsPlanned: true, recce: l.recce || undefined, duneField: l.duneField || undefined, points: l.points, offSegs: l.offSegs, vertexInfo: l.vertexInfo } : { points: l.points, recce: l.recce || undefined, duneField: l.duneField || undefined })) },
         planner: plan ? { settings: { cell: o.planCell, maxSegM: o.planMaxSegM, maxSegFlatM: o.planMaxSegFlatM, seed: o.planSeed }, obstacles: obstInfo, legs: plan.stats } : null,
         speedZones: res.zones.map(([a, b, lim]) => ({ fromKm: +S[a].km.toFixed(2), toKm: +S[b].km.toFixed(2), limit: lim || null })),
         profile: { stepKm: +(every * o.step / 1000).toFixed(3), km: prof.map((_, k) => +S[Math.min(S.length - 1, k * every)].km.toFixed(3)), h: prof },
@@ -2855,5 +3223,5 @@
   }
 
   return { VERSION, GENERATOR, planLegGaps, checkLine, lineHazards, coverObstacle, offPieces, offRuns, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
-    geo: { dist, bearing, dest, rel, simplify, projector } };
+    geo: { dist, bearing, dest, rel, simplify, projector }, makeSandIndex, sandQuery, fetchSand, heightReversalMask, legInDuneField, sampleLegLine, planLegRecce, capLabel, suggestWpType };
 });

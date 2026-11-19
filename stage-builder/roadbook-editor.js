@@ -305,7 +305,7 @@
       el.innerHTML = boxes.map(b => '<div class="row' + (E.sel === b.id ? ' sel' : '') + (b.waypoint ? ' wp' : '') + (b.deleted ? ' del' : '') + '" data-id="' + esc(b.id) + '">' +
         '<span class="n">' + (b.deleted ? '\u2715' : b.n) + '</span><span class="km"><b>' + (+b.km).toFixed(2) + '</b><small>' + (b.partial != null ? (+b.partial).toFixed(2) : '') + '</small></span>' +
         '<span class="tul">' + tulipSmall(b.tulip) + '</span><span class="tx"><div class="nt" title="' + esc(b.notes) + '">' + esc(b.notes || '(no notes)') + '</div><div class="sy">' + (b.symbols || []).slice(0, 6).map(s => R.symbolSVG(s, 18)).join('') + '</div></span>' +
-        '<span class="fl">' + (b.danger ? '<span class="dg">' + '!'.repeat(b.danger) + '</span>' : '') + '<span>CAP ' + pad3(b.capOut != null ? b.capOut : b.cap) + '</span><span>' + flags(b) + '</span></span></div>').join('');
+        '<span class="fl">' + (b.danger ? '<span class="dg">' + '!'.repeat(b.danger) + '</span>' : '') + '<span>CAP ' + pad3(b.capOut != null ? b.capOut : b.cap) + ((b.capType === 'C' || b.offPiste) ? ' C' : '') + '</span><span>' + flags(b) + '</span></span></div>').join('');
     }
     const live = E.rb.boxes.filter(b => !b.deleted), st = E.rb.stats || {};
     $('#counts').textContent = live.length + ' boxes' + (st.per10km && st.per10km.offPiste != null ? ' \u00b7 off-piste ' + st.per10km.offPiste + '/10 km' : '') + ' \u00b7 ' + live.filter(b => b.pinned).length + ' pinned';

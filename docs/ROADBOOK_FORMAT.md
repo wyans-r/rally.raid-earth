@@ -98,11 +98,17 @@ field, so it is deterministic per stage). The path is simplified to drivable pie
   `planMaxDown`, 22 % / 35 %, or crossing anything blocked); then the minimum-slope line if that one is tenable; if
   neither, the planner's own line stays (0.5.1 took the shorter of the two) (`stats[].valley[]` lists both
   lengths, grades and the pick; `planValleyCentre: false` turns it off).
-- All roadbook distances (`km`) are along this line. The stage file is not changed: the in-game GPS keeps the waypoint
+- All roadbook distances (`km`) are along this line. In a dune field that line is a recce line (the heading between boxes, or a broad corridor that really runs along it, not a weave around single dunes), so the partials are the recce-line distance, not the straight-line CAP. The stage file is not changed: the in-game GPS keeps the waypoint
   CAPs and the stage's km. Optionally `RoadbookGen.applyPlannedLine(stage, roadbook)` (or `RB_WRITE_STAGE=<file>
   node roadbook/tools/gen.js ...`) writes a copy of the stage whose `direct` legs carry the planned points
   (`planned: true`) with leg / waypoint / roadbook-box `km` re-summed and waypoint `cap` untouched, so the trip-meter
   snap at each waypoint matches the roadbook.
+
+## Dune fields (0.6.0)
+
+Inside a mapped sand sea (`natural=sand` or `natural=dune`) or a stretch that trips the height-reversal test (the same one that writes DNX notes), `planOffPiste` draws a **recce line**: mostly the CAP heading, gently smoothed. It may drift into a broad interdune corridor only when one really runs along the heading for at least 1.5 km with walls on both sides; it never weaves around a single dune. Boxes are written on a change of instruction (entering or leaving dunes, a big cordon, a steep face or drop, a waypoint). The 300 m minimum and the usual density do not apply there (`duneSpacingM` 800, `duneMaxGapKm` 25). Off-piste CAPs are calculated (`CAP 060 C`, `capType: 'C'`). Distances stay along the recce line, even when the heading in the box is the straight CAP. Set `duneRecce: false` to get the older A* weave.
+
+When the builder *suggests* a waypoint type on a dune leg, it offers WPN. A type the user already set is never overwritten.
 
 ## `boxes[]`
 
@@ -113,6 +119,7 @@ field, so it is deterministic per stage). The path is simplified to drivable pie
 | `km` | number | total distance from the DSS, 0.01 km: what the trip meter reads at the box |
 | `partial` | number | km since the previous (not deleted) box |
 | `capIn`, `capOut` | int | heading (degrees true) arriving at / leaving the box along the route. `cap` = `capOut` (what the GPS / stage format call `cap`) |
+| `capType` | string / null | `C` on an off-piste (`direct`) box: the CAP is calculated from the recce / planned line (FIA/FIM “calculated heading”). Omitted on piste |
 | `waypoint` | string / null | the stage waypoint id at this box |
 | `label` | string | `DSS`, `WPM 2`, `NOTE`, `DANGER` ... |
 | `lat`, `lon` | number | where the box is (6 decimals) |

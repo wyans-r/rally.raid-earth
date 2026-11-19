@@ -990,9 +990,10 @@ const VERSION = '1.2.0';
           acc += dist(v2[k - 1], v2[k]) / 1000;
           const end = k === v2.length - 1;
           let type = 'NOTE';
+          const midWp = (typeof o.inDune === 'function' && o.inDune(v2[k])) ? 'WPN' : 'WPM';
           if (end && lastSec) type = 'ASS';
-          else if (end && offKm >= W.wpmMinOffKm) type = 'WPM';
-          else if (!end && acc - lastWpm >= W.wpmEveryKm && offKm - acc >= W.wpmEveryKm / 3) { type = 'WPM'; lastWpm = acc; }
+          else if (end && offKm >= W.wpmMinOffKm) type = midWp;
+          else if (!end && acc - lastWpm >= W.wpmEveryKm && offKm - acc >= W.wpmEveryKm / 3) { type = midWp; lastWpm = acc; }
           push(v2[k], type, { mode: 'direct', points: [v2[k - 1], v2[k]] });
         }
       }

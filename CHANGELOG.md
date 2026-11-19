@@ -9,9 +9,14 @@ All notable changes to rally.raid Earth: the BeamNG mod (released on [GitHub Rel
 
 ## [Unreleased]
 
+### Added
+- **In a dune field, the roadbook path is a recce line, not a weave around every dune.** It stays on the heading between boxes, or follows a broad trough between dunes only when one really runs along that heading for a long stretch. Big dune ridges and steep faces get caution notes (DNX, difficulty L1–L3, CROSS CORDON, STEEP FACE / STEEP DROP) instead of the line dodging them; the competitor picks their own line. Off-piste headings are written as calculated CAP (C). Inside dunes the usual 300 m minimum and box density are relaxed, so gaps between boxes can be long. When the builder suggests a waypoint type on a dune leg, it offers a navigation waypoint (WPN); a type you already set is left alone. Distances in the book are along this recce line.
+  - Technical: roadbook-gen 0.6.0 (`planLegRecce`, OSM `natural=sand`/`dune` plus the height-reversal test). Preview only until this is put live; the Planner copy updates with the next mod release.
+  - A dune field is OpenStreetMap sand or dune polygons, or the same up-and-down height test used for DNX notes. A single isolated ridge is still crossed at its saddle.
+
 ### Changed (mod)
-- The in-game Planner app's roadbook generator now matches the website's (0.5.3): when it plans an off-piste line, it goes round forest and woods, ESA WorldCover tree cover and open water instead of through them, and it treats heavy vegetation as practically impassable. This reaches players with the next mod release.
-  - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` = `stage-builder/roadbook-gen.js` 0.5.3.
+- The in-game Planner app's roadbook generator now matches the website's (0.6.0): it goes round forest and woods, ESA WorldCover tree cover and open water, treats heavy vegetation as practically impassable, and in dune fields it writes a recce line with caution notes instead of weaving. This reaches players with the next mod release.
+  - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` = `stage-builder/roadbook-gen.js` 0.6.0.
 
 ## Website update - 2026-11-19: Auto routing, switchbacks, vegetation
 

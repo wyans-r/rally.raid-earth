@@ -851,7 +851,10 @@ function addPoint(lat, lon) {
   st.points.splice(at, 0, p)
   sel = at
   // the next type: after DSS go on with WPM; after DZ propose FZ
-  if (curType === 'DSS') setType('WPM'); else if (curType === 'DZ') setType('FZ'); else if (curType === 'FZ') setType('WPM')
+  var nextT = (window.RoadbookGen && window.RoadbookGen.suggestWpType)
+    ? window.RoadbookGen.suggestWpType({ prevType: curType, current: (curType === 'DZ' ? 'FZ' : 'WPM'), inDune: !!(p && (p.leg && p.leg.duneField) || (p && p._inDune)) })
+    : (curType === 'DZ' ? 'FZ' : 'WPM')
+  if (curType === 'DSS' || curType === 'FZ' || curType === 'DZ') setType(nextT)
   render()
   Promise.all([computeLeg(at), at + 1 < st.points.length ? computeLeg(at + 1) : null]).then(render)
 }
