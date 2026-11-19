@@ -5,9 +5,9 @@
  *
  * Fragment versions:  #s1=...  a stage (opens in the builder)
  *                     #r1=...  a roadbook plus its stage (opens in the editor)
- *                     #y1=...  a rally file (opens in the rally viewer)
+ *                     #y1=...  a rally file (not public: the rally viewer is retracted)
  *                     #k1=<id> a short link: the same payload stored on the site (POST /api/share, KV), fetched
- *                              from /api/share/<id>. The public form is /s/<id> (or /r/<id> for a rally); the page rewrites it to #k1=<id>.
+ *                              from /api/share/<id>. The public form is /s/<id>; the page rewrites it to #k1=<id>.
  * Short links (19 Nov 2026): Share tries a short link first and falls back to the long link automatically;
  * "Copy long link" always makes the long one. Long links keep working unchanged.
  *
@@ -119,18 +119,12 @@
   }
 
   function pageUrl(which) {
-    if (typeof location === 'undefined') return which === 'roadbook' ? 'roadbook.html' : which === 'rally' ? 'rally.html' : './';
+    if (typeof location === 'undefined') return which === 'roadbook' ? 'roadbook.html' : './';
     var origin = location.origin, path = location.pathname || '/';
     var onRb = /\/roadbook(\.html)?$/i.test(path);
-    var onRally = /\/rally(\.html)?$/i.test(path);
+    // Rally viewer is not public: there is no rally.html page to send people to.
     if (which === 'rally') {
-      if (onRally) return origin + path;
-      if (/index\.html$/i.test(path)) return origin + path.replace(/index\.html$/i, 'rally.html');
-      if (onRb) return origin + path.replace(/roadbook(\.html)?$/i, 'rally.html');
-      var rdir = path.replace(/[^/]+$/, '');
-      if (!rdir) rdir = '/';
-      if (rdir.charAt(rdir.length - 1) !== '/') rdir += '/';
-      return origin + rdir + 'rally.html';
+      return origin + '/';
     }
     if (which === 'roadbook') {
       if (onRb) return origin + path;
@@ -283,12 +277,13 @@
   // so every relative link, pageUrl() and a later share behave exactly as on the normal page.
   function adoptShortPath() {
     if (typeof document === 'undefined' || typeof location === 'undefined' || typeof history === 'undefined') return null;
-    var m = /^\/(s|r)\/([A-Za-z0-9]{22})\/?$/.exec(location.pathname || '');
+    var m = /^\/s\/([A-Za-z0-9]{22})\/?$/.exec(location.pathname || '');
     var meta = document.querySelector && document.querySelector('meta[name="rr-short"]');
     if (!m || !meta) return null;
     var kind = meta.getAttribute('data-page');
-    var page = kind === 'roadbook' ? '/roadbook.html' : kind === 'rally' ? '/rally.html' : '/';
-    m = [m[0], m[2]];
+    if (kind === 'rally') return null; // viewer retracted
+    var page = kind === 'roadbook' ? '/roadbook.html' : '/';
+    m = [m[0], m[1]];
     try { history.replaceState(null, '', page + '#k1=' + m[1]); } catch (e) { return null; }
     return m[1];
   }
@@ -327,6 +322,7 @@
     var m = /^(s|r|y)1=([A-Za-z0-9_-]+)$/.exec(fragment || '');
     if (!m) return Promise.reject(new Error('bad payload'));
     var kind = m[1] === 's' ? 'stage' : m[1] === 'r' ? 'roadbook' : 'rally';
+    if (kind === 'rally') return Promise.reject(new Error('rally short links are not available'));
     var ctl = typeof AbortController === 'function' ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, timeoutMs || 10000) : null;
     return fetch(apiBase() + '/api/share', {
@@ -337,7 +333,7 @@
         if (r.status !== 201 || !j || !SHORT_ID.test(j.id || '')) {
           var e = new Error((j && j.error) || ('the short link service answered HTTP ' + r.status)); e.status = r.status; throw e;
         }
-        return apiBase() + (kind === 'rally' ? '/r/' : '/s/') + j.id;
+        return apiBase() + '/s/' + j.id;
       });
     }, function (e) { throw new Error(e && e.name === 'AbortError' ? 'the short link service did not answer' : 'the short link service could not be reached'); })
       .then(function (u) { clearTimeout(timer); return u; }, function (e) { clearTimeout(timer); throw e; });

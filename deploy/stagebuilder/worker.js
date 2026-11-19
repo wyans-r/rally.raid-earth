@@ -1,15 +1,17 @@
 // rally.raid Earth stage builder Worker (rrearth.wyans.net): short share links.
-// Everything except /api/* and /s/* is served straight from the static assets (wrangler.jsonc run_worker_first).
+// Everything except the run_worker_first paths is served straight from the static assets.
 //
-//   POST /api/share        body {"v":1,"kind":"stage"|"roadbook"|"rally","data":"<the #s1= / #r1= / #y1= payload>"}
+//   POST /api/share        body {"v":1,"kind":"stage"|"roadbook","data":"<the #s1= / #r1= payload>"}
 //                          -> 201 {"id","url"}; stored in KV (binding SHARES) under a random 22-char base62 id (~131 bits)
 //   GET  /api/share/<id>   -> the stored record (immutable, cacheable)
-//   GET  /s/<id>           -> the builder (stage) or roadbook editor (roadbook) or rally viewer (rally)
-//   GET  /r/<id>           -> the rally viewer (same record; used for kind=rally short links)
+//   GET  /s/<id>           -> the builder (stage) or roadbook editor (roadbook)
+//
+// 19 Nov 2026 (wyans): the rally viewer is retracted from the public site. GET /rally, /rally.html,
+// /rally-view.js, /rallies/* and /r/<id> return 404. POST kind=rally is rejected. A /s/<id> record
+// whose kind is rally also 404s.
 //
 // Limits: 256 KB request body, 4 MB once inflated, JSON + format checks, uploads per IP: 10 per minute (rate-limit
-// binding) and 20 per 10 min (KV counter); the IP is only used as a salted hash. No listing endpoint. Long #s1= / #r1= / #y1= links are handled entirely by the pages.
-// A compiled rally file (preview lines, not full stage tracks) fits the 256 KB cap (Atlantic to Atlas 2027 is ~43 KB compressed). Full stages stay as bundled files and are not stored in the share.
+// binding) and 20 per 10 min (KV counter); the IP is only used as a salted hash. No listing endpoint. Long #s1= / #r1= links are handled entirely by the pages.
 const ID_RE = /^[A-Za-z0-9]{22}$/;
 const MAX_BYTES = 256 * 1024;
 const MAX_INFLATED = 4 * 1024 * 1024;
@@ -123,7 +125,7 @@ async function create(req, env, url) {
   const keys = Object.keys(msg).sort().join(',');
   if (keys !== 'data,kind,v') return err(400, 'Expected exactly v, kind and data.');
   if (msg.v !== 1) return err(400, 'Unsupported version.');
-  if (msg.kind !== 'stage' && msg.kind !== 'roadbook' && msg.kind !== 'rally') return err(400, 'kind must be stage, roadbook or rally.');
+  if (msg.kind !== 'stage' && msg.kind !== 'roadbook') return err(400, 'kind must be stage or roadbook.');
   if (typeof msg.data !== 'string' || !/^[A-Za-z0-9_-]{8,}$/.test(msg.data)) return err(400, 'data must be the base64url share payload.');
   const rl = await rateLimited(req, env);
   if (rl.limited) return err(429, 'Too many short links from your connection. Try again in a few minutes, or use the long link.', { 'retry-after': String(Math.max(1, rl.retry)) });
@@ -133,7 +135,7 @@ async function create(req, env, url) {
   const id = newId();
   const created = new Date().toISOString();
   await env.SHARES.put('s:' + id, JSON.stringify({ v: 1, kind: msg.kind, data: msg.data, created }), { metadata: { kind: msg.kind, created, bytes: body.byteLength } });
-  const path = msg.kind === 'rally' ? '/r/' : '/s/';
+  const path = '/s/';
   return json({ id, url: url.origin + path + id, kind: msg.kind }, 201);
 }
 
@@ -150,7 +152,8 @@ async function page(id, req, env, url) {
     const r = await env.SHARES.getWithMetadata('s:' + id);
     if (r.value) { found = true; kind = (r.metadata && r.metadata.kind) || JSON.parse(r.value).kind || 'stage'; }
   }
-  const pagePath = kind === 'roadbook' ? '/roadbook' : kind === 'rally' ? '/rally.html' : '/';
+  if (kind === 'rally') return new Response('Not found.', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  const pagePath = kind === 'roadbook' ? '/roadbook' : '/';
   const asset = await env.ASSETS.fetch(new Request(new URL(pagePath, url), { headers: req.headers }));
   const tag = '<base href="/"><meta name="rr-short" content="' + (ID_RE.test(id) ? id : '') + '" data-page="' + kind + '" data-found="' + found + '">';
   const out = new HTMLRewriter().on('head', { element(e) { e.prepend(tag, { html: true }); } }).transform(asset);
@@ -173,8 +176,14 @@ export default {
         if (req.method !== 'GET' && req.method !== 'HEAD') return err(405, 'Use GET.', { allow: 'GET' });
         return await read(m[1], env);
       }
-      m = /^\/(s|r)\/([^/]*)\/?$/.exec(p);
-      if (m && (req.method === 'GET' || req.method === 'HEAD')) return await page(m[2], req, env, url);
+      // Rally viewer retracted (19 Nov 2026): do not serve /rally, /r/<id> or bundled rallies.
+      if (p === '/rally' || p === '/rally/' || p === '/rally.html' || p === '/rally-view.js'
+          || p === '/rallies' || p === '/rallies/' || p.startsWith('/rallies/')
+          || p === '/r' || p === '/r/' || /^\/r\//.test(p)) {
+        return new Response('Not found.', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+      }
+      m = /^\/s\/([^/]*)\/?$/.exec(p);
+      if (m && (req.method === 'GET' || req.method === 'HEAD')) return await page(m[1], req, env, url);
       if (p.startsWith('/api/')) return err(404, 'Not found.');
       return env.ASSETS.fetch(req);
     } catch (e) {

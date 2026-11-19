@@ -63,7 +63,7 @@
       h += '<div class="round' + (r.status === 'ready' ? '' : ' ph') + '"><div class="n">' + r.n + '</div><div class="b"><div class="t">' + esc(r.name) + '</div>' +
         '<div class="m">' + fmtD(r.start) + ' &ndash; ' + fmtD(r.end) + ' ' + r.start.slice(0, 4) + ' &middot; ' + esc(r.region) + '</div>' +
         (r.disclaimer ? '<div class="disc" style="margin:2px 0 0">' + esc(r.disclaimer) + '</div>' : '') + (r.note ? '<div class="note">' + esc(r.note) + '</div>' : '') + '</div>' +
-        (id ? '<a class="btn go" href="rally.html?rally=' + encodeURIComponent(id) + '">Open</a>' : '<span class="tag">placeholder</span>') + '</div>'
+        (id ? '<span class="tag">coming soon</span>' : '<span class="tag">placeholder</span>') + '</div>'
     })
     app.innerHTML = h + '</div><p class="note"><span class="exp">EXPERIMENTAL – not yet tested in game</span> Rally mode (the rally.raid Earth Rally app) and these events have not been tested in game yet.</p>'
   }

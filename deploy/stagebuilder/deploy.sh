@@ -42,11 +42,10 @@ rm -rf "$SITE/examples"
 cp -a "$SRC/examples" "$SITE/examples"
 # No Overpass extracts on main (the shared cache is on the branch overpass-cache); clear any left from the B20 deploy
 rm -rf "$SITE/overpass-extracts"
-# 19 Nov 2026 (wyans OK): the rally viewer is public: /rally.html, rally-view.js and the bundled rallies/ (Atlantic to Atlas 2027)
-cp "$SRC/rally.html" "$SITE/rally.html"
-cp "$SRC/rally-view.js" "$SITE/rally-view.js"
+# 19 Nov 2026 (wyans): rally viewer retracted from the public site until there is a featured reason for it.
+# Do not copy rally.html, rally-view.js or rallies/. Remove leftovers from an earlier deploy folder.
+rm -f "$SITE/rally.html" "$SITE/rally-view.js"
 rm -rf "$SITE/rallies"
-cp -a "$SRC/rallies" "$SITE/rallies"
 # No zips hosted here (GitHub Releases). NOT YET (held until wyans checks the event in game):
 # stage-chain.js, calendar.html, calendar.json (EXAMPLE_FLAGS.rallyEvents stays false in index.html)
 rm -rf "$SITE/download"

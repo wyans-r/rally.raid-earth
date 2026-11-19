@@ -1353,8 +1353,8 @@ function loadExample(id, skipConfirm) {
   })
 }
 // Feature switches for the Examples list. rallyEvents: the multi-day rally events ("rallies" in examples/index.json,
-// first Atlantic to Atlas 2027). OFF until wyans has checked the event in game; turning it on also needs calendar.html,
-// calendar.json and rallies/ deployed (deploy.sh).
+// first Atlantic to Atlas 2027). OFF until wyans has checked the event in game; turning it on also needs calendar.html
+// and calendar.json (deploy.sh). The rally viewer is not public.
 var EXAMPLE_FLAGS = { rallyEvents: false }
 var EX_OPEN_KEY = 'rallyraid-examples-open'
 function exOpenState() { try { return JSON.parse(localStorage.getItem(EX_OPEN_KEY) || '{}') || {} } catch (e) { return {} } }

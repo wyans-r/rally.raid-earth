@@ -37,6 +37,9 @@ test('changelog: inline bold / code / links; only http(s) links; HTML stays text
   assert.ok(/<details open><summary>\[1\.0\] - 2026-01-01<\/summary>/.test(out) && /<details><summary>Old<\/summary>/.test(out), out);
   assert.ok(/<ul><li>.*<ul><li>nested/.test(out), 'nested list');
 });
+test('changelog: does not mention the retracted rally viewer', () => {
+  assert.ok(!/rally\.html|Rally viewer/i.test(MD), 'CHANGELOG.md must not name the retracted rally viewer');
+});
 test('changelog: no innerHTML in the renderer', () => {
   assert.ok(!/innerHTML/.test(fs.readFileSync(path.join(__dirname, '..', 'stage-builder', 'changelog.js'), 'utf8')));
 });
