@@ -35,6 +35,9 @@ cp "$SRC/stage-polish.js" "$SITE/stage-polish.js"
 cp "$SRC/stagegen-core.js" "$SITE/stagegen-core.js"
 cp "$SRC/stagegen.js" "$SITE/stagegen.js"
 cp "$SRC/stagegen.css" "$SITE/stagegen.css"
+# 19 Nov 2026: Changelog tab. CHANGELOG.md comes from the repo root on every deploy, so the tab shows what is pushed
+if [ -f "$SRC/changelog.js" ]; then cp "$SRC/changelog.js" "$SITE/changelog.js"; fi
+if [ -f "$ROOT"/CHANGELOG.md ]; then cp "$ROOT"/CHANGELOG.md "$SITE/CHANGELOG.md"; fi
 rm -rf "$SITE/examples"
 cp -a "$SRC/examples" "$SITE/examples"
 # No Overpass extracts on main (the shared cache is on the branch overpass-cache); clear any left from the B20 deploy

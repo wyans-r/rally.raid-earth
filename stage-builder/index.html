@@ -81,6 +81,16 @@
   #ex-hint span { flex:1; }
   #ex-hint .b { flex:0 0 auto; }
   .ex-gh { color:var(--acc); font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin:10px 0 4px; cursor:pointer; list-style:none; padding:4px 2px; border-bottom:1px solid var(--line); user-select:none; }
+  #changelog { font-size:13px; line-height:1.45; }
+  #changelog .cl-title { margin:6px 0 4px; font-size:15px; }
+  #changelog .cl-intro ul, #changelog .cl-body ul { margin:4px 0 6px; padding-left:18px; }
+  #changelog li { margin:2px 0; }
+  #changelog li ul { color:#9aa4ad; font-size:12px; }
+  #changelog details.cl-sec { border-top:1px solid var(--line); padding:4px 0; }
+  #changelog details.cl-sec > summary { cursor:pointer; font-weight:700; padding:6px 0; }
+  #changelog h4 { margin:8px 0 2px; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--acc); }
+  #changelog code { background:#1f262c; padding:0 3px; border-radius:3px; font-size:12px; overflow-wrap:anywhere; }
+  #changelog p { margin:4px 0; }
   .ex-gh::-webkit-details-marker { display:none; }
   .ex-gh::before { content:'\25B8'; display:inline-block; width:1em; transition:transform .15s; }
   details[open] > .ex-gh::before { transform:rotate(90deg); }
@@ -119,7 +129,7 @@
     <div id="ex-hint"><span>New here? Open a sample stage to get a feel for how to build your own.</span>
       <button class="b p" id="ex-hint-go">Browse examples</button>
       <button class="b" id="ex-hint-x" title="Dismiss">Dismiss</button></div>
-    <div class="tabs"><button data-tab="plot" class="on">Plot</button><button data-tab="stage">Stage</button><button data-tab="rules">Rules</button><button data-tab="file">File</button><button data-tab="guide" title="What each waypoint type is and where to use it">Guide</button></div>
+    <div class="tabs"><button data-tab="plot" class="on">Plot</button><button data-tab="stage">Stage</button><button data-tab="rules">Rules</button><button data-tab="file">File</button><button data-tab="guide" title="What each waypoint type is and where to use it">Guide</button><button data-tab="changelog" title="What changed in the mod and on this website">Changelog</button></div>
 
     <div class="pane on" id="pane-plot">
       <label>Type for the next click</label>
@@ -186,6 +196,10 @@
       <hr>
       <div class="hint">Put exported stages in <b>&lt;BeamNG user folder&gt;/current/rallyraid/stages/</b> (Windows: %LOCALAPPDATA%\BeamNG\BeamNG.drive\current\rallyraid\stages). The work in progress is saved in this browser automatically.</div>
       <div class="hint">Map data &copy; OpenStreetMap contributors (ODbL), the same source BeamNG.Earth builds its roads from. Routing: Primary Piste legs: OSRM demo server (fair use: about one request a second); Piste and Traces legs and the Auto choice: OpenStreetMap ways from the public Overpass servers (cached in this browser). Search: Nominatim.</div>
+    </div>
+    <div class="pane" id="pane-changelog">
+      <div class="hint">What changed in the rally.raid Earth mod and on this website, newest first. Also on <a href="https://github.com/wyans-r/rally.raid-earth/blob/main/CHANGELOG.md" target="_blank" rel="noopener">GitHub</a>.</div>
+      <div id="changelog">Loading the changelog...</div>
     </div>
     <div class="pane" id="pane-guide">
       <div id="examples">
@@ -440,6 +454,17 @@ function routeGpx(a, b) {
  * The map data comes through the roadbook generator's Overpass helper (roadbook-gen.js, loaded on first use), so the
  * same mirrors apply; tiles are cached in this browser (IndexedDB) and routes in memory. */
 var trackRouterP = null
+// Changelog tab: CHANGELOG.md from the site (deploy.sh copies it from the repo), rendered by changelog.js (text only, no HTML)
+var changelogP = null
+function loadChangelog() {
+  if (changelogP) return changelogP
+  var box = document.getElementById('changelog')
+  changelogP = Promise.all([loadScriptOnce('changelog.js', function () { return !!window.RRChangelog }),
+    fetch('CHANGELOG.md', { cache:'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text() })])
+    .then(function (x) { window.RRChangelog.render(x[1], box) })
+    .catch(function (e) { changelogP = null; box.textContent = 'Could not load the changelog (' + (e && e.message) + '). It is also on GitHub: github.com/wyans-r/rally.raid-earth/blob/main/CHANGELOG.md' })
+  return changelogP
+}
 function loadScriptOnce(src, ready) {
   if (ready()) return Promise.resolve()
   return new Promise(function (res, rej) {
@@ -881,6 +906,7 @@ document.querySelectorAll('.tabs button').forEach(function (b) {
     document.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b) })
     document.querySelectorAll('.pane').forEach(function (x) { x.classList.toggle('on', x.id === 'pane-' + b.dataset.tab) })
     if (b.dataset.tab === 'guide') renderGuide()
+    if (b.dataset.tab === 'changelog') loadChangelog()
   })
 })
 document.addEventListener('click', function (e) { var a = e.target.closest('[data-g]'); if (a) { e.preventDefault(); showGuide(a.dataset.g) } })
