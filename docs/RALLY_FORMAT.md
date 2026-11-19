@@ -92,3 +92,7 @@ round = `{n, status: "ready" | "placeholder", name, region, start, end, rally?: 
    retries, and writes `rallies/build/<id>/` (`logs/<stage>.log`, `run.log`, `report.json`). `--only SS4`, `--redo`, `--no-roadbook`.
 3. `node tools/rally-compile.js rallies/specs/<id>.spec.json` checks everything and writes the rally file with its stages
    to `stage-builder/rallies/` and `mod/rallyraid/rallies/`.
+
+## Rally viewer (website, preview until marked live)
+
+`stage-builder/rally.html` draws the whole rally: special-stage preview lines, liaisons as great-circle dashes, a transfer with `liaisonOut.ferry` / `drive: false` as a dashed **Transfer (teleport)** (via a `kind: port` bivouac when there is one), bivouacs, rest-day and marathon flags. Open with `rally.html?rally=rallies/<id>.rally.json`, or drop in a file. A short link (`POST /api/share` with `kind: rally`, public URL `/r/<id>`) stores the compiled rally file (previews, not full stage tracks) under the ordinary 256 KB cap. Opening a stage in the builder uses `/?stage=rallies/<id>/stages/<stage>.json` when those files are bundled on the site.

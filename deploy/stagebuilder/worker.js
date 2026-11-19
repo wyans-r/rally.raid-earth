@@ -1,13 +1,15 @@
 // rally.raid Earth stage builder Worker (rrearth.wyans.net): short share links.
 // Everything except /api/* and /s/* is served straight from the static assets (wrangler.jsonc run_worker_first).
 //
-//   POST /api/share        body {"v":1,"kind":"stage"|"roadbook","data":"<the #s1= / #r1= payload>"}
+//   POST /api/share        body {"v":1,"kind":"stage"|"roadbook"|"rally","data":"<the #s1= / #r1= / #y1= payload>"}
 //                          -> 201 {"id","url"}; stored in KV (binding SHARES) under a random 22-char base62 id (~131 bits)
 //   GET  /api/share/<id>   -> the stored record (immutable, cacheable)
-//   GET  /s/<id>           -> the builder (stage) or roadbook editor (roadbook) page; the page fetches /api/share/<id>
+//   GET  /s/<id>           -> the builder (stage) or roadbook editor (roadbook) or rally viewer (rally)
+//   GET  /r/<id>           -> the rally viewer (same record; used for kind=rally short links)
 //
 // Limits: 256 KB request body, 4 MB once inflated, JSON + format checks, uploads per IP: 10 per minute (rate-limit
-// binding) and 20 per 10 min (KV counter); the IP is only used as a salted hash. No listing endpoint. Long #s1= / #r1= links are handled entirely by the pages.
+// binding) and 20 per 10 min (KV counter); the IP is only used as a salted hash. No listing endpoint. Long #s1= / #r1= / #y1= links are handled entirely by the pages.
+// A compiled rally file (preview lines, not full stage tracks) fits the 256 KB cap (Atlantic to Atlas 2027 is ~43 KB compressed). Full stages stay as bundled files and are not stored in the share.
 const ID_RE = /^[A-Za-z0-9]{22}$/;
 const MAX_BYTES = 256 * 1024;
 const MAX_INFLATED = 4 * 1024 * 1024;
@@ -85,6 +87,7 @@ async function inflateCapped(u8, max) {
 function payloadOk(kind, obj) {
   if (!obj || typeof obj !== 'object') return false;
   if (kind === 'stage') return obj.format === 'rallyraid-stage';
+  if (kind === 'rally') return obj.format === 'rallyraid-rally' && obj.schemaVersion === 1;
   return obj.format === 'rallyraid-roadbook' || !!(obj.roadbook && obj.roadbook.format === 'rallyraid-roadbook');
 }
 
@@ -111,26 +114,27 @@ async function create(req, env, url) {
   const ct = (req.headers.get('content-type') || '').toLowerCase();
   if (!ct.startsWith('application/json')) return err(415, 'Send JSON (content-type: application/json).');
   const len = +(req.headers.get('content-length') || 0);
-  if (len > MAX_BYTES) return err(413, 'This stage or roadbook is too big for a short link (limit 256 KB). Use the long link or the exported file.');
+  if (len > MAX_BYTES) return err(413, 'This file is too big for a short link (limit 256 KB). Use the long link or the exported file.');
   const body = await readCapped(req, MAX_BYTES);
-  if (!body) return err(413, 'This stage or roadbook is too big for a short link (limit 256 KB). Use the long link or the exported file.');
+  if (!body) return err(413, 'This file is too big for a short link (limit 256 KB). Use the long link or the exported file.');
   let msg;
   try { msg = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(body)); } catch (e) { return err(400, 'The request is not valid JSON.'); }
   if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return err(400, 'Expected a JSON object.');
   const keys = Object.keys(msg).sort().join(',');
   if (keys !== 'data,kind,v') return err(400, 'Expected exactly v, kind and data.');
   if (msg.v !== 1) return err(400, 'Unsupported version.');
-  if (msg.kind !== 'stage' && msg.kind !== 'roadbook') return err(400, 'kind must be stage or roadbook.');
+  if (msg.kind !== 'stage' && msg.kind !== 'roadbook' && msg.kind !== 'rally') return err(400, 'kind must be stage, roadbook or rally.');
   if (typeof msg.data !== 'string' || !/^[A-Za-z0-9_-]{8,}$/.test(msg.data)) return err(400, 'data must be the base64url share payload.');
   const rl = await rateLimited(req, env);
   if (rl.limited) return err(429, 'Too many short links from your connection. Try again in a few minutes, or use the long link.', { 'retry-after': String(Math.max(1, rl.retry)) });
   let obj;
   try { obj = JSON.parse(await inflateCapped(b64urlToBytes(msg.data), MAX_INFLATED)); } catch (e) { return err(400, 'The share payload is damaged or too big once unpacked.'); }
-  if (!payloadOk(msg.kind, obj)) return err(400, msg.kind === 'stage' ? 'This is not a rally.raid stage.' : 'This is not a rally.raid roadbook.');
+  if (!payloadOk(msg.kind, obj)) return err(400, msg.kind === 'stage' ? 'This is not a rally.raid stage.' : msg.kind === 'rally' ? 'This is not a rally.raid rally.' : 'This is not a rally.raid roadbook.');
   const id = newId();
   const created = new Date().toISOString();
   await env.SHARES.put('s:' + id, JSON.stringify({ v: 1, kind: msg.kind, data: msg.data, created }), { metadata: { kind: msg.kind, created, bytes: body.byteLength } });
-  return json({ id, url: url.origin + '/s/' + id, kind: msg.kind }, 201);
+  const path = msg.kind === 'rally' ? '/r/' : '/s/';
+  return json({ id, url: url.origin + path + id, kind: msg.kind }, 201);
 }
 
 async function read(id, env) {
@@ -146,7 +150,8 @@ async function page(id, req, env, url) {
     const r = await env.SHARES.getWithMetadata('s:' + id);
     if (r.value) { found = true; kind = (r.metadata && r.metadata.kind) || JSON.parse(r.value).kind || 'stage'; }
   }
-  const asset = await env.ASSETS.fetch(new Request(new URL(kind === 'roadbook' ? '/roadbook' : '/', url), { headers: req.headers }));
+  const pagePath = kind === 'roadbook' ? '/roadbook' : kind === 'rally' ? '/rally.html' : '/';
+  const asset = await env.ASSETS.fetch(new Request(new URL(pagePath, url), { headers: req.headers }));
   const tag = '<base href="/"><meta name="rr-short" content="' + (ID_RE.test(id) ? id : '') + '" data-page="' + kind + '" data-found="' + found + '">';
   const out = new HTMLRewriter().on('head', { element(e) { e.prepend(tag, { html: true }); } }).transform(asset);
   const h = new Headers(out.headers);
@@ -168,8 +173,8 @@ export default {
         if (req.method !== 'GET' && req.method !== 'HEAD') return err(405, 'Use GET.', { allow: 'GET' });
         return await read(m[1], env);
       }
-      m = /^\/s\/([^/]*)\/?$/.exec(p);
-      if (m && (req.method === 'GET' || req.method === 'HEAD')) return await page(m[1], req, env, url);
+      m = /^\/(s|r)\/([^/]*)\/?$/.exec(p);
+      if (m && (req.method === 'GET' || req.method === 'HEAD')) return await page(m[2], req, env, url);
       if (p.startsWith('/api/')) return err(404, 'Not found.');
       return env.ASSETS.fetch(req);
     } catch (e) {

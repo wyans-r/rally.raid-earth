@@ -9,7 +9,7 @@
   "compatibility_date": "2026-10-01",
   "account_id": "12d9d7f42a5a938f3f8aa5232a4557fb",
   "main": "worker.js",
-  "assets": { "directory": "./site", "binding": "ASSETS", "run_worker_first": ["/api/*", "/s/*"] },
+  "assets": { "directory": "./site", "binding": "ASSETS", "run_worker_first": ["/api/*", "/s/*", "/r/*"] },
   // KV namespace "rrearth-shares" (free tier): the stored short links, key s:<id>, plus short-lived rate-limit counters
   "kv_namespaces": [ { "binding": "SHARES", "id": "4f1f6d85381f4b948aebb9f0fd9db799" } ],
   // Workers rate-limit binding (a setting on this Worker, not a separate resource): 10 uploads per minute per IP

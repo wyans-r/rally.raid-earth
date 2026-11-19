@@ -5,8 +5,9 @@
  *
  * Fragment versions:  #s1=...  a stage (opens in the builder)
  *                     #r1=...  a roadbook plus its stage (opens in the editor)
+ *                     #y1=...  a rally file (opens in the rally viewer)
  *                     #k1=<id> a short link: the same payload stored on the site (POST /api/share, KV), fetched
- *                              from /api/share/<id>. The public form is /s/<id>; the page rewrites it to #k1=<id>.
+ *                              from /api/share/<id>. The public form is /s/<id> (or /r/<id> for a rally); the page rewrites it to #k1=<id>.
  * Short links (19 Nov 2026): Share tries a short link first and falls back to the long link automatically;
  * "Copy long link" always makes the long one. Long links keep working unchanged.
  *
@@ -62,9 +63,10 @@
     if (h.charAt(0) === '/') h = h.slice(1);
     var k = /^k(\d+)=([A-Za-z0-9]{22})$/.exec(h);
     if (k) return { kind: 'short', version: +k[1], id: k[2] };
-    var m = /^(s|r)(\d+)=(.*)$/.exec(h);
+    var m = /^(s|r|y)(\d+)=(.*)$/.exec(h);
     if (!m) return null;
-    return { kind: m[1] === 's' ? 'stage' : 'roadbook', version: +m[2], data: m[3] };
+    var kind = m[1] === 's' ? 'stage' : m[1] === 'r' ? 'roadbook' : 'rally';
+    return { kind: kind, version: +m[2], data: m[3] };
   }
 
   function packStage(stage) {
@@ -77,6 +79,10 @@
     if (stage) payload.stage = stage;
     return 'r1=' + encodePayload(payload);
   }
+  function packRally(rally) {
+    if (!rally || rally.format !== 'rallyraid-rally') throw new Error('not a rally raid rally file');
+    return 'y1=' + encodePayload(rally);
+  }
 
   function unpack(parsed) {
     if (!parsed) throw new Error(DAMAGED);
@@ -88,6 +94,10 @@
       return { kind: 'stage', stage: obj };
     }
     if (obj && obj.format === 'rallyraid-roadbook') return { kind: 'roadbook', roadbook: obj, stage: null };
+    if (parsed.kind === 'rally') {
+      if (!obj || obj.format !== 'rallyraid-rally') throw new Error('This share link is not a rally.');
+      return { kind: 'rally', rally: obj };
+    }
     if (obj && obj.roadbook && obj.roadbook.format === 'rallyraid-roadbook') {
       return { kind: 'roadbook', roadbook: obj.roadbook, stage: obj.stage || null };
     }
@@ -109,9 +119,19 @@
   }
 
   function pageUrl(which) {
-    if (typeof location === 'undefined') return which === 'roadbook' ? 'roadbook.html' : './';
+    if (typeof location === 'undefined') return which === 'roadbook' ? 'roadbook.html' : which === 'rally' ? 'rally.html' : './';
     var origin = location.origin, path = location.pathname || '/';
     var onRb = /\/roadbook(\.html)?$/i.test(path);
+    var onRally = /\/rally(\.html)?$/i.test(path);
+    if (which === 'rally') {
+      if (onRally) return origin + path;
+      if (/index\.html$/i.test(path)) return origin + path.replace(/index\.html$/i, 'rally.html');
+      if (onRb) return origin + path.replace(/roadbook(\.html)?$/i, 'rally.html');
+      var rdir = path.replace(/[^/]+$/, '');
+      if (!rdir) rdir = '/';
+      if (rdir.charAt(rdir.length - 1) !== '/') rdir += '/';
+      return origin + rdir + 'rally.html';
+    }
     if (which === 'roadbook') {
       if (onRb) return origin + path;
       if (/index\.html$/i.test(path)) return origin + path.replace(/index\.html$/i, 'roadbook.html');
@@ -129,9 +149,11 @@
     if (!parsed || typeof location === 'undefined') return false;
     if (parsed.kind === 'short') return false; // resolved by resolveShort (the server already picked the page)
     var onRb = /roadbook(\.html)?$/i.test(location.pathname);
+    var onRally = /rally(\.html)?$/i.test(location.pathname);
     var dest = null;
     if (parsed.kind === 'roadbook' && !onRb) dest = pageUrl('roadbook');
-    if (parsed.kind === 'stage' && onRb) dest = pageUrl('stage');
+    if (parsed.kind === 'rally' && !onRally) dest = pageUrl('rally');
+    if (parsed.kind === 'stage' && (onRb || onRally)) dest = pageUrl('stage');
     if (!dest) return false;
     location.replace(dest + location.hash);
     return true;
@@ -261,10 +283,12 @@
   // so every relative link, pageUrl() and a later share behave exactly as on the normal page.
   function adoptShortPath() {
     if (typeof document === 'undefined' || typeof location === 'undefined' || typeof history === 'undefined') return null;
-    var m = /^\/s\/([A-Za-z0-9]{22})\/?$/.exec(location.pathname || '');
+    var m = /^\/(s|r)\/([A-Za-z0-9]{22})\/?$/.exec(location.pathname || '');
     var meta = document.querySelector && document.querySelector('meta[name="rr-short"]');
     if (!m || !meta) return null;
-    var page = meta.getAttribute('data-page') === 'roadbook' ? '/roadbook.html' : '/';
+    var kind = meta.getAttribute('data-page');
+    var page = kind === 'roadbook' ? '/roadbook.html' : kind === 'rally' ? '/rally.html' : '/';
+    m = [m[0], m[2]];
     try { history.replaceState(null, '', page + '#k1=' + m[1]); } catch (e) { return null; }
     return m[1];
   }
@@ -276,7 +300,7 @@
       if (!r.ok) throw new Error(SHORT_OFFLINE + ' (HTTP ' + r.status + ')');
       return r.json();
     }, function () { throw new Error(SHORT_OFFLINE); }).then(function (rec) {
-      if (!rec || (rec.kind !== 'stage' && rec.kind !== 'roadbook') || typeof rec.data !== 'string') throw new Error(DAMAGED);
+      if (!rec || (rec.kind !== 'stage' && rec.kind !== 'roadbook' && rec.kind !== 'rally') || typeof rec.data !== 'string') throw new Error(DAMAGED);
       return { kind: rec.kind, version: rec.v || 1, data: rec.data, shortId: id };
     });
   }
@@ -289,7 +313,10 @@
     return fetchShort(parsed.id).then(function (p) {
       if (typeof location !== 'undefined') {
         var onRb = /roadbook(\.html)?$/i.test(location.pathname);
-        if ((p.kind === 'roadbook') !== onRb) { location.replace(pageUrl(p.kind) + '#k1=' + parsed.id); return null; }
+        var onRally = /rally(\.html)?$/i.test(location.pathname);
+        var want = p.kind === 'roadbook' ? 'roadbook' : p.kind === 'rally' ? 'rally' : 'stage';
+        var here = onRally ? 'rally' : onRb ? 'roadbook' : 'stage';
+        if (want !== here) { location.replace(pageUrl(want) + '#k1=' + parsed.id); return null; }
       }
       return p;
     });
@@ -297,19 +324,20 @@
 
   function createShort(fragment, timeoutMs) {
     if (!canShort()) return Promise.reject(new Error('short links need the website'));
-    var m = /^(s|r)1=([A-Za-z0-9_-]+)$/.exec(fragment || '');
+    var m = /^(s|r|y)1=([A-Za-z0-9_-]+)$/.exec(fragment || '');
     if (!m) return Promise.reject(new Error('bad payload'));
+    var kind = m[1] === 's' ? 'stage' : m[1] === 'r' ? 'roadbook' : 'rally';
     var ctl = typeof AbortController === 'function' ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, timeoutMs || 10000) : null;
     return fetch(apiBase() + '/api/share', {
       method: 'POST', headers: { 'content-type': 'application/json' }, signal: ctl ? ctl.signal : undefined,
-      body: JSON.stringify({ v: 1, kind: m[1] === 's' ? 'stage' : 'roadbook', data: m[2] })
+      body: JSON.stringify({ v: 1, kind: kind, data: m[2] })
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (r.status !== 201 || !j || !SHORT_ID.test(j.id || '')) {
           var e = new Error((j && j.error) || ('the short link service answered HTTP ' + r.status)); e.status = r.status; throw e;
         }
-        return apiBase() + '/s/' + j.id;
+        return apiBase() + (kind === 'rally' ? '/r/' : '/s/') + j.id;
       });
     }, function (e) { throw new Error(e && e.name === 'AbortError' ? 'the short link service did not answer' : 'the short link service could not be reached'); })
       .then(function (u) { clearTimeout(timer); return u; }, function (e) { clearTimeout(timer); throw e; });
@@ -358,7 +386,7 @@
     var made = createShort(fragment, opts.timeoutMs).then(function (u) { return { url: u, short: true }; },
       function (e) { return { url: long.url, short: false, reason: (e && e.message) || 'unknown error' }; });
     function note(r) {
-      if (r.short) return 'Short link copied. Anyone with it can open this ' + (page === 'roadbook' ? 'roadbook' : 'stage') + '; it is stored on rrearth.wyans.net. Use "Copy long link" for a link that carries the data itself.';
+      if (r.short) return 'Short link copied. Anyone with it can open this ' + (page === 'roadbook' ? 'roadbook' : page === 'rally' ? 'rally' : 'stage') + '; it is stored on rrearth.wyans.net. Use "Copy long link" for a link that carries the data itself.';
       return 'Could not make a short link (' + r.reason + '), so the long link was copied instead.' + (long.message ? ' ' + long.message : '');
     }
     if (isMobileShare()) {
@@ -385,7 +413,7 @@
   var api = {
     SOFT: SOFT, STRONG: STRONG, VERY: VERY, DAMAGED: DAMAGED, NEWER: NEWER,
     encodePayload: encodePayload, decodePayload: decodePayload,
-    parseHash: parseHash, unpack: unpack, packStage: packStage, packRoadbook: packRoadbook,
+    parseHash: parseHash, unpack: unpack, packStage: packStage, packRoadbook: packRoadbook, packRally: packRally,
     warnLevel: warnLevel, warnMessage: warnMessage, pageUrl: pageUrl, linkFor: linkFor,
     redirectIfNeeded: redirectIfNeeded, clearHash: clearHash,
     copyText: copyText, toast: toast, shareOrCopy: shareOrCopy, isMobileShare: isMobileShare,

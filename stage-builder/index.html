@@ -1266,8 +1266,29 @@ function bootFromShort(parsed) {
     Share.toast(e.message, 'err', 10000)
   }).then(function () { shortLoading = null })
 }
+function bootFromStageQuery() {
+  try {
+    var q = new URLSearchParams(location.search).get('stage')
+    if (!q) return false
+    var path = q.replace(/^\/+/, '')
+    if (path.indexOf('..') !== -1 || !/^rallies\/[A-Za-z0-9._\/-]+\.json$/.test(path)) { status('That stage path is not allowed.', 'err'); return false }
+    fetch(path, { cache: 'no-cache' }).then(function (r) {
+      if (!r.ok) throw new Error('Could not load the stage (HTTP ' + r.status + ').')
+      return r.json()
+    }).then(function (st) {
+      if (!st || st.format !== 'rallyraid-stage') throw new Error('That file is not a rally.raid stage.')
+      if (storedWork() && !confirm('You have a stage saved in this browser. Open this stage and replace it? (Export first if you want to keep it.)')) return
+      applyStage(st, st.name || st.id)
+      status('Opened ' + (st.name || st.id) + ' from the rally.', 'ok')
+      try { history.replaceState(null, '', location.pathname + location.hash) } catch (e) {}
+      metaToForm(); rulesToForm(); render()
+    }).catch(function (e) { status((e && e.message) || String(e), 'err') })
+    return true
+  } catch (e) { return false }
+}
 var openedShare = false
 try { openedShare = bootFromShare() } catch (e) { openedShare = false; status((e && e.message) || String(e), 'err') }
+if (!openedShare && bootFromStageQuery()) openedShare = true
 if (!openedShare) restoreStored()
 metaToForm(); rulesToForm(); render()
 window.addEventListener('hashchange', function () {

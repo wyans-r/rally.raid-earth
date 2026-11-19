@@ -43,7 +43,8 @@ cp -a "$SRC/examples" "$SITE/examples"
 # No Overpass extracts on main (the shared cache is on the branch overpass-cache); clear any left from the B20 deploy
 rm -rf "$SITE/overpass-extracts"
 # No zips hosted here (GitHub Releases). NOT YET (held until wyans checks the event in game):
-# stage-chain.js, calendar.html, calendar.json, rallies/
+# stage-chain.js, calendar.html, calendar.json, rallies/, rally.html, rally-view.js
+# Preview uploads may copy rally.html, rally-view.js and rallies/ (Atlantic to Atlas 2027) without a production deploy.
 rm -rf "$SITE/download"
 
 WR="$(command -v wrangler || true)"
