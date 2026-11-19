@@ -18,6 +18,8 @@
     water: { w: 3, color: '#1f6fd1', dash: '6 3' }, fence: { w: 2, fence: true }, railway: { w: 3, rail: true }, road: { w: 3.5 }
   };
   function stroke(x1, y1, x2, y2, cls, color, extraW) {
+    // numbers, not strings: callers pass toFixed() text, and "53.7" + 2.49 made x1="53.72.49..." (NaN in the SVG)
+    x1 = +x1; y1 = +y1; x2 = +x2; y2 = +y2;
     const st = STYLE[cls] || STYLE.track, c = color || st.color || '#111', w = st.w + (extraW || 0);
     let s = '';
     if (st.dbl) {

@@ -1,0 +1,83 @@
+// 0.5.0 (18 Nov 2026): minimum box spacing + off-piste gaps of track / road legs planned round obstacles. node --test
+const test = require('node:test'), assert = require('node:assert');
+const RB = require('../../stage-builder/roadbook-gen.js');
+const { dest, dist } = RB.geo;
+const P0 = [-20, 13];
+const seg = (a, b, c, d) => { const s = (p, q, r) => (q[1] - p[1]) * (r[0] - p[0]) - (q[0] - p[0]) * (r[1] - p[1]); return s(a, b, c) * s(a, b, d) < 0 && s(c, d, a) * s(c, d, b) < 0; };
+// is any point every 10 m along P inside the square lake shrunk by `inset` m (one planner cell + its simplification)
+const inLake = (P, c, half, inset) => { for (let i = 1; i < P.length; i++) { const n = Math.ceil(dist(P[i - 1], P[i]) / 10); for (let k = 0; k <= n; k++) { const q = [P[i - 1][0] + (P[i][0] - P[i - 1][0]) * k / n, P[i - 1][1] + (P[i][1] - P[i - 1][1]) * k / n], d = dist(c, q), b = RB.geo.bearing(c, q) * Math.PI / 180; if (Math.abs(d * Math.sin(b)) < half - inset && Math.abs(d * Math.cos(b)) < half - inset) return true; } } return false; };
+const crosses = (P, poly) => { for (let i = 1; i < P.length; i++) for (let k = 1; k < poly.length; k++) if (seg(P[i - 1], P[i], poly[k - 1], poly[k])) return true; return false; };
+// a road leg: WP a, a 2 km straight connector east onto a road that then runs 5 km north, WP b on the road's end
+function roadStage() {
+  const a = P0, r0 = dest(a, 90, 2000), road = [r0]; for (let k = 1; k <= 25; k++) road.push(dest(r0, 0, k * 200));
+  const b = road[road.length - 1], pts = [a].concat(road);
+  return { format: 'rallyraid-stage', schemaVersion: 1, id: 'g', name: 'G',
+    waypoints: [{ id: 'a', n: 0, type: 'DSS', lat: a[0], lon: a[1], km: 0 }, { id: 'b', n: 1, type: 'ASS', lat: b[0], lon: b[1] }],
+    route: { legs: [{ from: 'a', to: 'b', mode: 'road', points: pts, off: [[0, 1]] }] } };
+}
+// a lake (closed natural=water way) 600 m across, square on the middle of the connector
+function lake() {
+  const c = dest(P0, 90, 1000), g = [dest(dest(c, 0, 300), 270, 300), dest(dest(c, 0, 300), 90, 300), dest(dest(c, 180, 300), 90, 300), dest(dest(c, 180, 300), 270, 300)];
+  g.push(g[0]); return { type: 'way', tags: { natural: 'water' }, geometry: g.map(p => ({ lat: p[0], lon: p[1] })) };
+}
+
+test('offPieces: the connector of a road leg is an off-piste piece; short ones are not', () => {
+  const st = roadStage(), o = RB.DEFAULTS;
+  assert.deepStrictEqual(RB.offPieces(st, o).map(p => [p.i0, p.i1, !!p.whole]), [[0, 1, false]]);
+  st.route.legs[0].points[0] = dest(st.route.legs[0].points[1], 270, 100);
+  assert.strictEqual(RB.offPieces(st, o).length, 0);
+  const s2 = roadStage(); s2.route.legs[0].via = 'gpx'; assert.strictEqual(RB.offPieces(s2, o).length, 0);
+});
+
+test('a road leg connector across a lake is planned round it, joined to the road, and marked off-piste', () => {
+  const st = roadStage(), L = lake(), poly = L.geometry.map(g => [g.lat, g.lon]);
+  assert.ok(crosses(st.route.legs[0].points.slice(0, 2), poly), 'the straight connector crosses the lake');
+  const plan = RB.planOffPiste(st, () => 100, [L], Object.assign({}, RB.DEFAULTS));
+  const leg = plan.stage.route.legs[0];
+  assert.ok(leg.gapsPlanned);
+  const P = leg.points, roadPts = st.route.legs[0].points.slice(1);
+  assert.ok(P.length > st.route.legs[0].points.length, 'vertices added');
+  assert.deepStrictEqual(P.slice(P.length - roadPts.length), roadPts, 'the road part is unchanged');
+  assert.deepStrictEqual(P[0], st.route.legs[0].points[0]);
+  const run = RB.offRuns(leg.offSegs); assert.strictEqual(run.length, 1); assert.strictEqual(run[0][0], 0);
+  assert.ok(inLake(st.route.legs[0].points.slice(0, 2), dest(P0, 90, 1000), 300, 45), 'straight: through the lake');
+  assert.ok(!inLake(P.slice(0, run[0][1] + 1), dest(P0, 90, 1000), 300, 45), 'the planned connector keeps out of the lake');
+  // the roadbook reads the planned connector as off-piste (CAPs) and the road as road
+  const S = RB.resampleRoute(plan.stage, 50);
+  assert.strictEqual(S[2].mode, 'direct'); assert.strictEqual(S[S.length - 3].mode, 'road');
+});
+
+test('a track leg: only its straight gaps are re-planned; generate() puts CAP boxes on the planned connector', async () => {
+  const st = roadStage(); const leg = st.route.legs[0]; leg.mode = 'track'; delete leg.off; leg.cover = { gaps: [[0, 1]] };
+  const rb = await RB.generate(st, { heightFn: () => 100, useOsm: false, obstacles: [lake()], osm: { elements: [lake()] }, density: 10 });
+  const rl = rb.route && rb.route.legs && rb.route.legs[0];
+  assert.ok(rl && rl.gapsPlanned, 'route leg carries the planned gap');
+  assert.ok(rb.boxes.some(b => b.km < 2.4 && /CAP \d{3}/.test(b.notes)), rb.boxes.map(b => b.km + ' ' + b.notes).join(' | '));
+});
+
+test('applyPlannedLine writes a planned gap into the stage as leg.off runs', () => {
+  const st = roadStage(); const plan = RB.planOffPiste(st, () => 100, [lake()], Object.assign({}, RB.DEFAULTS));
+  const rb = { route: { legs: plan.stage.route.legs.map(l => ({ from: l.from, to: l.to, gapsPlanned: true, points: l.points, offSegs: l.offSegs, vertexInfo: l.vertexInfo })) } };
+  const out = RB.applyPlannedLine(st, rb);
+  const l = out.route.legs[0]; assert.strictEqual(l.mode, 'road'); assert.ok(l.off && l.off[0][1] > 1); assert.ok(!l.cover);
+  // and the generator keeps an already planned run (more than one segment) as it is
+  assert.ok(RB.offPieces(out, RB.DEFAULTS).every(p => p.kept));
+});
+
+test('minimum spacing: no two boxes closer than minSpacingM unless a waypoint is involved; short partials flagged', async () => {
+  // a wiggly 12 km off-piste line: a bend every 80 m would want a box every 80 m
+  const pts = [P0]; let brg = 30;
+  for (let k = 1; k <= 150; k++) { brg += k % 2 ? 25 : -25; pts.push(dest(pts[pts.length - 1], brg, 80)); }
+  const b = pts[pts.length - 1];
+  const st = { format: 'rallyraid-stage', schemaVersion: 1, id: 'w', name: 'W',
+    waypoints: [{ id: 'a', n: 0, type: 'DSS', lat: P0[0], lon: P0[1], km: 0 }, { id: 'b', n: 1, type: 'ASS', lat: b[0], lon: b[1] }],
+    route: { legs: [{ from: 'a', to: 'b', mode: 'direct', points: pts }] } };
+  const rb = await RB.generate(st, { heightFn: (la, lo) => 100 + 30 * Math.sin(la * 3000) * Math.cos(lo * 2000), useOsm: false, planOffPiste: false, density: 40 });
+  assert.strictEqual(RB.DEFAULTS.minSpacingM, 250);
+  for (let i = 1; i < rb.boxes.length; i++) {
+    const A = rb.boxes[i - 1], B = rb.boxes[i], gap = Math.round((B.km - A.km) * 1000);
+    if (A.waypoint || B.waypoint) continue;
+    assert.ok(gap >= 250 - 15, 'gap ' + gap + ' m between ' + A.notes + ' / ' + B.notes);
+  }
+  rb.boxes.forEach(x => { if (x.partial != null && x.partial < 0.3 && rb.boxes.indexOf(x) > 0) assert.ok(x.short, 'short flag at ' + x.km); });
+});

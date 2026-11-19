@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.4.0';
+  const VERSION = '0.5.0';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -92,7 +92,7 @@
     }
     const out = []; let d0 = 0, km0 = 0;
     legs.forEach((leg, li) => {
-      const pts = leg.points;
+      const pts = leg.points, offSet = leg.offSegs && leg.offSegs.length ? new Set(leg.offSegs) : null;
       let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i - 1], pts[i]);
       const legKm = (typeof leg.km === 'number' && leg.km > 0) ? leg.km : L / 1000;
       const scale = L > 0 ? legKm / (L / 1000) : 1;
@@ -103,7 +103,7 @@
         while (seg < pts.length - 1 && s > segStart + segLen) { segStart += segLen; seg++; segLen = dist(pts[seg - 1], pts[seg]); }
         const t = segLen > 0 ? Math.min(1, (s - segStart) / segLen) : 0;
         const p = pts.length > 1 ? lerp(pts[seg - 1], pts[seg], t) : pts[0];
-        out.push({ lat: p[0], lon: p[1], d: d0 + s, km: km0 + (s / 1000) * scale, leg: li, mode: leg.mode || 'road', vtx: seg });
+        out.push({ lat: p[0], lon: p[1], d: d0 + s, km: km0 + (s / 1000) * scale, leg: li, mode: offSet && offSet.has(seg) ? 'direct' : (leg.mode || 'road'), vtx: seg });
       }
       d0 += L; km0 += legKm;
     });
@@ -660,8 +660,13 @@
                            // danger >= 2, gates, leaving / joining tracks are always kept; the rest is ranked and pruned
     maxGapKm: null,        // longest stretch without a box before a filler CAP / FOLLOW box (null: 40 / density km, min 1)
     mergeM: 70,            // features closer than this share a box
-    minSpacingM: 150,      // no two boxes closer than this (200 m on fast roads, below); closer ones merge or the weaker goes
-    fastSpacingM: 200,     // minimum spacing between boxes on tarmac / gravel roads (RO / PP)
+    // 0.5.0 (Wyans 18 Nov: "notes jammed on top of each other"): 250 m / 300 m. The Dakar roadbook lexicon flags any
+    // partial under 300 m as a "short distance" (green box, arrow on the line before); several elements a short way
+    // apart are drawn in ONE diagram with the distance between them ("extended note"). So: closer notes merge.
+    minSpacingM: 250,      // no two boxes closer than this (fastSpacingM on fast roads); closer ones merge (AT n M ...) or the weaker goes
+    fastSpacingM: 300,     // minimum spacing between boxes on tarmac / gravel roads (RO / PP)
+    wpShortM: 100,         // a must-keep note this close before a waypoint merges into the waypoint's box (else it keeps its own, flagged short)
+    shortFlagM: 300,       // partials under this are flagged `short` (the Dakar "short distance" mark)
     sideOffset: 60,        // m either side for the cross-section
     climbGrade: 7, climbMinLen: 150, climbMinRise: 12,
     crestMin: 9, dipMin: 9,
@@ -707,7 +712,7 @@
     overpassMaxPauseMs: 15000,
     junctionsInSpeedZones: 'turns', // 'all' | 'turns' (inside DZ..FZ only junctions where you turn / fork)
     // off-piste line planner (planOffPiste)
-    planOffPiste: true, planCell: 30, planWidthFrac: 0.18, planMinHalfWidth: 500, planMaxHalfWidth: 2500, planMinLegM: 400,
+    planOffPiste: true, planCell: 30, planWidthFrac: 0.18, planMinHalfWidth: 500, planMaxHalfWidth: 2500, planMinLegM: 400, planMinGapM: 150, planFollow: true, followMinM: 300, followRiseM: 8, followMaxTurn: 50,
     planNoise: 0.7, planNoiseCell: 450, planSlopeCost: 40, planCliff: 0.6, planClimbCost: 6, planDescentCost: 1.5,
     planMaxUp: 0.22, planMaxDown: 0.35, planFenceCost: 600, planSimplifyM: 45, planZeroIsSea: false, planMinSegM: 250,
     planMaxSegM: 1800, planMaxSegFlatM: 3000, planFlatSlope: 0.02, planJitterMinM: 50, planJitterMaxM: 140, planSeed: 0,
@@ -1534,8 +1539,16 @@
       case 'village': { const nm = latinPart(f.name) || 'VILLAGE'; return { sym: ['village'], note: f.off < 300 ? 'THROUGH ' + nm + (f.zone ? '' : ', SLOW') : nm + ' ' + (f.off / 1000).toFixed(1) + ' KM on' + f.side, pr: 45 }; }
       case 'undulations': return { sym: ['undulations'], note: 'SUCC. CRESTS ' + lenS(f.len) + (f.blind ? ', BLIND' : ''), pr: 40 + f.danger * 10 };
       case 'bend': return { sym: [Math.abs(f.turn) >= 135 ? 'hairpin' : f.twisty ? 'twisty' : 'bend'], note: (Math.abs(f.turn) >= 135 ? 'HAIRPIN ' : f.twisty ? 'TWISTY, SHARP ' : 'SHARP ') + (f.turn < 0 ? 'L' : 'R'), pr: 40 };
-      case 'cap': { const t = Math.abs(rel(f.from, f.to)); return { sym: f.obstacle ? ['cap', obstSym(f.obstacle)] : (f.reason && /dune/.test(f.reason) ? ['cap', 'dunes'] : ['cap']), note: 'CAP ' + pad3(f.to) + (f.reason ? ', ' + capReason(f.reason) : ''),
+      case 'cap': { const t = Math.abs(rel(f.from, f.to));
+        if (f.follow) {   // 0.5.0: "CAP 140, FOLLOW VALLEY FLOOR 2.1 KM, GENERAL CAP 152"
+          const g = f.followCap != null && Math.abs(rel(f.to, f.followCap)) >= 10 ? ', GENERAL CAP ' + pad3(f.followCap) : '';
+          return { sym: f.obstacle ? ['cap', obstSym(f.obstacle)] : (/dune/.test(f.follow) ? ['cap', 'dunes'] : ['cap']),
+            note: 'CAP ' + pad3(f.to) + ', ' + capReason(f.follow) + (f.followKm >= 0.5 ? ' ' + f.followKm.toFixed(1) + ' KM' : '') + g + (f.reason ? ', ' + capReason(f.reason) : ''),
+            pr: 28 + Math.min(45, t * 0.9) };
+        }
+        return { sym: f.obstacle ? ['cap', obstSym(f.obstacle)] : (f.reason && /dune/.test(f.reason) ? ['cap', 'dunes'] : ['cap']), note: 'CAP ' + pad3(f.to) + (f.reason ? ', ' + capReason(f.reason) : ''),
         pr: 20 + Math.min(45, t * 0.9) + (f.reason ? 8 : 0) - (f.fabricated ? 8 : 0) }; }
+      case 'follow': return { sym: /dune/.test(f.follow) ? ['dunes'] : [], note: capReason(f.follow) + (f.followKm >= 0.5 ? ' ' + f.followKm.toFixed(1) + ' KM' : '') + ', GENERAL CAP ' + pad3(f.followCap), pr: 50 };
       default: return { sym: [], note: String(f.kind).toUpperCase(), pr: 10 };
     }
   }
@@ -1649,7 +1662,7 @@
     for (let a = 0; a + 1 < boxes.length;) {
       const A = boxes[a], B = boxes[a + 1];
       if ((S[B.si].km - S[A.si].km) * 1000 >= spacing(A.si, B.si) || (A.wp && B.wp)) { a++; continue; }
-      if (B.wp && worth(A)) { a++; spacingKept++; continue; }
+      if (B.wp && worth(A) && (S[B.si].km - S[A.si].km) * 1000 >= o.wpShortM) { a++; spacingKept++; continue; }
       let host, guest;
       if (A.wp) { host = A; guest = B; } else if (B.wp) { host = B; guest = A; }
       else if (worth(A) && worth(B)) { host = A; guest = B; }
@@ -1735,7 +1748,7 @@
       for (const nd of nodes) if (nd.angle === null) { const k = nd.items[0].si; nd.angle = Math.round(rel(capAround(S, k, true, step), k >= N - 1 ? capAround(S, k, true, step) : capAround(S, k, false, step))); nd.track = tclass[Math.min(N - 1, k + 2)] || null; }
       // ---- notes, FIM style: danger first, then the action (the way through, in order; later steps "AT 80 ..."
       // metres after the box), then what confirms it (village, landmark), then terrain; at most 3 parts
-      const GRP = k => /^(junction|cap|leave_track|join_track|cross_\w+|gate|cattle_grid|ford|level_crossing|stop|bridge|surface|bend)$/.test(k) ? 1 : /^(village|landmark_pass|landmark_cross)$/.test(k) ? 2 : 3;
+      const GRP = k => /^(junction|cap|follow|leave_track|join_track|cross_\w+|gate|cattle_grid|ford|level_crossing|stop|bridge|surface|bend)$/.test(k) ? 1 : /^(village|landmark_pass|landmark_cross)$/.test(k) ? 2 : 3;
       const parts = [];   // {txt, grp, danger, pr, at}
       const caps = its.filter(it => it.f.kind === 'cap');
       const capMain = caps.length ? caps.reduce((x, y) => Math.abs(rel(y.f.from, y.f.to)) > Math.abs(rel(x.f.from, x.f.to)) ? y : x) : null;
@@ -1806,7 +1819,7 @@
         verified: false, pinned: false, rev: 1, history: []
       });
     });
-    for (let i = 0; i < out.length; i++) out[i].partial = i ? +(out[i].km - out[i - 1].km).toFixed(2) : 0;
+    for (let i = 0; i < out.length; i++) { out[i].partial = i ? +(out[i].km - out[i - 1].km).toFixed(2) : 0; if (i && out[i].partial * 1000 < o.shortFlagM) out[i].short = true; }
     // stats: boxes per 10 km on and off piste
     let offKm = 0, onKm = 0; for (let i = 1; i < N; i++) { const d = S[i].km - S[i - 1].km; if (S[i].mode === 'direct') offKm += d; else onKm += d; }
     const offB = out.filter(b => b.offPiste).length, onB = out.length - offB;
@@ -1854,7 +1867,8 @@
       let bi = 0, bd = Infinity;
       for (let i = 0; i < S.length; i++) { const d = dist([S[i].lat, S[i].lon], [+sb.lat, +sb.lon]); if (d < bd) { bd = d; bi = i; } }
       const s = S[bi];
-      const near = boxes.filter(b => !b.waypoint && Math.abs(b.km - s.km) * 1000 <= o.mergeM).sort((a, b) => Math.abs(a.km - s.km) - Math.abs(b.km - s.km))[0];
+      // 0.5.0: a plotted NOTE point closer than the box spacing to a box rides on that box (a waypoint's too)
+      const near = boxes.filter(b => Math.abs(b.km - s.km) * 1000 < Math.max(o.mergeM, o.minSpacingM)).sort((a, b) => Math.abs(a.km - s.km) - Math.abs(b.km - s.km))[0];
       if (near) { if (text || danger) { mark(near, sb, text); n++; } continue; }
       const cIn = capAround(S, bi, true, o.step), cOut = capAround(S, bi, false, o.step), tr = s.mode === 'direct' ? 'offpiste' : 'track';
       const box = { n: 0, id: 'stage-' + (sb.id || ('note-' + Math.round(s.km * 100))), km: +s.km.toFixed(2), partial: 0, capIn: n360(cIn), capOut: n360(cOut), cap: n360(cOut),
@@ -1865,7 +1879,7 @@
       boxes.push(box);
     }
     boxes.sort((a, b) => a.km - b.km || (b.waypoint ? 1 : 0) - (a.waypoint ? 1 : 0));
-    boxes.forEach((b, i) => { b.n = i + 1; b.partial = i ? +(b.km - boxes[i - 1].km).toFixed(2) : 0; });
+    boxes.forEach((b, i) => { b.n = i + 1; b.partial = i ? +(b.km - boxes[i - 1].km).toFixed(2) : 0; if (i && b.partial * 1000 < o.shortFlagM) b.short = true; else delete b.short; });
     return n;
   }
   const OSM_KINDS = new Set(['junction', 'cross_water', 'cross_fence', 'cross_railway', 'cross_road', 'ford', 'gate', 'cattle_grid', 'level_crossing', 'stop', 'bridge', 'surface', 'leave_track', 'join_track', 'village', 'landmark_cross', 'landmark_pass', 'rough', 'along_water', 'rocky_track']);
@@ -1888,13 +1902,35 @@
     // vertex, with the planner's reason)
     const legs = (stage && stage.route && stage.route.legs) || [];
     for (let i = 1; i < N - 1; i++) if (S[i].mode !== 'road' && S[i].leg === S[i - 1].leg && S[i].vtx !== S[i - 1].vtx && i + k < N && i - k >= 0) {
-      const leg = legs[S[i].leg], planned = leg && leg.planned;
+      const leg = legs[S[i].leg], planned = leg && (leg.planned || (leg.gapsPlanned && leg.vertexInfo && leg.vertexInfo[S[i].vtx - 1] && leg.vertexInfo[S[i].vtx - 1].gap));
       const a = bearing([S[i - k].lat, S[i - k].lon], [S[i].lat, S[i].lon]), b = bearing([S[i].lat, S[i].lon], [S[i + k].lat, S[i + k].lon]);
       // the sample nearest the vertex
       const vi = S[i].vtx - 1, vx = leg && leg.points[vi];
       let si = i; if (vx && dist([S[i - 1].lat, S[i - 1].lon], vx) < dist([S[i].lat, S[i].lon], vx)) si = i - 1;
       const inf = planned && leg.vertexInfo ? leg.vertexInfo[vi] : null;
+      // 0.5.0: terrain to follow. A bend inside a run with the same guidance ("follow valley floor") is no new box;
+      // the bend where a run starts says it, with the run's length and its general CAP
+      if (inf && planned) {
+        const prev = leg.vertexInfo[vi - 1], fIn = prev && prev.follow, fOut = inf.follow;
+        if (fOut && fOut === fIn && !inf.obstacle && Math.abs(rel(a, b)) < o.followMaxTurn && i > 0) continue;
+        if (fOut) {
+          let e = vi + 1; while (e < leg.points.length - 1 && leg.vertexInfo[e] && leg.vertexInfo[e].follow === fOut) e++;
+          let m = 0; for (let z = vi + 1; z <= e; z++) m += dist(leg.points[z - 1], leg.points[z]);
+          F.push({ i: si, kind: 'cap', from: a, to: b, danger: 0, planned: true, reason: inf.obstacle ? inf.reason : null, follow: fOut, followKm: +(m / 1000).toFixed(1), followCap: Math.round(bearing(leg.points[vi], leg.points[e])) % 360, fabricated: false, obstacle: inf.obstacle || null });
+          continue;
+        }
+      }
       if (Math.abs(rel(a, b)) >= (planned ? 3 : 10)) F.push({ i: si, kind: 'cap', from: a, to: b, danger: 0, planned: !!planned, reason: inf ? inf.reason : null, fabricated: !!(inf && inf.fabricated), obstacle: inf ? inf.obstacle : null });
+    }
+    // a run that starts at the first point of a planned leg / gap: said at that point
+    for (let i = 0; i < N - 1; i++) if (S[i].mode === 'direct' && (i === 0 || S[i].leg !== S[i - 1].leg || S[i - 1].mode !== 'direct')) {
+      const leg = legs[S[i].leg]; if (!leg || !leg.vertexInfo) continue;
+      const v0 = Math.max(0, S[i].vtx - 1), inf = leg.vertexInfo[v0]; if (!inf || !inf.follow) continue;
+      if (F.some(f => f.kind === 'cap' && f.follow === inf.follow && Math.abs(S[f.i].km - S[i].km) < 0.05)) continue;
+      let e = v0 + 1; while (e < leg.points.length - 1 && leg.vertexInfo[e] && leg.vertexInfo[e].follow === inf.follow) e++;
+      let m = 0; for (let z = v0 + 1; z <= e; z++) m += dist(leg.points[z - 1], leg.points[z]);
+      const cp = Math.round(bearing(leg.points[v0], leg.points[e])) % 360;
+      F.push({ i: Math.max(0, i - 1), kind: 'follow', danger: 0, follow: inf.follow, followKm: +(m / 1000).toFixed(1), followCap: cp });
     }
     return F;
   }
@@ -1938,11 +1974,34 @@
     if (t.barrier === 'fence' || t.barrier === 'wall') return 6;
     return 0;
   }
-  function corridorBoxes(stage, o) { // [s,w,n,e] per direct leg (for the obstacle query)
+  /**
+   * 0.5.0: the off-piste pieces of a stage. A `direct` leg is one piece. A `track` / `road` leg has a piece for each
+   * stretch that is not on a mapped way and is still a single straight segment: the straight gaps of a track leg
+   * (leg.cover.gaps) and the connectors the builder marks in leg.off (waypoint -> road, road -> waypoint, gaps),
+   * when at least planMinGapM long. Pieces the builder already planned (more than one segment) are kept as they are.
+   * -> [{ li, i0, i1, whole }] (point indexes in leg.points)
+   */
+  function offPieces(stage, o) {
     const out = [];
-    for (const leg of ((stage.route && stage.route.legs) || [])) {
-      if (leg.mode !== 'direct' || leg.points.length < 2) continue;
-      const A = leg.points[0], B = leg.points[leg.points.length - 1], L = dist(A, B);
+    ((stage.route && stage.route.legs) || []).forEach((leg, li) => {
+      const P = leg.points || []; if (P.length < 2) return;
+      if (leg.mode === 'direct') { out.push({ li, i0: 0, i1: P.length - 1, whole: true }); return; }
+      if (leg.via === 'gpx' || o.planGaps === false) return;
+      const pairs = [].concat((leg.cover && leg.cover.gaps) || [], leg.off || []).map(g => [+g[0], +g[1]])
+        .filter(g => g[1] === g[0] + 1 && g[0] >= 0 && g[1] < P.length && dist(P[g[0]], P[g[1]]) >= o.planMinGapM).sort((a, b) => a[0] - b[0]);
+      const kept = (leg.off || []).map(g => [+g[0], +g[1]]).filter(g => g[1] > g[0] + 1 && g[0] >= 0 && g[1] < P.length);
+      const all = pairs.map(g => ({ li, i0: g[0], i1: g[1], whole: false })).concat(kept.map(g => ({ li, i0: g[0], i1: g[1], whole: false, kept: true }))).sort((a, b) => a.i0 - b.i0);
+      let last = -1;
+      for (const g of all) if (g.i0 >= last) { out.push(g); last = g.i1; }
+    });
+    return out;
+  }
+  function corridorBoxes(stage, o) { // [s,w,n,e] per off-piste piece (for the obstacle query)
+    const out = [], legs = (stage.route && stage.route.legs) || [];
+    for (const pc of offPieces(stage, o)) {
+      if (pc.kept) continue;
+      const leg = legs[pc.li];
+      const A = leg.points[pc.i0], B = leg.points[pc.i1], L = dist(A, B);
       const W = Math.max(o.planMinHalfWidth, Math.min(o.planMaxHalfWidth, L * o.planWidthFrac)) + 300;
       const dLat = W / 111320, dLon = W / (111320 * Math.cos(rad(A[0])));
       out.push([Math.min(A[0], B[0]) - dLat, Math.min(A[1], B[1]) - dLon, Math.max(A[0], B[0]) + dLat, Math.max(A[1], B[1]) + dLon]);
@@ -2047,7 +2106,7 @@
   /** plan one leg: A, B [lat,lon] -> {points, vertexInfo, stats} */
   function planLeg(A, B, hfn, obstacles, o, seedStr) {
     const L = dist(A, B);
-    if (L < o.planMinLegM) return { points: [A, B], vertexInfo: [null, null], stats: { straight: true, reason: 'short' } };
+    if (L < (o._gap ? o.planMinGapM : o.planMinLegM)) return { points: [A, B], vertexInfo: [null, null], stats: { straight: true, reason: 'short' } };
     const P = projector(A[0]), a = P.xy(A), b = P.xy(B);
     const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L, nx = -uy, ny = ux;   // n = left of travel
     const c = o.planCell, W = Math.max(o.planMinHalfWidth, Math.min(o.planMaxHalfWidth, L * o.planWidthFrac));
@@ -2219,6 +2278,32 @@
       else if (maxG > 0.25) reason = 'avoid steep ground ' + other;
       info[k] = { reason, side, obstacle: ob ? OBST[ob] : null, climbSaved: Math.round(climbC - climbP) };
     }
+    // 5) 0.5.0: what the line follows on each piece (the piece leaving vertex k): ground either side ~150 m off the
+    // line compared with the line itself. A roadbook box says "FOLLOW VALLEY FLOOR" once instead of a CAP at every
+    // bend along it (bends() drops the bends inside a run with the same guidance)
+    if (o.planFollow !== false) for (let k = 0; k + 1 < V.length; k++) {
+      const p = V[k], q = V[k + 1], Lc = Math.hypot(q[0] - p[0], q[1] - p[1]); if (Lc * c < o.followMinM) continue;
+      const ui = (q[0] - p[0]) / Lc, uj = (q[1] - p[1]) / Lc, li = -uj, lj = ui;   // left of travel in grid steps
+      const off = Math.max(2, Math.round(150 / c));
+      let dl = 0, dr = 0, sl = 0, sr = 0, n = 0;
+      const at = (i, j) => { i = Math.round(i); j = Math.round(j); return i < i0 || i > i1 || j < -J || j > J ? -1 : idx(i, j); };
+      for (let t = 0.1; t <= 0.9001; t += 0.1) {
+        const ci = p[0] + (q[0] - p[0]) * t, cj = p[1] + (q[1] - p[1]) * t, k0 = at(ci, cj), kl = at(ci + li * off, cj + lj * off), kr = at(ci - li * off, cj - lj * off);
+        if (k0 < 0 || kl < 0 || kr < 0) continue;
+        const kl2 = at(ci + li * off / 2, cj + lj * off / 2), kr2 = at(ci - li * off / 2, cj - lj * off / 2);
+        dl += H[kl] - H[k0]; dr += H[kr] - H[k0]; sl += Math.max(SL[kl], kl2 >= 0 ? SL[kl2] : 0); sr += Math.max(SL[kr], kr2 >= 0 ? SL[kr2] : 0); n++;
+      }
+      if (n < 5) continue;
+      dl /= n; dr /= n; sl /= n; sr /= n;
+      const dun = dunesNear([Math.round((p[0] + q[0]) / 2), Math.round((p[1] + q[1]) / 2)]);
+      const hiL = dl > o.followRiseM, hiR = dr > o.followRiseM, side = dl > dr ? 'left' : 'right', sS = dl > dr ? sl : sr;
+      let follow = null;
+      if (dun && hiL && hiR) follow = 'follow dune corridor';
+      else if (hiL && hiR) follow = 'follow valley floor';
+      else if ((hiL || hiR) && Math.max(dl, dr) > o.followRiseM * 1.5) follow = sS > 0.3 ? 'follow foot of escarpment on ' + side : 'skirt high ground on ' + side;
+      if (!follow) continue;
+      info[k] = Object.assign(info[k] || { reason: null }, { follow });
+    }
     const pts = V.map((v, k) => k === 0 ? A : k === V.length - 1 ? B : P.ll(xyOf(v[0], v[1])).map(x => +x.toFixed(6)));
     const segs = []; for (let k = 1; k < pts.length; k++) segs.push(dist(pts[k - 1], pts[k]));
     return { points: pts, vertexInfo: info, stats: { straight: pts.length === 2, vertices: pts.length - 2, longestStraightM: Math.round(Math.max(...segs)), meanSegM: Math.round(segs.reduce((x, y) => x + y, 0) / segs.length),
@@ -2233,8 +2318,31 @@
   function planOffPiste(stage, hfn, obstacles, o) {
     o = Object.assign({}, DEFAULTS, o || {});
     const st = JSON.parse(JSON.stringify(stage)), legs = (st.route && st.route.legs) || [], stats = [];
+    // 0.5.0: off-piste stretches of track / road legs (gaps, connectors) are planned round obstacles too, spliced
+    // into the leg; their segments are marked in leg.offSegs (resampled as off-piste, CAPs from the planned line)
+    const gapsByLeg = new Map();
+    for (const pc of offPieces(stage, o)) if (!pc.whole) (gapsByLeg.get(pc.li) || gapsByLeg.set(pc.li, []).get(pc.li)).push(pc);
+    for (const [li, pcs] of gapsByLeg) {
+      const leg = legs[li], key = leg.from + '>' + leg.to, P0 = leg.points;
+      const pts = [P0[0]], info = [null], offSegs = [];
+      let at = 0;
+      for (const pc of pcs.sort((a, b) => a.i0 - b.i0)) {
+        for (let k = at + 1; k <= pc.i0; k++) { pts.push(P0[k]); info.push(null); }
+        const r = pc.kept ? { points: P0.slice(pc.i0, pc.i1 + 1), vertexInfo: P0.slice(pc.i0, pc.i1 + 1).map(() => null), stats: { kept: true } }
+          : planLeg(P0[pc.i0], P0[pc.i1], hfn, obstacles, Object.assign({}, o, { _gap: true }), (stage.id || '') + ':' + key + ':gap' + pc.i0 + ':' + (o.planSeed || 0));
+        // the piece's first point is a road / track point: it keeps no CAP, only what the first piece follows
+        if (r.vertexInfo[0] && r.vertexInfo[0].follow) info[info.length - 1] = { reason: null, follow: r.vertexInfo[0].follow, gapStart: true };
+        for (let k = 1; k < r.points.length; k++) { pts.push(r.points[k]); info.push(k < r.points.length - 1 ? Object.assign({ gap: true }, r.vertexInfo[k] || {}) : null); offSegs.push(pts.length - 1); }
+        at = pc.i1;
+        stats.push(Object.assign({ from: leg.from, to: leg.to, gap: true }, r.stats));
+      }
+      for (let k = at + 1; k < P0.length; k++) { pts.push(P0[k]); info.push(null); }
+      const L0 = P0.reduce((x, p, k) => k ? x + dist(P0[k - 1], p) : 0, 0), L1 = pts.reduce((x, p, k) => k ? x + dist(pts[k - 1], p) : 0, 0);
+      leg.points = pts; leg.vertexInfo = info; leg.offSegs = offSegs; leg.gapsPlanned = true;
+      if (typeof leg.km === 'number' && leg.km > 0) leg.km = +(leg.km + (L1 - L0) / 1000).toFixed(3); else leg.km = +(L1 / 1000).toFixed(3);
+    }
     for (const leg of legs) {
-      if (leg.mode !== 'direct' || leg.points.length < 2) continue;
+      if (leg.mode !== 'direct' || leg.points.length < 2 || o.planDirect === false) continue;
       const A = leg.points[0], B = leg.points[leg.points.length - 1], key = leg.from + '>' + leg.to;
       const ov = o.lineOverrides && o.lineOverrides[key], seed = (o.legSeeds && o.legSeeds[key]) || 0;
       let r;
@@ -2251,19 +2359,40 @@
     }
     // waypoint km = sum of leg km
     let km = 0; const at = {}; if (legs.length) at[legs[0].from] = 0;
-    for (const leg of legs) { km += leg.km; at[leg.to] = +km.toFixed(3); }
+    for (const leg of legs) { if (!(typeof leg.km === 'number')) leg.km = +(leg.points.reduce((x, p, k) => k ? x + dist(leg.points[k - 1], p) : 0, 0) / 1000).toFixed(3); km += leg.km; at[leg.to] = +km.toFixed(3); }
     for (const w of st.waypoints) if (at[w.id] !== undefined) w.km = at[w.id];
     if (legs.length) st.lengthKm = +km.toFixed(3);
     return { stage: st, stats };
   }
+  // planned gap segments [s, ...] (segment s = points[s-1] -> points[s]) -> [[i0, i1]] point-index runs
+  function offRuns(segs) { const out = []; for (const sg of (segs || []).slice().sort((a, b) => a - b)) { const l = out[out.length - 1]; if (l && l[1] === sg - 1) l[1] = sg; else out.push([sg - 1, sg]); } return out; }
+  /**
+   * 0.5.0, for the builder: plan the off-piste gaps / connectors of one track or road leg round obstacles (terrain
+   * tiles + OSM obstacles, the same planner as off-piste legs). leg {from, to, mode, points, cover?, off?} ->
+   * Promise<{ points, off: [[i0, i1]], stats }> (off = the planned runs, point indexes) or null when nothing to plan.
+   * opts: fetchBytes / decodeImage (tiles), Overpass options as for generate, log.
+   */
+  async function planLegGaps(leg, opts) {
+    const o = Object.assign({}, DEFAULTS, opts || {}, { planDirect: false });
+    const stage = { id: o.stageId || 'leg', waypoints: [], route: { legs: [JSON.parse(JSON.stringify(leg))] } };
+    if (!offPieces(stage, o).some(p => !p.whole && !p.kept)) return null;
+    const dem = createDem({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, sources: o.demSources, concurrency: o.demConcurrency });
+    await dem.load(corridorSamplePoints(stage, o));
+    const obst = o.obstacles ? { elements: o.obstacles } : await fetchObstacles(stage, o, o.log);
+    const plan = planOffPiste(stage, dem.h, obst.elements || [], Object.assign({}, o, { planZeroIsSea: true }));
+    const l = plan.stage.route.legs[0];
+    if (!l.gapsPlanned) return null;
+    return { points: l.points, off: offRuns(l.offSegs), stats: plan.stats, obstacles: (obst.elements || []).length };
+  }
   /** the stage file with its off-piste legs replaced by the roadbook's planned line (optional "update the stage") */
   function applyPlannedLine(stage, rb) {
     const st = JSON.parse(JSON.stringify(stage));
-    const byKey = new Map(((rb.route && rb.route.legs) || []).filter(l => l.planned).map(l => [l.from + '>' + l.to, l]));
+    const byKey = new Map(((rb.route && rb.route.legs) || []).filter(l => l.planned || l.gapsPlanned).map(l => [l.from + '>' + l.to, l]));
     let km = 0;
     for (const leg of st.route.legs) {
       const p = byKey.get(leg.from + '>' + leg.to);
-      if (p) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km; leg.planned = true; }
+      if (p && p.planned) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km; leg.planned = true; }
+      else if (p) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km != null ? p.km : +(leg.points.reduce((m, q, i) => i ? m + dist(leg.points[i - 1], q) : 0, 0) / 1000).toFixed(3); leg.off = offRuns(p.offSegs); delete leg.cover; }
       km += leg.km;
       const w = st.waypoints.find(x => x.id === leg.to); if (w) w.km = +km.toFixed(3);
     }
@@ -2285,7 +2414,7 @@
     let hfn = o.heightFn, demInfo = null, dem = null;
     if (!hfn) { dem = createDem({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, sources: o.demSources, concurrency: o.demConcurrency }); hfn = dem.h; }
     const demProgress = (d, t) => { progress('terrain', d, t); if (o.onDemProgress) o.onDemProgress(d, t); };
-    const hasDirect = ((stage.route && stage.route.legs) || []).some(l => l.mode === 'direct');
+    const hasDirect = offPieces(stage, Object.assign({}, DEFAULTS, opts || {})).length > 0;   // direct legs, or off-piste gaps / connectors of track / road legs (0.5.0)
     const planning = o.planOffPiste && hasDirect;
     const zeroIsSea = opts && opts.planZeroIsSea != null ? opts.planZeroIsSea : !!dem;
     const willFetch = !o.osm && o.useOsm !== false;
@@ -2336,6 +2465,9 @@
       features.terrainClass = fProf.terrainClass;
       const res = assemble(st, S, features, o);
       const amb = ambientNotes(res.boxes, S, fRock.concat(fAlong, fTerr.filter(f => f.kind === 'valley' || f.kind === 'ridge'), fOsm.filter(f => f.kind === 'rocky_track' || (f.kind === 'surface' && TRACK_CODE[f.to] === 'TRACES'))));
+      // 0.5.0: a mapped wadi / valley said by the ambient note beats the planner's own terrain guess on the same box
+      for (const b of res.boxes) if (/FOLLOW WADI|IN WADI BED|FOLLOW VALLEY [A-Z]/.test(b.notes.replace(/FOLLOW VALLEY FLOOR/g, '')))
+        b.notes = b.notes.replace(/,? ?(FOLLOW VALLEY FLOOR|FOLLOW DUNE CORRIDOR|SKIRT HIGH GROUND ON [LR]|FOLLOW FOOT OF ESCARPMENT ON [LR])( \d+\.\d KM)?(, GENERAL CAP \d{3})?/, '').replace(/^[,. ]+/, '');
       const enr = enrichBoxes(res.boxes, S, { landmarks: lms, cover: cov, terrain: fProf.terrainClass }, o);
       const offB = res.boxes.filter(b => b.offPiste && !b.waypoint), bare = b => b.symbols.every(x => x === 'cap' || x === 'continue');
       res.stats.enrich = Object.assign(enr, { landmarkObjects: lms.length, landmarkPass: fLm.filter(f => f.kind === 'landmark_pass').length, powerLineCrossings: fLm.filter(f => f.kind === 'landmark_cross').length,
@@ -2358,7 +2490,7 @@
           landcover: cov ? (landCover ? { name: LANDCOVER.name, tiles: landCover.loaded, failures: landCover.failures, knownPct: res.stats.enrich.coverKnownPct } : { name: 'supplied' }) : null,
           attribution: 'OpenStreetMap contributors (ODbL)' + (demInfo ? '; ' + demInfo.attribution : '') + (cov && landCover ? '; ' + LANDCOVER.attribution : '') },
         stats: res.stats,
-        route: { legs: ((st.route && st.route.legs) || []).map(l => Object.assign({ from: l.from, to: l.to, mode: l.mode, km: l.km }, l.planned ? { planned: true, points: l.points, vertexInfo: l.vertexInfo, edited: l.edited || undefined, seed: l.seed || undefined } : { points: l.points })) },
+        route: { legs: ((st.route && st.route.legs) || []).map(l => Object.assign({ from: l.from, to: l.to, mode: l.mode, km: l.km }, l.planned ? { planned: true, points: l.points, vertexInfo: l.vertexInfo, edited: l.edited || undefined, seed: l.seed || undefined } : l.gapsPlanned ? { gapsPlanned: true, points: l.points, offSegs: l.offSegs, vertexInfo: l.vertexInfo } : { points: l.points })) },
         planner: plan ? { settings: { cell: o.planCell, maxSegM: o.planMaxSegM, maxSegFlatM: o.planMaxSegFlatM, seed: o.planSeed }, obstacles: obstInfo, legs: plan.stats } : null,
         speedZones: res.zones.map(([a, b, lim]) => ({ fromKm: +S[a].km.toFixed(2), toKm: +S[b].km.toFixed(2), limit: lim || null })),
         profile: { stepKm: +(every * o.step / 1000).toFixed(3), km: prof.map((_, k) => +S[Math.min(S.length - 1, k * every)].km.toFixed(3)), h: prof },
@@ -2541,6 +2673,6 @@
     return n;
   }
 
-  return { VERSION, GENERATOR, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
+  return { VERSION, GENERATOR, planLegGaps, offPieces, offRuns, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
     geo: { dist, bearing, dest, rel, simplify, projector } };
 });

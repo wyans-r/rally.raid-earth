@@ -132,3 +132,16 @@ test('forest warnings stay on consecutive legs and do not name points with a way
   // each stretch is about 1.1 km, not the whole 2.2 km
   assert.ok(texts.every(t => /1\.1 km/.test(t)), texts.join(' | '))
 })
+
+test('stageId: start / finish places as a plain ASCII id (18 Nov 2026)', () => {
+  const ab = { name: 'Abteh ابطيح', region: 'cercle de Tan-Tan, Guelmim-Oued Noun, Maroc' }, ms = { name: 'Msied امسيد', region: 'Cercle de Msied, Maroc' }
+  assert.equal(P.stageId({ start: ab, end: ms }), 'abteh-to-msied')
+  assert.equal(P.stageId({ start: ab, end: ab }), 'abteh-loop')
+  assert.equal(P.stageId({ start: ab, end: ms, taken: ['abteh-to-msied'] }), 'abteh-to-msied-2')
+  assert.equal(P.stageId({ start: ab, end: ms, taken: ['abteh-to-msied', 'abteh-to-msied-2'] }), 'abteh-to-msied-3')
+  assert.equal(P.stageId({ start: { name: 'Mḥamid El Ghizlane' }, end: { name: 'Lac Iriki' } }), 'mhamid-el-ghizlane-to-lac-iriki')
+  assert.equal(P.stageId({ start: { name: 'ابطيح', region: 'cercle de Tan-Tan, Maroc' }, end: null }), 'cercle-de-tan-tan')   // no Latin name: the region
+  assert.equal(P.stageId({ lat: 28.1045, lon: -11.3123 }), 'stage-28-10n-11-31w')
+  const long = P.stageId({ start: { name: 'A'.repeat(50) }, end: { name: 'Tarfaya' } })
+  assert.ok(long.length <= 60 && /^[a-z0-9-]+$/.test(long), long)
+})

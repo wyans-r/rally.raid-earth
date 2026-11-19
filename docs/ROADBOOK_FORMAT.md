@@ -77,6 +77,15 @@ field, so it is deterministic per stage). The path is simplified to drivable pie
   knows why, a reason: `go left round dune`, `follow interdune corridor right`, `keep right of trees`, `avoid steep
   slope, go left`, `keep inland, right`, `along fence to a gap, left`. `vertexInfo[k]` per line point:
   `{reason, side, obstacle, climbSaved}`, or `{reason: null, fabricated: true}` for a pure variation dogleg.
+- **Off-piste stretches of track / road legs (0.5.0)**: the same planner runs on the parts of a `track` or `road` leg
+  that are not on a mapped way: the hop from a waypoint onto the road / track, gaps where no mapped way connects, and
+  the tail after the way ends (`leg.cover.gaps` and `leg.off`, docs/STAGE_FORMAT.md), when a piece is at least
+  `planMinGapM` (150 m). Each piece is planned between its own two end points and spliced back in, so it joins the
+  road / track exactly; the rest of the leg is untouched. The route leg then carries `gapsPlanned: true`, `offSegs`
+  (segment numbers, segment s = points[s-1] -> points[s]) and `vertexInfo` (`{gap: true, ...}` on planned bends); those
+  segments are read as off-piste (CAP boxes, reasons), the rest as road / track. Pieces the builder already planned
+  (a `leg.off` run of more than one segment) are kept as drawn. `planGaps: false` turns this off.
+  `RoadbookGen.planLegGaps(leg, opts)` does the same for one leg (the builder calls it after routing a leg).
 - All roadbook distances (`km`) are along this line. The stage file is not changed: the in-game GPS keeps the waypoint
   CAPs and the stage's km. Optionally `RoadbookGen.applyPlannedLine(stage, roadbook)` (or `RB_WRITE_STAGE=<file>
   node roadbook/tools/gen.js ...`) writes a copy of the stage whose `direct` legs carry the planned points
@@ -202,12 +211,17 @@ own code (v1.10.1-beta330), written up in `BEAMNG_EARTH_DATA_1118.txt` (box) / `
 
 ### Spacing, junction complexes and wording (0.3)
 
-- **Minimum spacing**: no two boxes closer than `minSpacingM` (150 m), or `fastSpacingM` (200 m) when both are on a
-  tarmac / gravel road (RO / PP). Two boxes closer than that become one: the things that matter (never-prune items:
+- **Minimum spacing**: no two boxes closer than `minSpacingM` (250 m since 0.5.0; was 150), or `fastSpacingM` (300 m;
+  was 200) when both are on a tarmac / gravel road (RO / PP). Real roadbooks: neither the FIM / W2RC nor the Dakar
+  rules set a minimum box distance, but the Dakar roadbook lexicon treats a partial under 300 m as a "short distance"
+  and combines elements that close into one "extended note" with the distance in it; sample rally rolls run about one
+  box per 0.6-1 km with only a few under 300 m. Boxes still under `shortFlagM` (300 m) from the one before get
+  `short: true`. Plotted NOTE points now ride on a box within `minSpacingM` too (0.4.0 used 70 m). Two boxes closer than that become one: the things that matter (never-prune items:
   real-choice junctions, crossings, gates, leaving / joining a track, planned CAP turns; anything with danger) move into
   the first box of the pair (into the waypoint's box when one is a waypoint), so a run of junctions and crossings is one
   box describing the way through it; the rest of the weaker box is dropped. Exceptions: two waypoints keep their own
-  boxes, a must-keep box just before a waypoint keeps its own spot (the waypoint box cannot move back), and pinned /
+  boxes, a must-keep box just before a waypoint keeps its own spot (the waypoint box cannot move back) unless it is
+  within `wpShortM` (100 m) of it, then it joins the waypoint box, and pinned /
   author / recce boxes are never moved or merged (`stats.merged`, `stats.spacingKept`).
 - **Which junctions are a choice** (`feature.choice`): a turn, a fork (a side road within 50 degrees of the way on),
   or straight on while a bigger road leaves. Not a choice (pruned and merged like any note, never "must keep"): straight

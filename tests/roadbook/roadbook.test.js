@@ -337,7 +337,8 @@ test('planner: a dune ridge across the line is crossed at its saddle', () => {
 
 test('roadbook from a planned line: a CAP box at each bend, the tulip shows the turn, the line is in the file', async () => {
   const st = multi([-20, 13], [[45, 10, 'ASS']]);
-  const rb = await RB.generate(st, { heightFn: hilly, useOsm: false, density: 10 });
+  // planFollow off: this checks the one-box-per-bend wording (0.5.0 terrain-following runs are tested in spacing_gaps1118)
+  const rb = await RB.generate(st, { heightFn: hilly, useOsm: false, density: 10, planFollow: false });
   const leg = rb.route.legs[0]; assert.ok(leg.planned && leg.points.length > 4);
   const caps = rb.boxes.filter(b => b.features.some(f => f.kind === 'cap'));
   // every clear bend of the line (15 deg; capKeepTurn is 10 measured over +-40 m) has its CAP box

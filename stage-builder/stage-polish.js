@@ -161,6 +161,40 @@
     return bits.join(' ')
   }
 
+  /**
+   * 18 Nov 2026: a stage id from the start and finish places: plain lowercase ASCII, accents dropped, [a-z0-9-],
+   * at most 60 characters (docs/STAGE_FORMAT.md). "tan-tan-to-tarfaya"; the same place at both ends: "tan-tan-loop";
+   * one name only: that name; none: from the start coordinates ("stage-28-10n-11-31w"). opts.taken: ids already
+   * used (an id there gets -2, -3, ...).
+   */
+  function asciiSlug(s, max) {
+    var t = String(s || '').toLowerCase(); if (t.normalize) t = t.normalize('NFKD')
+    t = t.replace(/[\u0300-\u036f]/g, '').replace(/\u00df/g, 'ss').replace(/[\u00e6]/g, 'ae').replace(/[\u0153]/g, 'oe').replace(/[\u00f8]/g, 'o').replace(/[\u0111]/g, 'd').replace(/[\u0142]/g, 'l')
+    t = t.toLowerCase().replace(/['\u2019`]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    if (max && t.length > max) t = t.slice(0, max).replace(/-[^-]*$/, '') || t.slice(0, max)
+    return t
+  }
+  function placeWord(p) {
+    if (!p) return ''
+    var cands = [p.name, p.feature].concat(String(p.region || '').split(','))
+    for (var i = 0; i < cands.length; i++) { var w = asciiSlug(cands[i], 28); if (w) return w }
+    return ''
+  }
+  function stageId(opts) {
+    opts = opts || {}
+    var a = placeWord(opts.start), b = placeWord(opts.end), id
+    if (a && b) id = a === b ? a + '-loop' : a + '-to-' + b
+    else if (a || b) id = a || b
+    else if (opts.lat != null && opts.lon != null && isFinite(opts.lat) && isFinite(opts.lon)) {
+      var f = function (v, pos, neg) { return Math.abs(v).toFixed(2).replace('.', '-') + (v >= 0 ? pos : neg) }
+      id = 'stage-' + f(+opts.lat, 'n', 's') + '-' + f(+opts.lon, 'e', 'w')
+    } else id = 'stage'
+    id = asciiSlug(id, 60) || 'stage'
+    var taken = {}; (opts.taken || []).forEach(function (x) { if (x) taken[String(x)] = true })
+    if (taken[id]) { var n = 2, base = id.slice(0, 56); while (taken[base + '-' + n]) n++; id = base + '-' + n }
+    return id
+  }
+
   function composeMeta(opts) {
     return { name: composeName(opts), description: composeDescription(opts) }
   }
@@ -351,6 +385,8 @@
     composeName: composeName,
     composeDescription: composeDescription,
     composeMeta: composeMeta,
+    stageId: stageId,
+    asciiSlug: asciiSlug,
     coverWords: coverWords,
     surfaceWords: surfaceWords,
     findForestProblems: findForestProblems,

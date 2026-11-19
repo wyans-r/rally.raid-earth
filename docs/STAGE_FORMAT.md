@@ -13,7 +13,7 @@ The mod converts nothing: it compares the player's `beamngEarth_api.pose()` lat 
 |---|---|---|---|
 | `format` | string | yes | always `"rallyraid-stage"` |
 | `schemaVersion` | int | yes | `1`. A reader refuses a file with a higher number than it knows. Additions that old readers can ignore keep `1`; changes that break them raise it |
-| `id` | string | yes | short unique name, `[a-z0-9-]`, also the file name (`moab-sand-flats-ss1`) |
+| `id` | string | yes | short unique name, `[a-z0-9-]`, at most 60 characters, also the file name (`moab-sand-flats-ss1`). The builder's "Generate name and description" sets it from the start and finish places (`abteh-to-msied`, `tan-tan-loop`; accents dropped; a region, then the start coordinates when no place name is found; `-2`, `-3` when an example already uses it) |
 | `name` | string | yes | what the HUD shows (`SS1 Moab Sand Flats`) |
 | `region`, `author`, `description`, `vehicleClass` | string | no | shown to players |
 | `created`, `modified` | ISO 8601 UTC | no | |
@@ -143,6 +143,7 @@ or, with `"via": "gpx"`, "my loaded GPX track" = along an imported GPX track; in
 Optional leg fields written by the builder (readers ignore them; older files without them still load, and an older `track` leg keeps its saved points until one of its ends moves):
 `via: "gpx"` (followed the loaded GPX track), and on a "tracks & paths" leg `cover: {"onKm": 6.52, "straightKm": 0.77, "gaps": [[201, 203]]}`:
 how much of it is on mapped ways, how much is drawn straight (short hops to reach a way, and gaps where no mapped way connects), and the gaps as `[from, to]` indexes into `points`.
+Since 18 Nov 2026 a `track` or `road` leg may also carry `off: [[from, to], ...]`: the off-piste runs of the leg as indexes into `points` (on a road leg the hop from the waypoint onto the road and off it at the end, which used to be hidden in the first / last road segment; on a track leg the same as `cover.gaps` once planned). A run of one segment is a straight hop; a longer run was planned round obstacles by the builder (the roadbook keeps it as drawn).
 
 ## Roadbook sync (the game side)
 

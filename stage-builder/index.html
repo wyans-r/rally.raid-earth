@@ -417,7 +417,12 @@ function routeRoad(a, b) {
   return osrm(url).then(function (j) {
     if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error(j.message || j.code || 'no route')
     var pts = j.routes[0].geometry.coordinates.map(function (c) { return [r6(c[1]), r6(c[0])] })
-    pts[0] = a; pts[pts.length - 1] = b
+    // 0.5.0: keep the hop from the waypoint onto the road (and off it at the end) as its own segment, marked in `off`,
+    // so the roadbook (and the builder) can plan it round obstacles instead of drawing it straight across
+    var off = []
+    if (dist(a, pts[0]) > 30) { pts.unshift(a); off.push([0, 1]) } else pts[0] = a
+    if (dist(pts[pts.length - 1], b) > 30) { pts.push(b); off.push([pts.length - 2, pts.length - 1]) } else pts[pts.length - 1] = b
+    pts.off = off
     return pts
   })
 }
@@ -472,6 +477,29 @@ function trackRouter() {
   trackRouterP.catch(function () { trackRouterP = null })
   return trackRouterP
 }
+// 0.5.0: the off-piste stretches of a track / road leg (hop from the waypoint onto the road, straight gaps where no
+// mapped way connects, the tail after the way ends) are planned round obstacles (water, cliffs, steep ground,
+// buildings, ...) by the roadbook generator's off-piste planner, then spliced back into the leg. Runs after the leg
+// is drawn; if the terrain / map servers do not answer the gap simply stays straight (the roadbook plans it again).
+var gapPlanOpts = { overpassTimeoutMs:45000 }
+function planLegGaps(k) {
+  var p = st.points[k]; if (!p || !p.leg || p.leg.via) return Promise.resolve()
+  var leg = p.leg, id = p.id, pts0 = leg.points
+  if (!leg.points || leg.points.length < 2 || !((leg.cover && leg.cover.gaps && leg.cover.gaps.length) || (leg.off && leg.off.length))) return Promise.resolve()
+  return loadScriptOnce('roadbook-gen.js', function () { return !!window.RoadbookGen }).then(function () {
+    var RB = window.RoadbookGen
+    if (!RB.planLegGaps) return null
+    var fetchBytes = function (url) { return fetch(url).then(function (r) { if (r.status === 404) return null; if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer() }) }
+    return RB.planLegGaps({ from:'a', to:'b', mode:leg.mode, points:leg.points, cover:leg.cover, off:leg.off }, Object.assign(gapPlanOpts, { fetchBytes:fetchBytes, stageId:st.meta.id || 'stage' }))
+  }).then(function (r) {
+    var q = st.points[k]; if (!r || !q || q.id !== id || q.leg !== leg || leg.points !== pts0) return
+    leg.points = r.points; leg.off = r.off
+    if (leg.cover) leg.cover.gaps = r.off.slice()
+    var m = 0; r.off.forEach(function (g) { for (var i = g[0] + 1; i <= g[1]; i++) m += dist(r.points[i - 1], r.points[i]) })
+    status('Leg to ' + legName(k) + ': ' + (m / 1000).toFixed(1) + ' km off the ' + (leg.mode === 'road' ? 'road' : 'tracks') + ', planned round obstacles (water, cliffs, steep ground, buildings).', 'ok')
+    render()
+  }).catch(function (e) { console.warn('off-piste gap planning:', e && e.message) })
+}
 function legName(k) { var p = st.points[k]; return p ? labelOf(p) : 'point ' + (k + 1) }
 function routeTracksLeg(k, a, b) {
   var id = st.points[k].id
@@ -483,6 +511,7 @@ function routeTracksLeg(k, a, b) {
     if (!still()) return
     var q = st.points[k], km = r.totalM / 1000, on = Math.round(r.onShare * 100), gapKm = r.gapM / 1000
     q.leg = { mode:'track', points:r.points, cover:{ onKm:+(r.wayM / 1000).toFixed(3), straightKm:+((r.linkM + r.gapM) / 1000).toFixed(3), gaps:r.gapIdx } }
+    if (r.status !== 'none') planLegGaps(k)
     if (r.status === 'none') { q.leg.noTracks = true; status('Leg to ' + legName(k) + ': no tracks or paths connect here, so it is drawn straight (dotted red).', 'warn') }
     else if (r.status === 'partial') status('Leg to ' + legName(k) + ': ' + km.toFixed(1) + ' km, ' + on + '% on tracks and paths. ' + gapKm.toFixed(1) + ' km is drawn straight where no mapped track connects (dotted red).', 'warn')
     else status('Leg to ' + legName(k) + ': ' + km.toFixed(1) + ' km along tracks and paths' + (r.linkM >= 1 ? ' (' + Math.round(r.linkM) + ' m straight to reach them)' : '') + '.', 'ok')
@@ -514,7 +543,8 @@ function computeLeg(k) {
   var id = p.id
   return routeRoad(a, b).then(function (pts) {
     var q = st.points[k]; if (!q || q.id !== id) return
-    q.leg = { mode:'road', points:pts }
+    q.leg = { mode:'road', points:pts.slice(), off:pts.off || [] }
+    planLegGaps(k)
     // road mode is OSRM's car profile: it never uses highway=track (nor private / farm / forestry ways), so where the
     // only short way is a track it drives a long way round. Say so, and point at the other mode.
     var len = 0; for (var n = 1; n < pts.length; n++) len += dist(pts[n - 1], pts[n])
@@ -589,7 +619,8 @@ function render() {
       var lp = legPts(i), lu = legUi(p.leg)
       L.polyline(lp, { color: lu === 'direct' ? '#ff9f43' : lu === 'gpx' ? '#c792ea' : lu === 'track' ? '#2bb673' : '#1e88e5', weight:4, opacity:.85, dashArray: p.leg && p.leg.pending ? '4 6' : null }).addTo(gRoute)
       // tracks & paths: the parts with no mapped track (drawn straight) dotted red on top
-      if (lu === 'track' && p.leg.cover && p.leg.cover.gaps) p.leg.cover.gaps.forEach(function (g) {
+      var offG = lu === 'track' && p.leg.cover && p.leg.cover.gaps ? p.leg.cover.gaps : lu === 'road' && p.leg.off ? p.leg.off : null
+      if (offG) offG.forEach(function (g) {
         if (lp[g[0]] && lp[g[1]]) L.polyline(lp.slice(g[0], g[1] + 1), { color:'#ff3b3b', weight:4, opacity:.95, dashArray:'2 7', interactive:false }).addTo(gRoute)
       })
     }
@@ -857,6 +888,7 @@ function exportStage() {
       // "tracks & paths" leg is on mapped ways (gaps: [from, to] point indexes drawn straight)
       if (p.leg && p.leg.via === 'gpx') l.via = 'gpx'
       if (p.leg && p.leg.mode === 'track' && p.leg.cover && !p.leg.via) l.cover = p.leg.cover
+      if (p.leg && (p.leg.mode === 'track' || p.leg.mode === 'road') && p.leg.off && p.leg.off.length && !p.leg.via) l.off = p.leg.off
       return l
     }) },
     builder: { notes: st.points.filter(function (p) { return isNoteType(p.type) }).map(function (p) { return p.id }) }
@@ -889,6 +921,7 @@ function legIn(l) {
   var o = { mode:l.mode, points:l.points }
   if (l.via === 'gpx') o.via = 'gpx'
   if (l.mode === 'track' && l.cover && !l.via) o.cover = l.cover
+  if ((l.mode === 'track' || l.mode === 'road') && l.off && !l.via) o.off = l.off
   return o
 }
 /** a copy of a stage file with every longitude folded into -180..180 (files / share links made before 18 Nov 2026
@@ -1445,14 +1478,24 @@ function generateMeta() {
       var el = document.getElementById('m-region'); if (el && !el.value) el.value = region
     }
     var last = st.points[st.points.length - 1]
-    return P.composeMeta({ region:region, start:start, mid:mid, end:end, lengthKm:last && last._km, legs:legStats(), coverMix:lastCoverMix })
+    var meta = P.composeMeta({ region:region, start:start, mid:mid, end:end, lengthKm:last && last._km, legs:legStats(), coverMix:lastCoverMix })
+    // 18 Nov 2026: the stage id from the start and finish place names (plain ASCII, accents dropped), not from the
+    // long generated name; ids the examples use are skipped (-2, -3, ...)
+    if (meta && P.stageId) {
+      var taken = (examplesList || []).map(function (e) { return e && e.id }).filter(function (x) { return x && x !== st.meta.id })
+      meta.id = P.stageId({ start:start, end:end, lat:st.points[0].lat, lon:st.points[0].lon, taken:taken })
+    }
+    return meta
   })
 }
 function applyGeneratedMeta(meta) {
   if (!meta) return
   st.meta.name = meta.name || ''
   st.meta.description = meta.description || ''
-  if (meta.name && !st.meta._idTouched) { st.meta.id = slug(meta.name) }
+  // the button fills the id as it fills the name (a typed id is replaced: the button is an explicit ask); the
+  // "keep generating" option leaves a typed id alone
+  if (meta.id && (!st.meta._idTouched || meta._explicit)) { st.meta.id = meta.id; if (meta._explicit) st.meta._idTouched = false }
+  else if (meta.name && !st.meta._idTouched) { st.meta.id = slug(meta.name) }
   metaToForm()
   save()
   var stt = document.getElementById('m-autostatus')
@@ -1487,7 +1530,7 @@ document.getElementById('p-undo-clear').addEventListener('click', function () { 
 document.getElementById('m-autogen').addEventListener('click', function () {
   if (exampleLock) { exampleLock = null }   // user asked to generate, so this is no longer an untouched example
   var stt = document.getElementById('m-autostatus'); if (stt) stt.textContent = 'Looking up nearby place names\u2026'
-  generateMeta().then(function (meta) { applyGeneratedMeta(meta) }, function (e) { if (stt) stt.textContent = 'Could not generate a name: ' + ((e && e.message) || e) })
+  generateMeta().then(function (meta) { if (meta) meta._explicit = true; applyGeneratedMeta(meta) }, function (e) { if (stt) stt.textContent = 'Could not generate a name: ' + ((e && e.message) || e) })
 })
 document.getElementById('m-autokeep').addEventListener('change', function () {
   if (this.checked) {
