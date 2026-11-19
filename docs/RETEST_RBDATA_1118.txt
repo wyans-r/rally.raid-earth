@@ -12,7 +12,8 @@ What changed (what you asked -> what was done):
   Game-crash resume (resuming after the game itself crashed) is a separate rule and is unchanged.
 - Roadbook (generator 0.4.0): notes only for things BeamNG.Earth really builds (written up in docs/ROADBOOK_DATA.md):
   * rocks: STONY / ROCKY, SLOW ! / STONES IN VG / ROCKS BOTH SIDES / ROCKY P where the game scatters rocks (bare ground
-    on a slope, shrubland, surface=rock tracks). Flat bare desert gets none (the game puts none there either).
+    on a slope, shrubland, surface=rock tracks), dune fields included (the game puts stones on dune flanks too).
+    Flat bare desert gets none (the game puts none there either).
   * gone: GATE, CATTLE GRID, plain FENCE (only chain-link fences and walls are built), WELL, CAIRN, SIGN POST, BOULDER,
     MONUMENT, MILESTONE, a RUIN / MOSQUE / FORT that is only a map point; BRIDGE where the route only passes under
     one, or on a footbridge; DEM bumps / ditches on graded roads and in towns; crests on main roads (unless blind).

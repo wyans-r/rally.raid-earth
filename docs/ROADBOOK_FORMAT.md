@@ -180,7 +180,7 @@ own code (v1.10.1-beta330), written up in `BEAMNG_EARTH_DATA_1118.txt` (box) / `
   towns or on beaches; ground over 35 degrees is rock. So off-piste (and on paths, which the game does not build):
   bare 5 %+ `STONY`, 10 %+ `ROCKY, SLOW !`, shrub `STONES IN VG`, over 70 % `ROCK, STEEP !`; on a track over bare 10 %+
   ground `ROCKS BOTH SIDES`; `surface=rock|rocky|bedrock` on the way `ROCKY P 400 M` (`rocky_track`). The same ground
-  once per 3 km unless it gets worse. OSM scree / bare rock areas (`EMP (STONY)`) only where WorldCover is bare / shrub.
+  once per 3 km unless it gets worse. Dune fields included (Wyans 18 Nov: the game puts stones on dune flanks too). OSM scree / bare rock areas (`EMP (STONY)`) only where WorldCover is bare / shrub.
 - **Valleys, wadis, rivers**: `FOLLOW VALLEY 1.2 KM` (DEM: both sides >= 4 m higher for 400 m+) off-piste and on tracks
   (not on tarmac); `ALONG RIVER onL (DRAA) 2.0 KM`, `FOLLOW WADI`, `IN WADI BED` (`along_water`: an OSM river / stream /
   canal / wadi within 150 m running the same way for 600 m+; a dry wadi needs the route in its bed or the valley in

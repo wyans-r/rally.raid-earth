@@ -424,18 +424,17 @@
    * is ROCK material. So: off-piste (and on paths, which the game does not build) on bare ground 5 %+ = STONY,
    * 10 %+ = ROCKY, in shrub = STONES IN VG, over 70 % = ROCK; on a track over bare 10 %+ ground = rocks both sides.
    */
-  function rockFeatures(S, H, hl, hr, cov, cls, o, dunes) {
+  function rockFeatures(S, H, hl, hr, cov, cls, o) {
     const N = S.length, step = o.step, F = [];
     if (!cov || !H || N < 5) return F;
-    // in a dune field the game's bare-ground rule puts stones on the dune flanks too, but the box says DNX: not repeated
-    const inDune = new Uint8Array(N); for (const d of dunes || []) { const e = d.end != null ? d.end : d.i + Math.round((d.lenKm || 0) * 1000 / step); for (let k = Math.max(0, d.i); k <= Math.min(N - 1, e); k++) inDune[k] = 1; }
+    // dune fields too (Wyans 18 Nov: "Note rocks in dune fields too"): the game's bare-ground rule puts stones on dune flanks
     const k = Math.max(1, Math.round(40 / step)), D = 2 * o.sideOffset;
     const slope = i => { const a = Math.max(0, i - k), b = Math.min(N - 1, i + k); const al = b > a ? (H[b] - H[a]) / ((b - a) * step) : 0;
       const xs = hl && hr && Number.isFinite(hl[i]) && Number.isFinite(hr[i]) ? (hl[i] - hr[i]) / D : 0; return Math.hypot(al, xs); };
     const lvl = new Array(N).fill(0);
     for (let i = 0; i < N; i++) {
       const c = cov[i], unbuilt = S[i].mode === 'direct' || cls[i] === 'offpiste' || cls[i] === 'path', sl = slope(i);
-      if (!c || !Number.isFinite(sl) || inDune[i]) continue;
+      if (!c || !Number.isFinite(sl)) continue;
       if (unbuilt && sl >= 0.7) lvl[i] = 4;
       else if (unbuilt && c === 'bare') lvl[i] = sl >= 0.10 ? 3 : sl >= 0.05 ? 2 : 0;
       else if (unbuilt && c === 'bush') lvl[i] = 1;
@@ -2326,7 +2325,7 @@
       else if (landCover) { await landCover.load(S.filter((_, i) => i % 2 === 0).map(s => [s.lat, s.lon]), (d, t) => progress('landcover', d, t)); if (landCover.loaded) cov = coverAlong(S, landCover.at, o); }
       const fCov = cov ? coverFeatures(S, cov, o) : [];
       const tcls = fOsm.trackClass || S.map(s => s.mode === 'direct' ? 'offpiste' : null);
-      const fRock = rockFeatures(S, fProf.H, hl, hr, cov, tcls, o, fProf.filter(f => f.kind === 'dunes'));
+      const fRock = rockFeatures(S, fProf.H, hl, hr, cov, tcls, o);
       const wways = (fOsm.waterways || []).concat(lmData && lmData.elements ? lmData.elements.filter(e => e.type === 'way' && e.tags && e.tags.waterway && e.geometry) : []);
       const fAlong = alongWaterFeatures(S, wways, fProf.valleyDepth, o);
       // a valley we already follow a river / wadi in: one note
