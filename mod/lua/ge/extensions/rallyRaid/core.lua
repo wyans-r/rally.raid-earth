@@ -39,10 +39,11 @@ local keys = require('rallyRaid/keys')              -- the player's key on each 
 local traceMod = require('rallyRaid/trace')           -- the stage's GPS trace (for the result package)
 -- RALLY MODE (EXPERIMENTAL, B10): multi-day rally files, liaisons, bivouac tie-in. Optional: a build without the file still runs.
 local rallyOk, rally = pcall(require, 'rallyRaid/rally')
-if not rallyOk then rally = { init = function () end, cmd = function () end, update = function () end, stageStarted = function () end, stageFinished = function () end, _reset = function () end, state = function () return { available = false } end } end
+if not rallyOk then rally = { init = function () end, cmd = function () end, update = function () end, stageStarted = function () end, stageFinished = function () end, _reset = function () end, enabled = function () return false end, state = function () return { available = false } end } end
 
 local M = {}
-M.VERSION = '0.3.1'   -- 0.3.1: roadbook 0.6.2 (dune drive line, mapped-only dunes, progress bar) in the Planner; 0.3.0: three HUD apps, repair fixes, unlimited recovers, roadbook 0.5.x; 0.2.0: official event runs (rallyRaid/official.lua)
+local function rallyEnabled() return rallyOk and type(rally.enabled) == 'function' and rally.enabled() end
+M.VERSION = '0.3.2'   -- 0.3.2: rally mode off by default (M.rally.enabled); 0.3.1: roadbook 0.6.2 in the Planner; 0.3.0: three HUD apps, repair fixes, unlimited recovers, roadbook 0.5.x; 0.2.0: official event runs (rallyRaid/official.lua)
 
 local SETTINGS_FILE = '/settings/rallyRaid.json'
 local RESULTS_DIR = '/rallyraid/results/'
@@ -784,7 +785,8 @@ local function dispatch(name, arg)
   elseif name:sub(1, 6) == 'resume' then resume.cmd(name:sub(7), arg)   -- (older name of the recover commands)
   elseif name:sub(1, 7) == 'planner' then planner.cmd(name:sub(8), arg)
   elseif name == 'rallyNew' then repair.newRally()
-  elseif name:sub(1, 5) == 'rally' then rally.cmd(name:sub(6), arg)   -- RALLY MODE (rallyList, rallyLoad, rallyDrive, ...)
+  elseif name:sub(1, 5) == 'rally' then
+    if rallyEnabled() then rally.cmd(name:sub(6), arg) else log_('I', 'rally mode is switched off (set M.rally.enabled = true in rallyRaid/repairConfig.lua to turn it on)') end
   elseif name == 'keys' then M.pushKeys(true)
   elseif name == 'liveFile' then M.settings.liveFile = not M.settings.liveFile; saveSettings(); M.requestState()
   elseif name == 'hello' then M.requestState(); resume.push(); gameResume.push(); repair.push(); if rally.push then rally.push() end   -- an app just opened
@@ -845,8 +847,9 @@ function M.appHello(name, on)
 end
 -- the hint for an app that is not on screen (BeamNG has no call to add one app to the player's layout)
 function M.appHint(name)
+  local layoutBtn = (name == 'planner' or not rallyEnabled()) and 'PLANNER LAYOUT' or 'RALLY LAYOUT'
   return 'rally.raid Earth: the "' .. (M.APP_TITLES[name] or name) .. '" app is not on your screen. Add it: ESC > UI Apps > Add app > ' ..
-    (M.APP_TITLES[name] or name) .. ', or press MENU > ' .. (name == 'planner' and 'PLANNER LAYOUT' or 'RALLY LAYOUT') .. ' in the GPS app.'
+    (M.APP_TITLES[name] or name) .. ', or press MENU > ' .. layoutBtn .. ' in the GPS app.'
 end
 
 -- the mod's two app layouts (settings/ui_apps/originalLayouts/default/*.uilayout.json, the way BeamNG.Earth ships its
@@ -985,7 +988,7 @@ function M.officialState() return official.state() end
 function M.loadOfficial(path) return official.load(path) end
 function M.onExtensionLoaded()
   loadSettings()
-  log_('I', 'rally.raid Earth ' .. M.VERSION .. ' loaded (rally mode ' .. (rallyOk and 'in' or 'not in') .. ' this build, async events ' ..
+  log_('I', 'rally.raid Earth ' .. M.VERSION .. ' loaded (rally mode ' .. (rallyEnabled() and 'on' or (rallyOk and 'off' or 'not in this build')) .. ', async events ' ..
     (officialOk and 'in' or 'not in') .. ' this build); commands are logged as "cmd <name> (<app>)"')
   gameResume.startupScan()                       -- crash saves left on disk: logged, and offered in the GPS MENU
 end

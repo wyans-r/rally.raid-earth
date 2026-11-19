@@ -24,6 +24,8 @@ local H = {}      -- hooks from core: api(), notify(t, s), ui(name, data), loadS
 local R = { rally = nil, path = nil, P = nil, liaison = nil, msg = nil, list = nil, t = 0, pushAcc = 0 }
 
 local function cfg() return cfgAll.rally or {} end
+-- 0.3.2: rally mode is off until tested in game. Set M.rally.enabled = true in repairConfig.lua to turn it on.
+function M.enabled() return cfg().enabled == true end
 local function now() return os.date('!%Y-%m-%dT%H:%M:%SZ') end
 local function notify(t, s) if H.notify then H.notify('rally.raid Earth: ' .. t, s or 5) end end
 local function log_(l, m) if H.log then H.log(l, 'rally: ' .. m) end end
@@ -254,6 +256,7 @@ end
 
 ------------------------------------------------------------------------------------------------------------------
 function M.update(dtReal, dtSim)
+  if not M.enabled() then return end
   R.t = R.t + (dtReal or 0)
   local L = R.liaison
   if L and L.mode == 'drive' then
@@ -270,7 +273,8 @@ function M.update(dtReal, dtSim)
 end
 
 function M.state()
-  local st = { experimental = true, loaded = R.rally ~= nil, msg = R.msg, list = R.list }
+  if not M.enabled() then return { available = false, experimental = true, loaded = false } end
+  local st = { available = true, experimental = true, loaded = R.rally ~= nil, msg = R.msg, list = R.list }
   if R.rally then
     local r = R.rally
     st.rally = { id = r.id, name = r.name, disclaimer = r.disclaimer, season = r.season, totals = r.totals, path = R.path,
@@ -292,6 +296,7 @@ end
 function M.push() if H.ui then H.ui('RallyRaidRally', M.state()) end end
 
 function M.cmd(sub, arg)
+  if not M.enabled() then return end
   R.msg = nil
   if sub == 'List' or sub == 'AppHere' then R.list = M.list(); M.push()
   elseif sub == 'Load' then M.load(arg)

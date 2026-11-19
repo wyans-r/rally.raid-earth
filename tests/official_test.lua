@@ -132,7 +132,7 @@ for p in pairs(vfs) do if p:match('^/rallyraid/results/official/.*%.rrresult%.js
 check(pkgPath ~= nil, 'result package file written')
 local pkg = pkgPath and DECODE_JSON(vfs[pkgPath])
 if pkg then
-  check(pkg.format == 'rallyraid-result-package' and pkg.modVersion == '0.3.1', 'package format + mod version')
+  check(pkg.format == 'rallyraid-result-package' and pkg.modVersion == '0.3.2', 'package format + mod version')
   check(pkg.hashes.stage == SHA256(stageText) and pkg.hashes.roadbook == SHA256(rbText), 'package carries the verified hashes')
   check(pkg.event.id == 'ev1' and pkg.entry.id == 'en1' and pkg.entry.token == nil, 'package names event + entry, never the key')
   check(pkg.result.totalTime == pkg.result.stageTime + pkg.result.penaltyTime and #pkg.result.waypoints == #S.stage.waypoints, 'result inside')

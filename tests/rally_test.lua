@@ -196,6 +196,9 @@ local function stop() car.speed, car.ve, car.vn = 0, 0, 0; step(0.1); step(0.1) 
 -- 1) allowance rule (published km at 60 km/h + 30 min, rounded up to 5 min)
 check(rally.allowanceMin(590) == 620 and rally.allowanceMin(50) == 80 and rally.allowanceMin(140) == 170 and rally.allowanceMin(0) == 0 and rally.allowanceMin(1) == 35, 'allowance rule')
 check(cfg.rally and cfg.rally.liaisonKmh == 60 and cfg.rally.liaisonExtraMin == 30 and cfg.rally.liaisonRoundMin == 5 and cfg.rally.teleportUsesAllowance == true, 'tunables in repairConfig.lua')
+check(cfg.rally.enabled == false and rally.enabled() == false and rally.state().available == false, 'rally mode is off by default (0.3.2)')
+cfg.rally.enabled = true
+check(rally.enabled() == true and rally.state().available == true, 'enabling M.rally.enabled turns rally mode on')
 
 -- 2) a test rally next to the sample stage
 local stagePath = '/rallyraid/stages/moab-sand-flats-ss1.json'

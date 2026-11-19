@@ -48,6 +48,7 @@ M.bivouac = {
 -- counts as used). Allowance not used on the day's liaisons is added to that evening's bivouac budget (M.bivouac).
 -- Defaults proposed in B10 (17 Nov 2026), for Wyans to confirm.
 M.rally = {
+  enabled = false,             -- 0.3.2: off until rally mode has been tested in game. Set true to show the RALLY button, panel and RALLY LAYOUT.
   liaisonKmh = 60,             -- allowance = published liaison km at this speed ...
   liaisonExtraMin = 30,        -- ... plus this ...
   liaisonRoundMin = 5,         -- ... rounded UP to this (the rally file already carries the result; used if it does not)

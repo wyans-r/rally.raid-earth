@@ -76,7 +76,7 @@ local na = 0; for _ in pairs(snap.apps) do na = na + 1 end
 check(na == 3, 'three HUD apps tracked: ' .. na)
 check(core.appHello('planner', false) == false and not core.appOn('planner'), 'hello(false): gone at once')
 check(core.appHint('planner'):find('Planner') and core.appHint('planner'):find('PLANNER LAYOUT'), 'hint: ' .. core.appHint('planner'))
-check(core.appHint('gps'):find('GPS') and core.appHint('gps'):find('RALLY LAYOUT'), 'hint: ' .. core.appHint('gps'))
+check(core.appHint('gps'):find('GPS') and core.appHint('gps'):find('PLANNER LAYOUT'), 'hint when rally mode is off: ' .. core.appHint('gps'))
 
 -- the layouts
 GS_CALLS = {}

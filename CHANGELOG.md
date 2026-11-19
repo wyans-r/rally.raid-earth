@@ -11,6 +11,12 @@ All notable changes to rally.raid Earth: the BeamNG mod (released on [GitHub Rel
 
 No unreleased changes at the moment.
 
+## [0.3.2] - 2026-11-19
+
+### Changed
+- Rally mode is switched off for now (untested); stages only. The GPS app's RALLY button, RALLY panel and RALLY LAYOUT are hidden until rally mode has been tested in game.
+  - Technical: set `M.rally.enabled = true` in `lua/ge/extensions/rallyRaid/repairConfig.lua` (inside the zip) to turn it back on; mod `VERSION` 0.3.2.
+
 ## [0.3.1] - 2026-11-19
 
 ### Changed

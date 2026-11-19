@@ -54,6 +54,8 @@ const tick = (n, dt) => post('/tick', { n, dt: dt || 0.1 })
   const open = async () => { await page.goto('http://127.0.0.1:' + PORT + '/page.html', { waitUntil: 'load' }); await sleep(1500) }
 
   await open()
+  // 0.3.2: rally mode is off by default; this file tests the RALLY panel and RALLY LAYOUT, so turn it on
+  await lua("require('rallyRaid/repairConfig').rally.enabled = true; if rallyRaid_core then rallyRaid_core.cmd('hello') end")
   check(await page.evaluate(() => angular.version.full) === '1.5.8', 'AngularJS 1.5.8, as in the game')
   let logs = await allLogs()
   for (const a of ['gps', 'roadbook', 'planner'])

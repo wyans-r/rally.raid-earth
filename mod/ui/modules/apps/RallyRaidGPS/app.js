@@ -448,7 +448,7 @@ angular.module('beamng.apps')
         '<span ng-show="rb.boxCount" title="roadbook box (next box in)">BOX {{ rb.box || \'-\' }}<span ng-show="rb.toNextBox !== undefined && rb.toNextBox !== null"> &rsaquo; {{ rb.toNextBox.toFixed(2) }}</span></span>' +
         '<span class="rrg-pen" ng-show="s.penalty">PEN +{{ clk(s.penalty) }}</span></div>' +
       // rally mode: the liaison being driven (the RALLY panel has the rest)
-      '<div class="rrg-row rrg-sub rrg-liaison" ng-show="rlz && !ov">LIAISON {{ rlz.target }}: {{ rlz.distKm }} km &middot; CAP {{ rlz.bearing }}&deg; &middot; <span ng-class="{\'rrg-pen\': rlz.leftS < 0}">LEFT {{ clk(rlz.leftS) }}</span>' +
+      '<div class="rrg-row rrg-sub rrg-liaison" ng-show="rlAvail && rlz && !ov">LIAISON {{ rlz.target }}: {{ rlz.distKm }} km &middot; CAP {{ rlz.bearing }}&deg; &middot; <span ng-class="{\'rrg-pen\': rlz.leftS < 0}">LEFT {{ clk(rlz.leftS) }}</span>' +
         '<button class="rrg-btn small" ng-click="openPanel(\'rally\')">RALLY</button></div>' +
       // speed zone banner
       '<div class="rrg-zone {{ zoneClass() || \'none\' }}">{{ zoneText() }}</div>' +
@@ -524,7 +524,7 @@ angular.module('beamng.apps')
         '<div class="rrg-mrow hot" ng-show="note"><div class="rrg-mtext">{{ note }}</div>' +
           '<button class="rrg-btn small" ng-click="note = \'\'">OK</button></div>' +
         '<div class="rrg-mrow"><div class="rrg-mtext">App layout (adds the apps)</div><span>' +
-          '<button class="rrg-btn small" ng-click="layout(\'Rally\')" title="GPS and Roadbook">RALLY LAYOUT</button>' +
+          '<button class="rrg-btn small" ng-show="rlAvail" ng-click="layout(\'Rally\')" title="GPS and Roadbook">RALLY LAYOUT</button>' +
           '<button class="rrg-btn small" ng-click="layout(\'Planner\')" title="GPS, Roadbook and Planner (with recce)">PLANNER LAYOUT</button>' +
           '<button class="rrg-btn small" ng-click="layout(\'Back\')" title="the layout you had before">MY LAYOUT</button></span></div>' +
         '<div class="rrg-msg" style="margin-top:auto" ng-show="keys.rallyRaid_tripPlus || keys.rallyRaid_boxSync">Driving keys: trip {{ keys.rallyRaid_tripPlus || \'-\' }} / {{ keys.rallyRaid_tripMinus || \'-\' }}, W {{ keys.rallyRaid_wPlus || \'-\' }} / {{ keys.rallyRaid_wMinus || \'-\' }}, box {{ keys.rallyRaid_boxPrev || \'-\' }} / {{ keys.rallyRaid_boxNext || \'-\' }}, sync {{ keys.rallyRaid_boxSync || \'-\' }}</div>' +
@@ -547,7 +547,7 @@ angular.module('beamng.apps')
       '<div class="rrg-overlay rrg-panel" ng-show="ov === \'repair\' || rpOpen">' +
         '<div class="rrg-row rrg-phead"><span class="rrg-label">REPAIR</span><button class="rrg-btn small" ng-click="closePanel(\'repair\')">&#10005;</button></div>' +
         '<div class="rrg-phost rrg-phost-repair"></div></div>' +
-      '<div class="rrg-overlay rrg-panel" ng-show="ov === \'rally\'">' +
+      '<div class="rrg-overlay rrg-panel" ng-show="ov === \'rally\' && rlAvail">' +
         '<div class="rrg-row rrg-phead"><span class="rrg-label">RALLY <small class="rrg-pen">EXPERIMENTAL</small></span><button class="rrg-btn small" ng-click="closePanel(\'rally\')">&#10005;</button></div>' +
         '<div class="rrg-phost rrg-phost-rally"></div></div>' +
     '</div></div>',
@@ -728,6 +728,7 @@ angular.module('beamng.apps')
       scope.rlAvail = false; scope.rlz = null; scope.rlName = ''
       scope.$on('RallyRaidRally', function (event, data) { if (data) scope.$evalAsync(function () {
         scope.rlAvail = data.available !== false
+        if (!scope.rlAvail && scope.ov === 'rally') scope.ov = ''
         scope.rlz = data.liaison || null
         scope.rlName = data.rally ? data.rally.name : ''
       }) })
