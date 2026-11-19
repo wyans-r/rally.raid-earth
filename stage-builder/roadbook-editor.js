@@ -683,7 +683,8 @@
   $('#lg-close').addEventListener('click', () => { $('#legend').hidden = true; });
   $('#legend').addEventListener('click', e => { if (e.target.id === 'legend') $('#legend').hidden = true; });
   $('#lg-print').addEventListener('click', () => { const w = window.open('', '_blank'); if (!w) return; w.document.write('<!doctype html><title>Roadbook symbol legend</title><style>body{margin:0}@page{size:A4 landscape;margin:8mm}' + R.LEGEND_CSS + '.rbl{width:auto}</style>' + R.legendHTML()); w.document.close(); setTimeout(() => w.print(), 300); });
-  $('#b-share').addEventListener('click', () => shareCurrentRoadbook());
+  $('#b-share').addEventListener('click', () => shareCurrentRoadbook(false));
+  $('#b-share-long').addEventListener('click', () => shareCurrentRoadbook(true));
   $('#b-save').addEventListener('click', () => { if (!E.rb) return; download(E.stage.id + '.roadbook.json', JSON.stringify(roadbookFile(), null, 1), 'application/json');
     banner('saved', 'info', 'Saved <b>' + esc(E.stage.id) + '.roadbook.json</b>. For the game, put it in <b>BeamNG user folder / current / rallyraid / roadbooks /</b>: the rally.raid Earth Roadbook app shows it when you load the stage.' +
       (E.rb.route && E.rb.route.legs.some(l => l.planned) ? ' The roadbook follows the planned off-piste line; you can also save the stage with that line:' : ''),
@@ -725,10 +726,16 @@
   async function openShareLink() {
     const Share = window.RallyRaidShare;
     if (!Share) return false;
-    const parsed = Share.parseHash(location.hash);
+    let parsed = Share.parseHash(location.hash);
     if (!parsed) return false;
     if (Share.redirectIfNeeded(parsed)) return true;
+    const viaShort = parsed.kind === 'short';
     try {
+      if (viaShort) {
+        banner('restored', 'info', 'Opening the shared roadbook\u2026');
+        parsed = await Share.resolveShort(parsed);
+        if (!parsed) return true; // sent to the builder page (a stage link)
+      }
       const data = Share.unpack(parsed);
       if (data.kind !== 'roadbook' || !data.roadbook) throw new Error('This share link is not a roadbook.');
       let stage = data.stage;
@@ -742,7 +749,7 @@
         return true;
       }
       await loadStage(stage, 'shared link', data.roadbook, { ignoreSaved: true });
-      banner('restored', 'info', 'Opened a shared roadbook. The link carried the data; nothing was uploaded.');
+      banner('restored', 'info', viaShort ? 'Opened a shared roadbook from a short link.' : 'Opened a shared roadbook. The link carried the data; nothing was uploaded.');
       Share.clearHash();
       return true;
     } catch (e) {
@@ -751,13 +758,15 @@
       return true; // handled (do not also load ?example=); keep the hash so it can be inspected
     }
   }
-  async function shareCurrentRoadbook() {
+  async function shareCurrentRoadbook(longOnly) {
     const Share = window.RallyRaidShare;
     if (!Share) return;
     if (!E.rb || !E.stage) return alert('Open or generate a roadbook first.');
     try {
-      const info = Share.linkFor(Share.pageUrl('roadbook'), Share.packRoadbook(E.rb, E.stage));
-      Share.shareOrCopy(info, { title: E.rb.name || E.stage.name || E.stage.id, text: 'Rally raid roadbook: ' + (E.rb.name || E.stage.name || E.stage.id) });
+      const frag = Share.packRoadbook(E.rb, E.stage);
+      const opts = { title: E.rb.name || E.stage.name || E.stage.id, text: 'Rally raid roadbook: ' + (E.rb.name || E.stage.name || E.stage.id) };
+      if (longOnly) Share.shareOrCopy(Share.linkFor(Share.pageUrl('roadbook'), frag), opts);
+      else Share.shareLink('roadbook', frag, opts);
     } catch (e) { banner('err', 'err', 'Could not make a share link: ' + esc(e.message)); }
   }
   async function start() {

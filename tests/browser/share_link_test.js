@@ -2,7 +2,7 @@
 // NODE_PATH=/workspace/rr-tools/node_modules node tests/browser/share_link_test.js
 const puppeteer = require('puppeteer-core'), fs = require('fs'), http = require('http'), path = require('path');
 const S = require('../../stage-builder/share.js');
-const ROOT = '/workspace/rallyraid', SITE = path.join(ROOT, 'stage-builder');
+const ROOT = path.join(__dirname, '..', '..'), SITE = path.join(ROOT, 'stage-builder');
 const EX = path.join(SITE, 'examples');
 const OUT = path.join(ROOT, 'tests/browser/screens/share-after');
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png' };
@@ -207,7 +207,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(vis.exists && vis.visible && /Share/i.test(vis.text), 'mobile 390x844: Share button is visible (' + JSON.stringify(vis) + ')');
     // may need to confirm a long-link dialog (this stage is only ~3k = soft, no confirm)
     page.on('dialog', d => d.accept());
-    await page.click('#b-share');
+    await page.click('#b-share'); // no /api/share on this test server: falls back to the long link
     await sleep(600);
     const shared = await page.evaluate(() => window.__shared);
     const toast = await page.evaluate(() => (document.getElementById('rr-share-toast') || {}).textContent);
@@ -252,9 +252,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.waitForFunction(() => window.RoadbookEditor && RoadbookEditor.E && RoadbookEditor.E.rb, { timeout: 20000 });
     let dialog = null;
     page.once('dialog', async d => { dialog = d.message(); await d.dismiss(); });
-    await page.click('#b-share');
+    await page.click('#b-share-long'); // 19 Nov 2026: Share makes a short link; Copy long link keeps the long-link warning
     await sleep(600);
-    ok(dialog && /long/i.test(dialog) && /messaging apps/i.test(dialog), 'Share on a long roadbook warns before copying: ' + JSON.stringify(dialog));
+    ok(dialog && /long/i.test(dialog) && /messaging apps/i.test(dialog), 'Copy long link on a long roadbook warns before copying: ' + JSON.stringify(dialog));
     await ctx.close();
   }
 

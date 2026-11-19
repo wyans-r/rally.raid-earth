@@ -115,7 +115,7 @@
       <span class="hbtns"><button class="b" id="ex-open" title="Load a sample stage and edit it">Examples</button>
       <a class="b" href="https://github.com/wyans-r/rally.raid-earth/releases/latest" target="_blank" rel="noopener" title="Download the BeamNG.drive mod (GPS, roadbook, stages) and install steps from GitHub Releases" style="text-decoration:none;display:inline-flex;align-items:center">Get the mod</a>
       <button class="b" id="rb-open" title="Make the roadbook for this stage: auto-generated from terrain and OpenStreetMap, then edit it, print it (PDF) and use it in game">Roadbook</button>
-      <button class="b" id="b-share" title="Copy a link that opens this stage in someone else&rsquo;s browser. The link carries the stage itself; nothing is uploaded.">Share link</button></span></div></header>
+      <button class="b" id="b-share" title="Copy a short link that opens this stage in someone else&rsquo;s browser (stored on this site). For a link that carries the stage itself, use Copy long link under File.">Share link</button></span></div></header>
     <div id="ex-hint"><span>New here? Open a sample stage to get a feel for how to build your own.</span>
       <button class="b p" id="ex-hint-go">Browse examples</button>
       <button class="b" id="ex-hint-x" title="Dismiss">Dismiss</button></div>
@@ -173,8 +173,8 @@
     </div>
 
     <div class="pane" id="pane-file">
-      <div class="row"><button class="b p" id="f-export">Export stage .json</button><button class="b" id="f-gpx">Export .gpx</button><button class="b" id="f-share" title="Copy a link that opens this stage in someone else&rsquo;s browser. The link carries the stage itself; nothing is uploaded.">Copy share link</button></div>
-      <div class="hint">A share link carries this stage in the address itself, so it opens in another browser with no import step and nothing is stored online. Very long stages may not fit in some messaging apps; if the link fails, send the exported file instead.</div>
+      <div class="row"><button class="b p" id="f-export">Export stage .json</button><button class="b" id="f-gpx">Export .gpx</button><button class="b" id="f-share" title="Copy a short link (rrearth.wyans.net/s/...) that opens this stage in someone else&rsquo;s browser. The stage is stored on this site.">Copy share link</button><button class="b" id="f-share-long" title="Copy a long link that carries the stage itself in the address; nothing is stored online.">Copy long link</button></div>
+      <div class="hint">A share link is short (rrearth.wyans.net/s/&hellip;) and fits in Discord and text messages; the stage is stored on this site so the link can open it. If the short link can&rsquo;t be made, the long link is copied instead. A long link carries the whole stage in the address, so nothing is stored online, but it can be too long for some messaging apps; then send the exported file.</div>
       <hr>
       <label>Roadbook</label>
       <div class="row"><button class="b" id="f-roadbook">Open the roadbook editor</button></div>
@@ -1073,20 +1073,38 @@ function bootFromShare() {
   if (!Share) return false
   var parsed = Share.parseHash(location.hash)
   if (!parsed) return false
+  if (parsed.kind === 'short') { bootFromShort(parsed); return false } // async: stored work shows first, then the shared stage
   if (Share.redirectIfNeeded(parsed)) return true
   try {
-    var data = Share.unpack(parsed)
-    if (data.kind !== 'stage' || !data.stage) throw new Error('This share link is not a stage.')
-    if (storedWork() && !confirm('You have a stage saved in this browser. Open the shared stage and replace it? (Export first if you want to keep it.)')) return false
-    applyStage(data.stage, data.stage.name || data.stage.id)
-    status('Opened a shared stage. The link carried the data; nothing was uploaded.', 'ok')
-    Share.clearHash()
-    return true
+    return openSharedStage(Share.unpack(parsed), false)
   } catch (e) {
     status(e.message, 'err')
     Share.toast(e.message, 'err', 10000)
     return false
   }
+}
+function openSharedStage(data, viaShort) {
+  var Share = window.RallyRaidShare
+  if (data.kind !== 'stage' || !data.stage) throw new Error('This share link is not a stage.')
+  if (storedWork() && !confirm('You have a stage saved in this browser. Open the shared stage and replace it? (Export first if you want to keep it.)')) { if (viaShort) Share.clearHash(); return false }
+  applyStage(data.stage, data.stage.name || data.stage.id)
+  status(viaShort ? 'Opened a shared stage from a short link.' : 'Opened a shared stage. The link carried the data; nothing was uploaded.', 'ok')
+  Share.clearHash()
+  return true
+}
+var shortLoading = null
+function bootFromShort(parsed) {
+  var Share = window.RallyRaidShare
+  if (shortLoading === parsed.id) return
+  shortLoading = parsed.id
+  status('Opening the shared stage\u2026', 'ok')
+  Share.resolveShort(parsed).then(function (p) {
+    if (!p) return
+    if (openSharedStage(Share.unpack(p), true)) { openedShare = true; metaToForm(); rulesToForm(); render() }
+  }).catch(function (e) {
+    status(e.message, 'err')
+    Share.toast(e.message, 'err', 10000)
+  }).then(function () { shortLoading = null })
 }
 var openedShare = false
 try { openedShare = bootFromShare() } catch (e) { openedShare = false; status((e && e.message) || String(e), 'err') }
@@ -1239,18 +1257,20 @@ function openRoadbook() {
 document.getElementById('rb-open').addEventListener('click', openRoadbook)
 document.getElementById('f-roadbook').addEventListener('click', openRoadbook)
 
-function shareCurrentStage() {
+function shareCurrentStage(longOnly) {
   var Share = window.RallyRaidShare
   if (!Share) return
   if (!st.points.length) { alert('Plot or load a stage first.'); return }
   try {
     var stage = exportStage()
-    var info = Share.linkFor(Share.pageUrl('stage'), Share.packStage(stage))
-    Share.shareOrCopy(info, { title: stage.name || stage.id, text: 'Rally raid stage: ' + (stage.name || stage.id) })
+    var opts = { title: stage.name || stage.id, text: 'Rally raid stage: ' + (stage.name || stage.id) }
+    if (longOnly) Share.shareOrCopy(Share.linkFor(Share.pageUrl('stage'), Share.packStage(stage)), opts)
+    else Share.shareLink('stage', Share.packStage(stage), opts)
   } catch (e) { status('Could not make a share link: ' + e.message, 'err') }
 }
-document.getElementById('b-share').addEventListener('click', shareCurrentStage)
-document.getElementById('f-share').addEventListener('click', shareCurrentStage)
+document.getElementById('b-share').addEventListener('click', function () { shareCurrentStage(false) })
+document.getElementById('f-share').addEventListener('click', function () { shareCurrentStage(false) })
+document.getElementById('f-share-long').addEventListener('click', function () { shareCurrentStage(true) })
 
 
 // ------------------------------------------------------------------ B19: example first-edit, clear all, auto name, forest warning

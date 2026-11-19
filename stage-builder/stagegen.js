@@ -459,7 +459,9 @@
   function copySealedLink() {
     var Share = window.RallyRaidShare; if (!Share || !sealedStage) return Promise.resolve(null)
     var info = Share.linkFor(Share.pageUrl('stage'), Share.packStage(sealedStage))
-    return Share.shareOrCopy(info, { title: sealedStage.name, text: 'Rally raid stage: ' + sealedStage.name }).then(function (r) {
+    var go = Share.shareLink ? Share.shareLink('stage', Share.packStage(sealedStage), { title: sealedStage.name, text: 'Rally raid stage: ' + sealedStage.name })
+      : Share.shareOrCopy(info, { title: sealedStage.name, text: 'Rally raid stage: ' + sealedStage.name })
+    return go.then(function (r) {
       if (r && !r.cancelled) { S.sealed.downloaded.link = true; renderBlind() }
       return { length: info.length, result: r }
     })

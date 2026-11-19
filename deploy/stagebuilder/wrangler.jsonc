@@ -1,14 +1,20 @@
 {
-  // Rally raid stage builder -> https://rrearth.wyans.net (public, static, no login). Moved from stagebuilder.wyans.net
+  // Rally raid stage builder -> https://rrearth.wyans.net (public, no login). Moved from stagebuilder.wyans.net
   // on 17 Nov 2026; that host is now the redirect Worker in deploy/redirect-worker.
   // Source: stage-builder/ in this repository. Redeploy (only with wyans' OK): sh deploy/stagebuilder/deploy.sh
-  // Static assets only: no Worker script, no /api routes. The shared Overpass cache (B20) is on the
-  // branch `overpass-cache` until it is tested and reintegrated.
+  // 19 Nov 2026: short share links. worker.js answers /api/share and /s/* only (run_worker_first); every other path is
+  // the static assets, as before. Needs wrangler 4.36 or newer (rate-limit binding). The shared Overpass cache (B20)
+  // is on the branch `overpass-cache`.
   "name": "stagebuilder",
   "compatibility_date": "2026-10-01",
   "account_id": "12d9d7f42a5a938f3f8aa5232a4557fb",
-  "assets": { "directory": "./site" },
+  "main": "worker.js",
+  "assets": { "directory": "./site", "binding": "ASSETS", "run_worker_first": ["/api/*", "/s/*"] },
+  // KV namespace "rrearth-shares" (free tier): the stored short links, key s:<id>, plus short-lived rate-limit counters
+  "kv_namespaces": [ { "binding": "SHARES", "id": "4f1f6d85381f4b948aebb9f0fd9db799" } ],
+  // Workers rate-limit binding (a setting on this Worker, not a separate resource): 10 uploads per minute per IP
+  "ratelimits": [ { "name": "SHARE_RL", "namespace_id": "1119", "simple": { "limit": 10, "period": 60 } } ],
   "workers_dev": false,
-  "preview_urls": false,
+  "preview_urls": true,
   "routes": [ { "pattern": "rrearth.wyans.net", "custom_domain": true } ]
 }

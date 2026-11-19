@@ -5,6 +5,10 @@
  *
  * Fragment versions:  #s1=...  a stage (opens in the builder)
  *                     #r1=...  a roadbook plus its stage (opens in the editor)
+ *                     #k1=<id> a short link: the same payload stored on the site (POST /api/share, KV), fetched
+ *                              from /api/share/<id>. The public form is /s/<id>; the page rewrites it to #k1=<id>.
+ * Short links (19 Nov 2026): Share tries a short link first and falls back to the long link automatically;
+ * "Copy long link" always makes the long one. Long links keep working unchanged.
  *
  * Compression uses a minified subset of fflate (deflateSync / inflateSync),
  * MIT License, Copyright (c) Arjun Barrett, https://github.com/101arrowz/fflate
@@ -56,6 +60,8 @@
     if (h.charAt(0) === '#') h = h.slice(1);
     // ignore a leading slash some browsers add
     if (h.charAt(0) === '/') h = h.slice(1);
+    var k = /^k(\d+)=([A-Za-z0-9]{22})$/.exec(h);
+    if (k) return { kind: 'short', version: +k[1], id: k[2] };
     var m = /^(s|r)(\d+)=(.*)$/.exec(h);
     if (!m) return null;
     return { kind: m[1] === 's' ? 'stage' : 'roadbook', version: +m[2], data: m[3] };
@@ -121,6 +127,7 @@
 
   function redirectIfNeeded(parsed) {
     if (!parsed || typeof location === 'undefined') return false;
+    if (parsed.kind === 'short') return false; // resolved by resolveShort (the server already picked the page)
     var onRb = /roadbook(\.html)?$/i.test(location.pathname);
     var dest = null;
     if (parsed.kind === 'roadbook' && !onRb) dest = pageUrl('roadbook');
@@ -241,13 +248,149 @@
     return copyText(url).then(function () { afterCopy(); return { copied: true }; });
   }
 
+
+  // ------------------------------------------------------------------ short links (/s/<id>)
+  var SHORT_ID = /^[A-Za-z0-9]{22}$/;
+  var SHORT_GONE = 'This short link was not found. It may be mistyped or cut off. Ask for a new link, or for the long link or file.';
+  var SHORT_OFFLINE = 'Could not reach the site to open this short link. Check your connection and reload.';
+
+  function apiBase() { return (typeof location !== 'undefined' && location.origin && /^https?:/.test(location.protocol)) ? location.origin : ''; }
+  function canShort() { return !!apiBase() && typeof fetch === 'function' && !root.RR_NO_SHORT_LINKS; }
+
+  // /s/<id> was served by the Worker with <meta name="rr-short">: switch the address to the page's own path + #k1=<id>
+  // so every relative link, pageUrl() and a later share behave exactly as on the normal page.
+  function adoptShortPath() {
+    if (typeof document === 'undefined' || typeof location === 'undefined' || typeof history === 'undefined') return null;
+    var m = /^\/s\/([A-Za-z0-9]{22})\/?$/.exec(location.pathname || '');
+    var meta = document.querySelector && document.querySelector('meta[name="rr-short"]');
+    if (!m || !meta) return null;
+    var page = meta.getAttribute('data-page') === 'roadbook' ? '/roadbook.html' : '/';
+    try { history.replaceState(null, '', page + '#k1=' + m[1]); } catch (e) { return null; }
+    return m[1];
+  }
+
+  function fetchShort(id) {
+    if (!SHORT_ID.test(id || '')) return Promise.reject(new Error(SHORT_GONE));
+    return fetch(apiBase() + '/api/share/' + id, { headers: { accept: 'application/json' } }).then(function (r) {
+      if (r.status === 404) throw new Error(SHORT_GONE);
+      if (!r.ok) throw new Error(SHORT_OFFLINE + ' (HTTP ' + r.status + ')');
+      return r.json();
+    }, function () { throw new Error(SHORT_OFFLINE); }).then(function (rec) {
+      if (!rec || (rec.kind !== 'stage' && rec.kind !== 'roadbook') || typeof rec.data !== 'string') throw new Error(DAMAGED);
+      return { kind: rec.kind, version: rec.v || 1, data: rec.data, shortId: id };
+    });
+  }
+
+  /** parsed (from parseHash) -> Promise of a parsed long payload; for a short link of the other kind, sends the
+   *  browser to the right page and resolves null. */
+  function resolveShort(parsed) {
+    if (!parsed || parsed.kind !== 'short') return Promise.resolve(parsed);
+    if (parsed.version !== 1) return Promise.reject(new Error(NEWER));
+    return fetchShort(parsed.id).then(function (p) {
+      if (typeof location !== 'undefined') {
+        var onRb = /roadbook(\.html)?$/i.test(location.pathname);
+        if ((p.kind === 'roadbook') !== onRb) { location.replace(pageUrl(p.kind) + '#k1=' + parsed.id); return null; }
+      }
+      return p;
+    });
+  }
+
+  function createShort(fragment, timeoutMs) {
+    if (!canShort()) return Promise.reject(new Error('short links need the website'));
+    var m = /^(s|r)1=([A-Za-z0-9_-]+)$/.exec(fragment || '');
+    if (!m) return Promise.reject(new Error('bad payload'));
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, timeoutMs || 10000) : null;
+    return fetch(apiBase() + '/api/share', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, signal: ctl ? ctl.signal : undefined,
+      body: JSON.stringify({ v: 1, kind: m[1] === 's' ? 'stage' : 'roadbook', data: m[2] })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.status !== 201 || !j || !SHORT_ID.test(j.id || '')) {
+          var e = new Error((j && j.error) || ('the short link service answered HTTP ' + r.status)); e.status = r.status; throw e;
+        }
+        return apiBase() + '/s/' + j.id;
+      });
+    }, function (e) { throw new Error(e && e.name === 'AbortError' ? 'the short link service did not answer' : 'the short link service could not be reached'); })
+      .then(function (u) { clearTimeout(timer); return u; }, function (e) { clearTimeout(timer); throw e; });
+  }
+
+  // copy a link that is still being made: ClipboardItem with a promise keeps Safari's user-gesture rule happy
+  function copyLater(textPromise) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function') {
+      try {
+        var item = new ClipboardItem({ 'text/plain': textPromise.then(function (t) { return new Blob([t], { type: 'text/plain' }); }) });
+        return navigator.clipboard.write([item]).catch(function () { return textPromise.then(copyText); });
+      } catch (e) {}
+    }
+    return textPromise.then(copyText);
+  }
+
+  // last resort when the clipboard or share sheet refuses (no user gesture left): show the link with its own buttons
+  function showLinkBox(url, note) {
+    if (typeof document === 'undefined') return;
+    var old = document.getElementById('rr-linkbox'); if (old) old.remove();
+    var box = document.createElement('div');
+    box.id = 'rr-linkbox';
+    box.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px';
+    box.innerHTML = '<div style="background:#1c2026;color:#e8eaed;border:1px solid #3a414a;border-radius:8px;padding:14px;max-width:560px;width:100%;font:13px/1.4 system-ui,sans-serif">' +
+      '<div class="lb-note" style="margin-bottom:8px"></div><input readonly style="width:100%;box-sizing:border-box;padding:6px;background:#0f1215;color:#e8eaed;border:1px solid #3a414a;border-radius:4px">' +
+      '<div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end"><button type="button" data-a="share" style="display:none">Share</button><button type="button" data-a="copy">Copy</button><button type="button" data-a="close">Close</button></div></div>';
+    box.querySelector('.lb-note').textContent = note || 'Here is your link:';
+    var inp = box.querySelector('input'); inp.value = url;
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') box.querySelector('[data-a=share]').style.display = '';
+    box.addEventListener('click', function (ev) {
+      var a = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-a');
+      if (ev.target === box || a === 'close') box.remove();
+      else if (a === 'copy') copyText(url).then(function () { toast('Link copied.', 'ok'); box.remove(); }, function () { inp.focus(); inp.select(); });
+      else if (a === 'share') navigator.share({ url: url }).then(function () { box.remove(); }, function () {});
+    });
+    document.body.appendChild(box);
+    inp.focus(); inp.select();
+  }
+
+  /** Share button: short link first, the long link automatically if that fails. page = 'stage' | 'roadbook'. */
+  function shareLink(page, fragment, opts) {
+    opts = opts || {};
+    var long = linkFor(pageUrl(page), fragment);
+    if (!canShort()) return shareOrCopy(long, opts);
+    var title = opts.title || 'rally.raid Earth', text = opts.text || title;
+    var made = createShort(fragment, opts.timeoutMs).then(function (u) { return { url: u, short: true }; },
+      function (e) { return { url: long.url, short: false, reason: (e && e.message) || 'unknown error' }; });
+    function note(r) {
+      if (r.short) return 'Short link copied. Anyone with it can open this ' + (page === 'roadbook' ? 'roadbook' : 'stage') + '; it is stored on rrearth.wyans.net. Use "Copy long link" for a link that carries the data itself.';
+      return 'Could not make a short link (' + r.reason + '), so the long link was copied instead.' + (long.message ? ' ' + long.message : '');
+    }
+    if (isMobileShare()) {
+      return made.then(function (r) {
+        return navigator.share({ title: title, text: text, url: r.url }).then(function () { return { shared: true, short: r.short, url: r.url }; }, function (e) {
+          if (e && e.name === 'AbortError') return { cancelled: true };
+          showLinkBox(r.url, r.short ? 'Your short link:' : note(r));
+          return { shown: true, short: r.short, url: r.url };
+        });
+      });
+    }
+    return copyLater(made.then(function (r) { return r.url; })).then(function () {
+      return made.then(function (r) {
+        toast(note(r), r.short ? 'ok' : 'warn', r.short ? 6000 : 10000);
+        return { copied: true, short: r.short, url: r.url, reason: r.reason };
+      });
+    }, function () {
+      return made.then(function (r) { showLinkBox(r.url, r.short ? 'Your short link:' : note(r)); return { shown: true, short: r.short, url: r.url }; });
+    });
+  }
+
+  var adoptedShort = adoptShortPath();
+
   var api = {
     SOFT: SOFT, STRONG: STRONG, VERY: VERY, DAMAGED: DAMAGED, NEWER: NEWER,
     encodePayload: encodePayload, decodePayload: decodePayload,
     parseHash: parseHash, unpack: unpack, packStage: packStage, packRoadbook: packRoadbook,
     warnLevel: warnLevel, warnMessage: warnMessage, pageUrl: pageUrl, linkFor: linkFor,
     redirectIfNeeded: redirectIfNeeded, clearHash: clearHash,
-    copyText: copyText, toast: toast, shareOrCopy: shareOrCopy, isMobileShare: isMobileShare
+    copyText: copyText, toast: toast, shareOrCopy: shareOrCopy, isMobileShare: isMobileShare,
+    canShort: canShort, createShort: createShort, fetchShort: fetchShort, resolveShort: resolveShort,
+    shareLink: shareLink, showLinkBox: showLinkBox, adoptedShort: adoptedShort, SHORT_GONE: SHORT_GONE
   };
   root.RallyRaidShare = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
