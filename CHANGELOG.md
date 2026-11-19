@@ -9,8 +9,12 @@ All notable changes to rally.raid Earth: the BeamNG mod (released on [GitHub Rel
 
 ## [Unreleased]
 
-### Changed (mod 0.3.1, not released yet)
-- The in-game Planner app makes the same roadbooks as the website (roadbook 0.6.2): the drivable line round dunes with distances along it, dune fields only where the map shows sand, and the steady progress bar. It also goes round forest, woods and open water. The Roadbook app draws calculated headings with a C, like the website. This reaches players with the next mod download.
+No unreleased changes at the moment.
+
+## [0.3.1] - 2026-11-19
+
+### Changed
+- The in-game Planner app makes the same roadbooks as the website (roadbook 0.6.2): the drivable line round dunes with distances along it, dune fields only where the map shows sand, and the steady progress bar. It also goes round forest, woods and open water. The Roadbook app draws calculated headings with a C, like the website.
   - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` and `mod/ui/modules/apps/RallyRaidRoadbook/roadbook-render.js` = the website's files byte for byte; the Planner's bar uses the generator's `frac`; mod `VERSION` 0.3.1.
 
 ## Website update - 2026-11-19: dune roadbooks, rally viewer, Changelog tab
