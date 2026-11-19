@@ -8,8 +8,8 @@
  "author": "",
  "description": "",
  "vehicleClass": "",
- "created": "2026-11-19T14:19:40.137Z",
- "modified": "2026-11-19T14:19:40.137Z",
+ "created": "2026-11-19T14:22:54.610Z",
+ "modified": "2026-11-19T14:22:54.610Z",
  "dataSource": "OpenStreetMap contributors (ODbL), routed with OSRM; driven in game (BeamNG.Earth)",
  "lengthKm": 3.5,
  "rules": {
@@ -115,7 +115,7 @@
  },
  "waypoints": [
   {
-   "id": "pmwnmzm5l35",
+   "id": "pmwnn3s7m35",
    "n": 0,
    "type": "DSS",
    "lat": 38.567602,
@@ -125,7 +125,7 @@
    "box": 1
   },
   {
-   "id": "pmwnmzm5l36",
+   "id": "pmwnn3s7m36",
    "n": 1,
    "type": "WPV",
    "lat": 38.574433,
@@ -135,7 +135,7 @@
    "box": 2
   },
   {
-   "id": "pmwnmzm5l37",
+   "id": "pmwnn3s7m37",
    "n": 2,
    "type": "WPM",
    "lat": 38.573868,
@@ -145,7 +145,7 @@
    "box": 3
   },
   {
-   "id": "pmwnmzm5l38",
+   "id": "pmwnn3s7m38",
    "n": 3,
    "type": "ASS",
    "lat": 38.568781,
@@ -159,44 +159,44 @@
   "boxes": [
    {
     "n": 1,
-    "id": "pmwnmzm5l35",
+    "id": "pmwnn3s7m35",
     "km": 0,
     "partial": 0,
     "cap": 40,
-    "waypoint": "pmwnmzm5l35",
+    "waypoint": "pmwnn3s7m35",
     "label": "DSS",
     "lat": 38.567602,
     "lon": -109.531389
    },
    {
     "n": 2,
-    "id": "pmwnmzm5l36",
+    "id": "pmwnn3s7m36",
     "km": 1.2,
     "partial": 1.2,
     "cap": 90,
-    "waypoint": "pmwnmzm5l36",
+    "waypoint": "pmwnn3s7m36",
     "label": "WPV 1",
     "lat": 38.574433,
     "lon": -109.520976
    },
    {
     "n": 3,
-    "id": "pmwnmzm5l37",
+    "id": "pmwnn3s7m37",
     "km": 2.7,
     "partial": 1.5,
     "cap": 135,
-    "waypoint": "pmwnmzm5l37",
+    "waypoint": "pmwnn3s7m37",
     "label": "WPM 2",
     "lat": 38.573868,
     "lon": -109.503744
    },
    {
     "n": 4,
-    "id": "pmwnmzm5l38",
+    "id": "pmwnn3s7m38",
     "km": 3.5,
     "partial": 0.8,
     "cap": null,
-    "waypoint": "pmwnmzm5l38",
+    "waypoint": "pmwnn3s7m38",
     "label": "ASS",
     "lat": 38.568781,
     "lon": -109.497237
@@ -207,8 +207,8 @@
  "route": {
   "legs": [
    {
-    "from": "pmwnmzm5l35",
-    "to": "pmwnmzm5l36",
+    "from": "pmwnn3s7m35",
+    "to": "pmwnn3s7m36",
     "mode": "track",
     "km": 1.2,
     "points": [
@@ -699,8 +699,8 @@
     ]
    },
    {
-    "from": "pmwnmzm5l36",
-    "to": "pmwnmzm5l37",
+    "from": "pmwnn3s7m36",
+    "to": "pmwnn3s7m37",
     "mode": "track",
     "km": 1.5,
     "points": [
@@ -1311,8 +1311,8 @@
     ]
    },
    {
-    "from": "pmwnmzm5l37",
-    "to": "pmwnmzm5l38",
+    "from": "pmwnn3s7m37",
+    "to": "pmwnn3s7m38",
     "mode": "track",
     "km": 0.8,
     "points": [

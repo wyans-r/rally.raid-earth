@@ -1,7 +1,7 @@
 // rally.raid Earth Planner: plan a stage and its roadbook inside the game (docs/INGAME_PLANNER.md).
 // The documents live here, in the same code the website uses (planner-core.js = the builder's import / export,
 // roadbook-gen.js = the website's generator byte for byte, roadbook-render.js = the website's drawing), so a file
-// goes stagebuilder.wyans.net -> game -> website unchanged. The game side is rallyRaid/planner.lua:
+// goes rrearth.wyans.net -> game -> website unchanged. The game side is rallyRaid/planner.lua:
 //   app -> Lua: rallyRaid_core.plannerCall(name, argsJson, text) (pose, mark, rec, list, readOpen / readChunk,
 //               writeBegin / writeChunk / writeCommit, load, reloadRoadbook, open) and rallyRaid_core.cmd('planner...')
 //   Lua -> app: guihooks 'RallyRaidPlanner' (state: open, pose, recording, the game's stage) and 'RallyRaidPlannerKey'
@@ -314,7 +314,7 @@ angular.module('beamng.apps')
       '<div class="rpl-row" ng-show="ui.tab === \'files\'"><button class="rpl-btn go" ng-click="save()" ng-disabled="busy || !v.hasStage">SAVE</button>',
         '<button class="rpl-btn go" ng-click="saveLoad()" ng-disabled="busy || !v.hasStage" title="Save, then load it into the rally computer">SAVE + LOAD IN GAME</button>',
         '<label><input type="checkbox" ng-model="ui.teleport"> TP to start</label></div>',
-      '<div class="rpl-dim" ng-show="ui.tab === \'files\'">Files go to <b>{{ files.userPath || \'<BeamNG user folder>/\' }}rallyraid/</b> (stages/, roadbooks/). Open them on stagebuilder.wyans.net (Import / Open roadbook); files saved from the website go in the same folders.</div>',
+      '<div class="rpl-dim" ng-show="ui.tab === \'files\'">Files go to <b>{{ files.userPath || \'<BeamNG user folder>/\' }}rallyraid/</b> (stages/, roadbooks/). Open them on rrearth.wyans.net (Import / Open roadbook); files saved from the website go in the same folders.</div>',
       '<div class="rpl-list" ng-show="ui.tab === \'files\'">',
         '<div class="rpl-item rpl-file" ng-repeat="f in files.stages track by f.path" ng-class="{sel: ui.file === f.path}" ng-click="ui.file = f.path" ng-dblclick="open(f)">',
           '<span class="nm">{{ f.name }}<br><small>{{ f.ok ? (f.km.toFixed(1) + \' km \u00b7 \' + (f.roadbook ? \'roadbook\' : \'no roadbook\')) : f.error }}</small></span>',
@@ -322,7 +322,7 @@ angular.module('beamng.apps')
         '<div class="rpl-item rpl-file" ng-repeat="f in files.drafts track by f.path"><span class="nm">DRAFT {{ f.file }}<br><small>unsaved work kept by the planner</small></span>',
           '<button class="rpl-btn" ng-click="openDraft(f)" ng-disabled="busy">RESTORE</button></div></div>',
       '<div class="rpl-msg" ng-class="ui.kind">{{ ui.msg }}</div>',
-      '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://stagebuilder.wyans.net and the project README.</p></details>',
+      '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://rrearth.wyans.net and the project README.</p></details>',
     '</div></div></div>'
   ].join('')
 

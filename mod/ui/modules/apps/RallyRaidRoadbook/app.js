@@ -89,7 +89,7 @@ angular.module('beamng.apps')
         '<span class="rrb-src" title="{{ r.roadbookFile }}">{{ r.roadbookFile ? r.roadbookFile.replace(\'/rallyraid/roadbooks/\', \'\') : \'stage boxes only\' }}</span>' +
         '<button class="rrb-btn" ng-click="cmd(\'reloadRoadbook\')" title="re-read the roadbook file">&#8635;</button>' +
         '<button class="rrb-btn" ng-click="openStages()" title="choose a stage and its roadbook">BOOK</button></div>' +
-      '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://stagebuilder.wyans.net and the project README.</p></details>' +
+      '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://rrearth.wyans.net and the project README.</p></details>' +
     '</div></div>',
     replace: true,
     scope: {},

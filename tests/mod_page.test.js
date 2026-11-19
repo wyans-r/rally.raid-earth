@@ -242,7 +242,7 @@ test('/mod page serves and shows every key of this build (headless)', async (t) 
     for (const b of bindings) {
       assert.ok(byKey[b.keyLabel], 'rendered page missing ' + b.keyLabel)
     }
-    assert.equal(got.href, '/download/rallyraid_earth.zip')
+    assert.equal(got.href, 'https://github.com/wyans-r/rally.raid-earth/releases/latest/download/rallyraid_earth.zip')   // hosted on GitHub Releases since 17 Nov 2026
     assert.match(got.text, /rallyraid_earth\.zip/)
     assert.equal(got.stepNote, true)
     assert.match(byKey['Ctrl+Shift+Left'], /W/)

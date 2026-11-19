@@ -133,7 +133,7 @@ window.RallyRaidPanels.repair = (function () {
         '<div class="rrr-foot"><span class="rrr-total">{{ totalText() }}</span><span>' +
           '<button class="rrr-btn go" ng-click="confirm()" ng-disabled="!canConfirm()">REPAIR</button> ' +
           '<button class="rrr-btn" ng-click="close()">CLOSE</button></span></div>' +
-        '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://stagebuilder.wyans.net and the project README.</p></details>' +
+        '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://rrearth.wyans.net and the project README.</p></details>' +
       '</div>' +
     '</div></div>',
     replace: true,
@@ -542,7 +542,7 @@ angular.module('beamng.apps')
           '<button class="rrg-btn" ng-click="cmd(\'teleport\')" ng-disabled="!s.count">TP TO DSS</button>' +
           '<button class="rrg-btn go" ng-click="load()" ng-disabled="!pick.path">LOAD</button>' +
           '<button class="rrg-btn" ng-click="picker = false">&#10005;</button></div>' +
-        '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://stagebuilder.wyans.net and the project README.</p></details></div>' +
+        '<details class="rr-credits"><summary>Credits</summary><p>Map data © OpenStreetMap contributors (ODbL). Land cover: © ESA WorldCover project / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium (CC BY 4.0). Elevation: Mapterhorn (open DEMs, including Copernicus GLO-30) and Mapzen/Tilezen Terrarium tiles. Routing: OSRM. Map queries: public Overpass mirrors including NextGIS. Place names: Nominatim. Built for BeamNG.Earth. Not an official BeamNG or FIM/FIA product. Full credits: https://rrearth.wyans.net and the project README.</p></details></div>' +
       // REPAIR panel (the former Repair app) and RALLY panel (the former Rally app): mounted in link()
       '<div class="rrg-overlay rrg-panel" ng-show="ov === \'repair\' || rpOpen">' +
         '<div class="rrg-row rrg-phead"><span class="rrg-label">REPAIR</span><button class="rrg-btn small" ng-click="closePanel(\'repair\')">&#10005;</button></div>' +

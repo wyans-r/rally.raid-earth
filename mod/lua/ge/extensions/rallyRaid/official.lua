@@ -1,4 +1,4 @@
--- rally.raid Earth: OFFICIAL RUNS of an async event (docs/EVENTS.md). The website (stagebuilder.wyans.net/events) gives each
+-- rally.raid Earth: OFFICIAL RUNS of an async event (docs/EVENTS.md). The website (rrearth.wyans.net/events) gives each
 -- entrant an event pack per stage: <user folder>/rallyraid/events/<event>-ss<n>.rrevent.json. It holds the locked stage
 -- and roadbook files as text, their SHA-256 hashes (the ones published on the event page), the event's window and
 -- rules, the minimum mod version, and the entrant's upload key.

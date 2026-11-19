@@ -1038,7 +1038,7 @@
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json',
-      'User-Agent': 'RallyRaidRoadbook/1.0 (https://stagebuilder.wyans.net)'
+      'User-Agent': 'RallyRaidRoadbook/1.0 (https://rrearth.wyans.net)'
     };
     let text = '';
     try {

@@ -6,12 +6,12 @@
  "stage": {
   "id": "ingame-test-stage",
   "name": "In-game test stage",
-  "hash": "sha256:92e0030b37996cfc79568520a113720ef0564521bfe6cd0647a7368cce066187",
+  "hash": "sha256:3fc6b232c68448a6393cab5ff1da4a34da39d801a4378d67cb54752709a7c56a",
   "lengthKm": 3.5
  },
  "generator": "rallyraid-roadbook-gen 0.5.2",
- "created": "2026-11-19T14:19:40.173Z",
- "modified": "2026-11-19T14:19:40.221Z",
+ "created": "2026-11-19T14:22:54.637Z",
+ "modified": "2026-11-19T14:22:54.670Z",
  "revision": 7,
  "conflicts": [],
  "partial": "driven-heights",
@@ -78,8 +78,8 @@
  "route": {
   "legs": [
    {
-    "from": "pmwnmzm5l35",
-    "to": "pmwnmzm5l36",
+    "from": "pmwnn3s7m35",
+    "to": "pmwnn3s7m36",
     "mode": "track",
     "km": 1.2,
     "points": [
@@ -570,8 +570,8 @@
     ]
    },
    {
-    "from": "pmwnmzm5l36",
-    "to": "pmwnmzm5l37",
+    "from": "pmwnn3s7m36",
+    "to": "pmwnn3s7m37",
     "mode": "track",
     "km": 1.5,
     "points": [
@@ -1182,8 +1182,8 @@
     ]
    },
    {
-    "from": "pmwnmzm5l37",
-    "to": "pmwnmzm5l38",
+    "from": "pmwnn3s7m37",
+    "to": "pmwnn3s7m38",
     "mode": "track",
     "km": 0.8,
     "points": [
@@ -1645,13 +1645,13 @@
  "boxes": [
   {
    "n": 1,
-   "id": "pmwnmzm5l35",
+   "id": "pmwnn3s7m35",
    "km": 0,
    "partial": 0,
    "capIn": 40,
    "capOut": 40,
    "cap": 40,
-   "waypoint": "pmwnmzm5l35",
+   "waypoint": "pmwnn3s7m35",
    "label": "DSS",
    "lat": 38.567602,
    "lon": -109.531389,
@@ -1685,7 +1685,7 @@
     "auto-route",
     "auto-dem"
    ],
-   "autoKey": "wp:pmwnmzm5l35",
+   "autoKey": "wp:pmwnn3s7m35",
    "verified": false,
    "pinned": false,
    "rev": 1,
@@ -1753,7 +1753,7 @@
    "history": [
     {
      "rev": 2,
-     "at": "2026-11-19T14:19:40.210Z",
+     "at": "2026-11-19T14:22:54.660Z",
      "by": "editor",
      "change": "deleted",
      "note": "in-game planner"
@@ -1763,13 +1763,13 @@
   },
   {
    "n": 2,
-   "id": "pmwnmzm5l36",
+   "id": "pmwnn3s7m36",
    "km": 1.2,
    "partial": 1.2,
    "capIn": 60,
    "capOut": 90,
    "cap": 90,
-   "waypoint": "pmwnmzm5l36",
+   "waypoint": "pmwnn3s7m36",
    "label": "WPV 1",
    "lat": 38.574433,
    "lon": -109.520976,
@@ -1817,7 +1817,7 @@
     "auto-route",
     "auto-dem"
    ],
-   "autoKey": "wp:pmwnmzm5l36",
+   "autoKey": "wp:pmwnn3s7m36",
    "verified": false,
    "pinned": false,
    "rev": 1,
@@ -1897,7 +1897,7 @@
    "capOut": 92,
    "cap": 92,
    "offPiste": false,
-   "id": "ed-mwnmzm7fmmtu",
+   "id": "ed-mwnn3s8zo32x",
    "source": "editor",
    "sources": [
     "editor"
@@ -1908,28 +1908,28 @@
    "history": [
     {
      "rev": 1,
-     "at": "2026-11-19T14:19:40.203Z",
+     "at": "2026-11-19T14:22:54.659Z",
      "by": "editor",
      "change": "added",
      "note": "in-game planner"
     },
     {
      "rev": 2,
-     "at": "2026-11-19T14:19:40.204Z",
+     "at": "2026-11-19T14:22:54.659Z",
      "by": "editor",
      "change": "updated notes,danger,symbols",
      "note": "in-game planner"
     },
     {
      "rev": 3,
-     "at": "2026-11-19T14:19:40.209Z",
+     "at": "2026-11-19T14:22:54.660Z",
      "by": "editor",
      "change": "updated tulip",
      "note": "in-game planner"
     },
     {
      "rev": 4,
-     "at": "2026-11-19T14:19:40.209Z",
+     "at": "2026-11-19T14:22:54.660Z",
      "by": "editor",
      "change": "moved",
      "note": "in-game planner"
@@ -1988,13 +1988,13 @@
   },
   {
    "n": 6,
-   "id": "pmwnmzm5l37",
+   "id": "pmwnn3s7m37",
    "km": 2.7,
    "partial": 0.7,
    "capIn": 95,
    "capOut": 135,
    "cap": 135,
-   "waypoint": "pmwnmzm5l37",
+   "waypoint": "pmwnn3s7m37",
    "label": "WPM 2",
    "lat": 38.573868,
    "lon": -109.503744,
@@ -2042,7 +2042,7 @@
     "auto-route",
     "auto-dem"
    ],
-   "autoKey": "wp:pmwnmzm5l37",
+   "autoKey": "wp:pmwnn3s7m37",
    "verified": false,
    "pinned": false,
    "rev": 1,
@@ -2050,13 +2050,13 @@
   },
   {
    "n": 7,
-   "id": "pmwnmzm5l38",
+   "id": "pmwnn3s7m38",
    "km": 3.5,
    "partial": 0.8,
    "capIn": 135,
    "capOut": 135,
    "cap": 135,
-   "waypoint": "pmwnmzm5l38",
+   "waypoint": "pmwnn3s7m38",
    "label": "ASS",
    "lat": 38.568781,
    "lon": -109.497237,
@@ -2081,7 +2081,7 @@
    "sources": [
     "auto-route"
    ],
-   "autoKey": "wp:pmwnmzm5l38",
+   "autoKey": "wp:pmwnn3s7m38",
    "verified": false,
    "pinned": false,
    "rev": 1,
@@ -2094,7 +2094,7 @@
  },
  "ingame": {
   "mode": "driven-heights",
-  "at": "2026-11-19T14:19:40.221Z",
+  "at": "2026-11-19T14:22:54.670Z",
   "by": "rallyraid-ingame-planner 0.1.0",
   "offlineReason": null
  }
