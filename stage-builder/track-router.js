@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.4.0';
+  var VERSION = '1.5.0';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -69,7 +69,8 @@
   var UNPAVED_Q = 'unpaved|gravel|fine_gravel|compacted|dirt|earth|ground|sand|mud|rock|pebblestone|grass|salt|stone|clay';
 
   /** cost factor per metre for a way's tags (1 = an ordinary track), or null = not used by this mode */
-  function wayCost(t) {
+  function wayCost(t, profile) {
+    if (profile === 'piste' || profile === 'traces') return tierCost(t, profile);
     if (!t || !t.highway || t.area === 'yes') return null;
     var hw = t.highway, sf = t.surface || '', unp = UNPAVED.test(sf), pav = PAVED.test(sf);
     var f = null;
@@ -89,6 +90,37 @@
     if (f == null) return null;
     if (t.access === 'private' || t.access === 'no' || t.motor_vehicle === 'no' || t.vehicle === 'no') f *= 1.3;
     return f;
+  }
+  // ------------------------------------------------------------------ 1.5.0: routing tiers (Wyans 19 Nov 2026)
+  // "Primary Piste (Roads), Piste (Tracks), Traces (off-road trails and two-track), and off-piste". Primary Piste is OSRM
+  // road routing and off-piste the builder's straight / planned line (neither is here); Piste and Traces are profiles of
+  // this router. tierOf() says which tier a way belongs to, for the builder's Auto choice.
+  var MAJOR = /^(trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link)$/;
+  function tierOf(t) {
+    if (!t || !t.highway || t.area === 'yes') return null;
+    var hw = t.highway, sf = t.surface || '', unp = UNPAVED.test(sf), pav = PAVED.test(sf);
+    if (/^(motorway|motorway_link|construction|proposed|steps|platform|corridor|elevator|raceway|bus_stop)$/.test(hw)) return null;
+    if (/^(path|bridleway|footway|cycleway)$/.test(hw)) return pav ? null : 'traces';
+    if (t.informal === 'yes') return 'traces';
+    if (hw === 'track') return /^grade[45]$/.test(t.tracktype || '') ? 'traces' : 'piste';
+    if (MAJOR.test(hw) || hw === 'residential' || hw === 'living_street') return unp ? 'piste' : 'primary';
+    if (hw === 'unclassified' || hw === 'road') return unp ? 'piste' : 'primary';
+    if (hw === 'service') return /^(driveway|parking_aisle|drive-through|emergency_access)$/.test(t.service || '') ? null : unp ? 'piste' : 'primary';
+    return null;
+  }
+  /** cost per metre in the Piste / Traces profiles: the tier's own ways at ~1, the other small ways only to link them */
+  function tierCost(t, profile) {
+    var base = wayCost(t); if (base == null) return null;
+    var tr = tierOf(t), hw = t.highway;
+    if (profile === 'piste') {
+      if (tr === 'traces') return hw === 'track' ? 1.25 : 2.6;   // trails only to bridge (a short gap costs 2.0, a long one 3.0)
+      return base;
+    }
+    // traces
+    if (tr === 'traces') return t.access === 'private' || t.access === 'no' ? 1.3 : 1.0;
+    if (hw === 'track') return 1.25;
+    if (wayClass(t) === 'highway') return base;
+    return Math.min(2.4, base * 1.15);
   }
   /** 1.3.0: way class for the route summary: track | path | road (small roads) | highway (primary / secondary / trunk) */
   function wayClass(t) {
@@ -162,7 +194,7 @@
 
   // ------------------------------------------------------------------ graph
   /* elements: Overpass ways with nodes + geometry (any number of answers merged; duplicates skipped) */
-  function buildGraph(answers, lat0, skip, joinX) {
+  function buildGraph(answers, lat0, skip, joinX, profile) {
     var P = projector(lat0), idx = new Map(), ll = [], xy = [], adj = [], seen = new Set(), nWays = 0, kinds = {};
     function node(id, g) {
       var k = idx.get(id);
@@ -175,7 +207,7 @@
       ((ans && ans.elements) || []).forEach(function (e) {
         if (e.type !== 'way' || !e.geometry || !e.nodes || seen.has(e.id)) return;
         seen.add(e.id);
-        var f = wayCost(e.tags);
+        var f = wayCost(e.tags, profile);
         if (f == null || (skip && skip.has(e.id))) return;
         var wi = ways.length; ways.push({ id: e.id, tags: e.tags, f: f }); nWays++;
         var kd = wayKind(e.tags); kinds[kd] = (kinds[kd] || 0) + 1;
@@ -491,6 +523,69 @@
     });
   }
 
+  /** classify() on answers already loaded (exported for tests) */
+  function classifyLine(answers, a, b, o) {
+    o = Object.assign({ nearM: 60, maxDeg: 40 }, o || {});
+    var P = projector((a[0] + b[0]) / 2), A = P.xy(a), B = P.xy(b), L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    var out = { primary: 0, piste: 0, traces: 0, any: 0, n: 0, m: Math.round(L) };
+    if (L < 1) return out;
+    var ux = (B[0] - A[0]) / L, uy = (B[1] - A[1]) / L, cosMax = Math.cos(o.maxDeg * Math.PI / 180);
+    // segments near the line, per tier (a 250 m grid along the corridor)
+    var CELL = 250, grid = new Map(), seen = new Set();
+    answers.forEach(function (ans) {
+      ((ans && ans.elements) || []).forEach(function (e) {
+        if (e.type !== 'way' || !e.geometry || seen.has(e.id)) return; seen.add(e.id);
+        var tr = tierOf(e.tags); if (!tr) return;
+        var prev = null;
+        e.geometry.forEach(function (g) {
+          if (!g) { prev = null; return; }
+          var q = P.xy([g.lat, g.lon]);
+          if (prev) {
+            // keep only segments near the leg line
+            var mx = (prev[0] + q[0]) / 2, my = (prev[1] + q[1]) / 2, t = (mx - A[0]) * ux + (my - A[1]) * uy, side = Math.abs((mx - A[0]) * uy - (my - A[1]) * ux);
+            var sl = Math.hypot(q[0] - prev[0], q[1] - prev[1]);
+            if (t > -o.nearM - sl && t < L + o.nearM + sl && side < o.nearM + sl) {
+              var sg = [prev, q, tr];
+              var x0 = Math.floor(Math.min(prev[0], q[0]) / CELL), x1 = Math.floor(Math.max(prev[0], q[0]) / CELL), y0 = Math.floor(Math.min(prev[1], q[1]) / CELL), y1 = Math.floor(Math.max(prev[1], q[1]) / CELL);
+              if ((x1 - x0 + 1) * (y1 - y0 + 1) <= 400) for (var cx = x0; cx <= x1; cx++) for (var cy = y0; cy <= y1; cy++) { var kk = cx + ',' + cy; (grid.get(kk) || grid.set(kk, []).get(kk)).push(sg); }
+            }
+          }
+          prev = q;
+        });
+      });
+    });
+    var n = Math.max(2, Math.round(L / 20)), cnt = { primary: 0, piste: 0, traces: 0, any: 0 };
+    for (var i = 0; i <= n; i++) {
+      var p = [A[0] + (B[0] - A[0]) * i / n, A[1] + (B[1] - A[1]) * i / n], hit = {};
+      for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) {
+        var l = grid.get((Math.floor(p[0] / CELL) + dx) + ',' + (Math.floor(p[1] / CELL) + dy)); if (!l) continue;
+        l.forEach(function (sg) {
+          if (hit[sg[2]]) return;
+          var h = segDist(p, sg[0], sg[1]); if (h.d > o.nearM) return;
+          var sx = sg[1][0] - sg[0][0], sy = sg[1][1] - sg[0][1], sl = Math.hypot(sx, sy) || 1;
+          if (Math.abs((sx * ux + sy * uy) / sl) < cosMax) return;   // crosses the line rather than following it
+          hit[sg[2]] = true;
+        });
+      }
+      ['primary', 'piste', 'traces'].forEach(function (k) { if (hit[k]) cnt[k]++; });
+      if (hit.primary || hit.piste || hit.traces) cnt.any++;
+    }
+    ['primary', 'piste', 'traces', 'any'].forEach(function (k) { out[k] = +(cnt[k] / (n + 1)).toFixed(3); });
+    out.n = n + 1;
+    return out;
+  }
+  /** 1.5.0 Auto: the tier to try first from classifyLine()'s shares, then the order to fall back in */
+  function autoOrder(cov, o) {
+    o = Object.assign({ autoMin: 0.5 }, o || {});
+    var tiers = ['primary', 'piste', 'traces'].sort(function (x, y) { return cov[y] - cov[x] });
+    var first = cov[tiers[0]] >= o.autoMin || (cov.any >= o.autoMin && cov[tiers[0]] > 0) ? tiers[0] : 'offpiste';
+    // nothing runs along the line itself: still try roads, Piste, then Traces, but builders accept those only when the
+    // route stays on mapped ways (>= 80 %) and is short (<= 1.5x the straight line); "~" marks that stricter test
+    if (first === 'offpiste') return ['primary~', 'piste~', 'traces~', 'offpiste'];
+    // fall back down the tiers (Primary Piste -> Piste -> Traces), skipping tiers the line does not touch at all; off-piste last
+    var down = { primary: ['piste', 'traces'], piste: ['traces'], traces: ['piste'] }[first].filter(function (t) { return cov[t] > 0.05 });
+    return [first].concat(down, ['offpiste']);
+  }
   // ------------------------------------------------------------------ the router (data + cache + search)
   function createRouter(io) {
     io = io || {};
@@ -527,7 +622,7 @@
     function route(a, b, opts) {
       var o = Object.assign({}, DEFAULTS, opts || {});
       a = [a[0], wrapLon(a[1])]; b = [b[0], wrapLon(b[1])];   // 1.1.2: Overpass rejects lon outside -180..180
-      var rk = [a[0], a[1], b[0], b[1]].map(function (x) { return (+x).toFixed(6) }).join(',');
+      var rk = [a[0], a[1], b[0], b[1]].map(function (x) { return (+x).toFixed(6) }).join(',') + ':' + (o.profile || 'mixed');
       if (routes.has(rk)) return Promise.resolve(Object.assign({}, routes.get(rk), { cached: true, ms: 0 }));
       var L = dist(a, b);
       if (L / 1000 > o.maxLegKm) return Promise.reject(new Error('leg longer than ' + o.maxLegKm + ' km: add waypoints'));
@@ -538,7 +633,7 @@
         var t1 = Date.now();
         var skip = new Set(), G, res, dropped = 0;
         for (var tries = 0; ; tries++) {
-          G = buildGraph(answers, (a[0] + b[0]) / 2, skip, o.joinCrossings);
+          G = buildGraph(answers, (a[0] + b[0]) / 2, skip, o.joinCrossings, o.profile);
           res = findPath(G, a, b, o);
           var bad = res ? badRoadRuns(res, o) : [];
           if (!bad.length || tries >= o.roadRetries) break;
@@ -557,7 +652,23 @@
         return res;
       });
     }
-    return { route: route, clear: function () { mem.clear(); routes.clear(); loaded.length = 0; } };
+    /**
+     * 1.5.0 Auto: how much of the straight line a -> b runs along each tier. Samples every ~20 m; a sample counts for a
+     * tier when a way of that tier is within nearM (60 m) and runs roughly the same way (within 40 deg). Returns
+     * { primary, piste, traces, any: share 0..1 of the samples, n, m }. Uses the same map tiles as route().
+     */
+    function classify(a, b, opts) {
+      var o = Object.assign({ nearM: 60, maxDeg: 40 }, DEFAULTS, opts || {});
+      a = [a[0], wrapLon(a[1])]; b = [b[0], wrapLon(b[1])];
+      var L = dist(a, b);
+      if (L / 1000 > o.maxLegKm) return Promise.reject(new Error('leg longer than ' + o.maxLegKm + ' km: add waypoints'));
+      var boxes = queryBoxes(a, b, o);
+      if (boxes.length > o.maxTiles) return Promise.reject(new Error('leg too long for track routing: add waypoints'));
+      return Promise.all(boxes.map(function (bx) { return tile(bx, o) })).then(function (answers) {
+        return classifyLine(answers, a, b, o);
+      });
+    }
+    return { route: route, classify: classify, clear: function () { mem.clear(); routes.clear(); loaded.length = 0; } };
   }
 
   /**
@@ -579,6 +690,6 @@
     };
   }
 
-  return { VERSION: VERSION, viaRoadbookGen: viaRoadbookGen, DEFAULTS: DEFAULTS, wayCost: wayCost, overpassQuery: overpassQuery, legBbox: legBbox, queryBoxes: queryBoxes,
+  return { VERSION: VERSION, viaRoadbookGen: viaRoadbookGen, DEFAULTS: DEFAULTS, wayCost: wayCost, tierOf: tierOf, classifyLine: classifyLine, autoOrder: autoOrder, overpassQuery: overpassQuery, legBbox: legBbox, queryBoxes: queryBoxes,
     buildGraph: buildGraph, findPath: findPath, wayClass: wayClass, badRoadRuns: badRoadRuns, createRouter: createRouter, dist: dist, wrapLon: wrapLon };
 });

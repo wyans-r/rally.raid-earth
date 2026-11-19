@@ -307,3 +307,42 @@ test('1.4.0 switchbacks: a mountain road 2.4x its straight line that keeps closi
   const r = await TR.createRouter({ overpass: async () => answer([way({ highway: 'unclassified', surface: 'gravel' }, pts)]) }).route(ll(-260, 0), ll(-260, 1320));
   assert.ok(r.roadWaysDropped === 0 && r.byClass.road > 3000, JSON.stringify({ byClass: r.byClass, dropped: r.roadWaysDropped }));
 });
+
+// 1.5.0 routing tiers (Wyans 19 Nov 2026): Primary Piste (roads), Piste (tracks), Traces (trails, two-track), Off-piste; Auto
+test('1.5.0 tiers: which tier a way belongs to', () => {
+  assert.strictEqual(TR.tierOf({ highway: 'track' }), 'piste');
+  assert.strictEqual(TR.tierOf({ highway: 'track', tracktype: 'grade5' }), 'traces');
+  assert.strictEqual(TR.tierOf({ highway: 'path' }), 'traces');
+  assert.strictEqual(TR.tierOf({ highway: 'bridleway' }), 'traces');
+  assert.strictEqual(TR.tierOf({ highway: 'unclassified', surface: 'dirt' }), 'piste');
+  assert.strictEqual(TR.tierOf({ highway: 'unclassified' }), 'primary');
+  assert.strictEqual(TR.tierOf({ highway: 'tertiary', surface: 'asphalt' }), 'primary');
+  assert.strictEqual(TR.tierOf({ highway: 'service', informal: 'yes' }), 'traces');
+  assert.strictEqual(TR.tierOf({ highway: 'motorway' }), null);
+  // profiles: each tier's own ways are the cheap ones
+  assert.ok(TR.wayCost({ highway: 'path' }, 'traces') < TR.wayCost({ highway: 'track' }, 'traces'));
+  assert.ok(TR.wayCost({ highway: 'path' }, 'piste') > TR.DEFAULTS.gapCost);
+  assert.strictEqual(TR.wayCost({ highway: 'track' }, 'piste'), 1);
+});
+test('1.5.0 Auto: a straight line along a track picks Piste; across open ground Off-piste; along a path Traces', () => {
+  const trk = way({ highway: 'track' }, [[0, 10], [1000, 30], [2000, 10]]);
+  const pth = way({ highway: 'path' }, [[0, 3000], [2000, 3020]]);
+  const crossing = way({ highway: 'track' }, [[1000, -1500], [1000, 1500]]);   // crosses the line: does not count
+  const cov1 = TR.classifyLine([answer([trk, crossing])], ll(0, 0), ll(2000, 0));
+  assert.ok(cov1.piste > 0.9 && cov1.traces === 0, JSON.stringify(cov1));
+  assert.deepStrictEqual(TR.autoOrder(cov1), ['piste', 'offpiste']);
+  const cov2 = TR.classifyLine([answer([crossing])], ll(0, -800), ll(2000, -800));
+  assert.ok(cov2.any < 0.1, JSON.stringify(cov2)); assert.deepStrictEqual(TR.autoOrder(cov2), ['primary~', 'piste~', 'traces~', 'offpiste']);
+  const cov3 = TR.classifyLine([answer([pth])], ll(0, 3000), ll(2000, 3000));
+  assert.ok(cov3.traces > 0.9, JSON.stringify(cov3)); assert.strictEqual(TR.autoOrder(cov3)[0], 'traces');
+  // roads first, then down the tiers the line touches, off-piste last
+  assert.deepStrictEqual(TR.autoOrder({ primary: 0.6, piste: 0.3, traces: 0, any: 0.8 }), ['primary', 'piste', 'offpiste']);
+});
+test('1.5.0 profiles: Traces follows a path where Piste takes the track beside it', async () => {
+  const trk = way({ highway: 'track' }, [[0, 0], [0, 300], [2000, 300], [2000, 0]]);   // 2.6 km round on a track
+  const pth = way({ highway: 'path' }, [[0, 0], [1000, -60], [2000, 0]]);               // 2.0 km on a path
+  const R = TR.createRouter({ overpass: async () => answer([trk, pth]) });
+  const rp = await R.route(ll(0, 0), ll(2000, 0), { profile: 'piste' }), rt = await R.route(ll(0, 0), ll(2000, 0), { profile: 'traces' });
+  assert.ok(rp.byClass.track > 2000 && rp.byClass.path < 1, JSON.stringify(rp.byClass));
+  assert.ok(rt.byClass.path > 1900 && rt.byClass.track < 1, JSON.stringify(rt.byClass));
+});

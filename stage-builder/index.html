@@ -105,7 +105,7 @@
 <link rel="stylesheet" href="mobile.css"> <!-- mobile: phone layout, no effect above 900 px -->
 <link rel="stylesheet" href="stagegen.css"> <!-- stagegen: Auto stage panel -->
 <script src="share.js"></script>
-<script src="track-router.js"></script> <!-- "tracks & paths" legs: OSM minor ways from Overpass, A* -->
+<script src="track-router.js"></script> <!-- Piste / Traces legs and the Auto choice: OSM ways from Overpass, A* -->
 <script src="stage-polish.js"></script> <!-- B19: Route labels, auto name/description, forest warnings -->
 </head>
 <body>
@@ -125,8 +125,8 @@
       <label>Type for the next click</label>
       <div class="types" id="typebtns"></div>
       <div class="row">
-        <div><label>New leg follows</label>
-          <select id="legmode"><option value="road" title="Routed by OSRM on roads big enough for cars (asphalt and main gravel roads). OSRM never uses highway=track, so tracks are skipped: use tracks &amp; paths for those.">roads (car routing)</option><option value="track" title="Follows small OpenStreetMap ways: tracks, unpaved lanes, paths (less: the game does not build paths), using village streets and minor roads only to link them. Gaps with no mapped way are drawn straight and flagged.">tracks &amp; paths (OpenStreetMap)</option><option value="gpx" title="Follows the GPX track you loaded in the File tab.">my loaded GPX track</option><option value="direct" title="A straight line: open off-piste terrain.">straight line (off-piste)</option></select></div>
+        <div><label>New leg routing</label>
+          <select id="legmode"></select></div>
         <div class="nf" style="padding-top:18px"><label style="display:inline;text-transform:none"><input type="checkbox" id="snap" style="width:auto" checked> snap clicks to road</label></div>
       </div>
       <div class="row" style="margin-top:6px">
@@ -185,7 +185,7 @@
       <div class="row"><button class="b" id="f-recompute">Re-route all legs</button><button class="b d" id="f-new">New stage</button></div>
       <hr>
       <div class="hint">Put exported stages in <b>&lt;BeamNG user folder&gt;/current/rallyraid/stages/</b> (Windows: %LOCALAPPDATA%\BeamNG\BeamNG.drive\current\rallyraid\stages). The work in progress is saved in this browser automatically.</div>
-      <div class="hint">Map data &copy; OpenStreetMap contributors (ODbL), the same source BeamNG.Earth builds its roads from. Routing: OSRM demo server (fair use: about one request a second); "tracks &amp; paths" legs: OpenStreetMap ways from the public Overpass servers (cached in this browser). Search: Nominatim.</div>
+      <div class="hint">Map data &copy; OpenStreetMap contributors (ODbL), the same source BeamNG.Earth builds its roads from. Routing: Primary Piste legs: OSRM demo server (fair use: about one request a second); Piste and Traces legs and the Auto choice: OpenStreetMap ways from the public Overpass servers (cached in this browser). Search: Nominatim.</div>
     </div>
     <div class="pane" id="pane-guide">
       <div id="examples">
@@ -435,7 +435,7 @@ function routeGpx(a, b) {
   return [a].concat(seg).concat([b])
 }
 
-// ------------------------------------------------------------------ tracks & paths (track-router.js)
+// ------------------------------------------------------------------ Piste / Traces legs (track-router.js)
 /* Leg mode "track": along small OpenStreetMap ways (tracks, paths, unpaved lanes) that OSRM's car profile skips.
  * The map data comes through the roadbook generator's Overpass helper (roadbook-gen.js, loaded on first use), so the
  * same mirrors apply; tiles are cached in this browser (IndexedDB) and routes in memory. */
@@ -501,60 +501,109 @@ function planLegGaps(k) {
   }).catch(function (e) { console.warn('off-piste gap planning:', e && e.message) })
 }
 function legName(k) { var p = st.points[k]; return p ? labelOf(p) : 'point ' + (k + 1) }
-function routeTracksLeg(k, a, b) {
-  var id = st.points[k].id
-  var still = function () { var q = st.points[k], o = st.points[k - 1]; return q && q.id === id && o && q.lat === b[0] && q.lon === b[1] && o.lat === a[0] && o.lon === a[1] }
-  status('Leg to ' + legName(k) + ': looking for tracks and paths on OpenStreetMap...')
-  return trackRouter().then(function (R) {
-    return R.route(a, b, { onProgress: function (d, n) { if (n > 1 && still()) status('Leg to ' + legName(k) + ': loading map tracks, part ' + Math.min(n, d + 1) + ' of ' + n + '...') } })
-  }).then(function (r) {
-    if (!still()) return
-    var q = st.points[k], km = r.totalM / 1000, on = Math.round(r.onShare * 100), gapKm = r.gapM / 1000
-    q.leg = { mode:'track', points:r.points, cover:{ onKm:+(r.wayM / 1000).toFixed(3), straightKm:+((r.linkM + r.gapM) / 1000).toFixed(3), gaps:r.gapIdx } }
-    if (r.status !== 'none') planLegGaps(k)
-    if (r.status === 'none') { q.leg.noTracks = true; status('Leg to ' + legName(k) + ': no tracks or paths connect here, so it is drawn straight (dotted red).', 'warn') }
-    else if (r.status === 'partial') status('Leg to ' + legName(k) + ': ' + km.toFixed(1) + ' km, ' + on + '% on tracks and paths. ' + gapKm.toFixed(1) + ' km is drawn straight where no mapped track connects (dotted red).', 'warn')
-    else status('Leg to ' + legName(k) + ': ' + km.toFixed(1) + ' km along tracks and paths' + (r.linkM >= 1 ? ' (' + Math.round(r.linkM) + ' m straight to reach them)' : '') + '.', 'ok')
-    render()
-  }).catch(function (e) {
-    if (!still()) return
-    st.points[k].leg = { mode:'track', points:[a, b], failed:true, cover:{ onKm:0, straightKm:+(dist(a, b) / 1000).toFixed(3), gaps:[[0, 1]] } }
-    var why = /abort|timed? ?out|no answer|stalled|no complete answer/i.test(e && e.message) ? 'the map servers did not answer in time' : /HTTP|Overpass|fetch|network/i.test(e && e.message) ? 'the map servers are busy or unreachable' : (e && e.message)
-    status('Leg to ' + legName(k) + ': could not get tracks from OpenStreetMap (' + why + '), so it is drawn straight. Choose "tracks & paths" again in a minute to retry.', 'warn')
-    render()
-  })
-}
 // the "Leg to here" / "New leg follows" choice <-> the stored leg. Files only ever store road / track / direct
 // (docs/STAGE_FORMAT.md, the mod, roadbook-gen.js); "follow my GPX" is mode "track" with via "gpx".
-function legUi(leg) { return !leg ? 'direct' : leg.mode === 'track' && leg.via === 'gpx' ? 'gpx' : leg.mode || 'direct' }
-function legOfUi(v) { return v === 'gpx' ? { mode:'track', via:'gpx' } : { mode:v } }
+// 1.5: the choice is auto / primary / piste / traces / offpiste / gpx; older files' "tracks & paths" legs show as mixed
+function legUi(leg) { return !leg ? 'offpiste' : leg.via === 'gpx' ? 'gpx' : leg.auto ? 'auto' : tierOfLeg(leg) }
+function legOfUi(v) {
+  return v === 'gpx' ? { mode:'track', via:'gpx' } : v === 'auto' ? { mode:'direct', auto:true } : v === 'primary' ? { mode:'road', tier:'primary' }
+    : v === 'piste' || v === 'traces' ? { mode:'track', tier:v } : v === 'mixed' ? { mode:'track' } : { mode:'direct', tier:'offpiste' }
+}
 
 // compute the leg arriving at point k
+// ------------------------------------------------------------------ 1.5 routing tiers + Auto (Wyans 19 Nov 2026)
+/* "Four tiers: Primary Piste (Roads), Piste (Tracks), Traces (off-road trails and two-track), and off-piste. Rather than
+ * the user selecting for each waypoint, have the stage tool choose the best option ... allow the user to override."
+ * A leg stores the router it used in `mode` (road / track / direct, as before, so older readers and the mod keep
+ * working) plus `tier` (primary / piste / traces / offpiste) and `auto: true` when the builder chose it. */
+var TIER_COLORS = { primary:'#1e88e5', piste:'#2bb673', mixed:'#2bb673', traces:'#d4a017', offpiste:'#ff9f43', gpx:'#c792ea' }
+var TIER_NAMES = { primary:'Primary Piste', piste:'Piste', traces:'Traces', offpiste:'Off-piste', gpx:'my GPX', mixed:'Piste + Traces' }
+var TIER_WHAT = { primary:'roads', piste:'tracks', traces:'trails and two-track', offpiste:'open ground' }
+function tierOfLeg(leg) {
+  if (!leg) return 'offpiste'
+  if (leg.via === 'gpx') return 'gpx'
+  if (leg.tier) return leg.tier
+  return leg.mode === 'road' ? 'primary' : leg.mode === 'track' ? 'mixed' : 'offpiste'
+}
+function legTryTier(a, b, tier0) {
+  // "piste~" / "traces~" (Auto only): the straight line itself runs along nothing, so accept the route only if it stays
+  // on mapped ways (>= 80 %) and is short (<= 1.5x straight)
+  var strict = /~$/.test(tier0), tier = tier0.replace(/~$/, '')
+  var straight = dist(a, b)
+  if (tier === 'offpiste') return Promise.resolve({ tier:tier, ok:true, leg:{ mode:'direct', points:[a, b] } })
+  if (tier === 'primary') return routeRoad(a, b).then(function (pts) {
+    var len = 0; for (var n = 1; n < pts.length; n++) len += dist(pts[n - 1], pts[n])
+    var hop = 0; (pts.off || []).forEach(function (g) { hop += dist(pts[g[0]], pts[g[1]]) })
+    var onShare = len > 0 ? 1 - hop / len : 0
+    var detour = straight > 500 && len > straight * (strict ? 1.5 : 1.8), far = strict && onShare < 0.8
+    return { tier:tier, ok:!detour && !far, strict:strict, onShare:onShare, leg:{ mode:'road', points:pts.slice(), off:pts.off || [] }, len:len,
+      why: detour ? 'roads go ' + (len / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight' : far ? 'the nearest road is ' + (hop / 1000).toFixed(1) + ' km off the points' : '',
+      msg: detour ? ['Road routing went ' + (len / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight (road routing never uses tracks); try Piste or Traces for this leg.', 'warn'] : null }
+  }).catch(function (e) { return { tier:tier, ok:false, failed:true, why:'road routing failed (' + e.message + ')', leg:{ mode:'road', points:[a, b], failed:true }, msg:['Road routing failed (' + e.message + '): drawn straight.', 'warn'] } })
+  // piste / traces / mixed (older "tracks & paths" legs): the track router with that profile
+  return trackRouter().then(function (R) { return R.route(a, b, { profile: tier === 'mixed' ? undefined : tier }) }).then(function (r) {
+    var leg = { mode:'track', points:r.points, cover:{ onKm:+(r.wayM / 1000).toFixed(3), straightKm:+((r.linkM + r.gapM) / 1000).toFixed(3), gaps:r.gapIdx } }
+    if (r.status === 'none') leg.noTracks = true
+    var ok = strict ? r.status !== 'none' && r.onShare >= 0.8 && r.totalM <= 1.5 * straight
+      : r.status !== 'none' && r.onShare >= 0.5 && r.totalM <= Math.max(3 * straight, straight + 600)
+    var km = r.totalM / 1000, on = Math.round(r.onShare * 100), what = TIER_WHAT[tier] || 'tracks and paths'
+    var msg = r.status === 'none' ? ['No ' + what + ' connect here, so it is drawn straight (dotted red).', 'warn']
+      : r.status === 'partial' ? [km.toFixed(1) + ' km, ' + on + '% on ' + what + '. ' + (r.gapM / 1000).toFixed(1) + ' km is drawn straight where no mapped way connects (dotted red).', 'warn']
+      : [km.toFixed(1) + ' km along ' + what + (r.linkM >= 1 ? ' (' + Math.round(r.linkM) + ' m straight to reach them)' : '') + '.', 'ok']
+    return { tier:tier, ok:ok, strict:strict, leg:leg, status:r.status, onShare:r.onShare, len:r.totalM, msg:msg,
+      why: !ok ? (r.status === 'none' ? 'no ' + what + ' connect' : r.onShare < (strict ? 0.8 : 0.5) ? 'only ' + on + '% on ' + what : 'a ' + (r.totalM / 1000).toFixed(1) + ' km detour for ' + (straight / 1000).toFixed(1) + ' km') : '' }
+  }).catch(function (e) {
+    var why = /abort|timed? ?out|no answer|stalled|no complete answer/i.test(e && e.message) ? 'the map servers did not answer in time' : /HTTP|Overpass|fetch|network/i.test(e && e.message) ? 'the map servers are busy or unreachable' : (e && e.message)
+    return { tier:tier, ok:false, failed:true, why:why, leg:{ mode:'track', points:[a, b], failed:true, cover:{ onKm:0, straightKm:+(straight / 1000).toFixed(3), gaps:[[0, 1]] } },
+      msg:['Could not get ' + (TIER_WHAT[tier] || 'tracks') + ' from OpenStreetMap (' + why + '), so it is drawn straight. Choose the routing again in a minute to retry.', 'warn'] }
+  })
+}
 function computeLeg(k) {
   var p = st.points[k]
   if (k === 0) { p.leg = null; return Promise.resolve() }
   var a = [st.points[k - 1].lat, st.points[k - 1].lon], b = [p.lat, p.lon]
-  var mode = (p.leg && p.leg.mode) || 'direct', via = p.leg && p.leg.via === 'gpx' ? 'gpx' : undefined
-  p.leg = { mode:mode, points:[a, b], pending: mode === 'road' || (mode === 'track' && !via) }
-  if (via) p.leg.via = via
-  if (mode === 'direct') return Promise.resolve()
-  if (mode === 'track' && via) { var t = routeGpx(a, b); if (t) p.leg.points = t; else status('No GPX track loaded: leg drawn straight. Load a GPX in the File tab, or choose "tracks & paths".', 'warn'); return Promise.resolve() }
-  if (mode === 'track') return routeTracksLeg(k, a, b)
-  var id = p.id
-  return routeRoad(a, b).then(function (pts) {
-    var q = st.points[k]; if (!q || q.id !== id) return
-    q.leg = { mode:'road', points:pts.slice(), off:pts.off || [] }
-    planLegGaps(k)
-    // road mode is OSRM's car profile: it never uses highway=track (nor private / farm / forestry ways), so where the
-    // only short way is a track it drives a long way round. Say so, and point at the other mode.
-    var len = 0; for (var n = 1; n < pts.length; n++) len += dist(pts[n - 1], pts[n])
-    var straight = dist(a, b)
-    if (straight > 500 && len > straight * 1.8) status('Leg to ' + legName(k) + ': road routing went ' + (len / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight. Road routing never uses tracks; try "tracks & paths" for this leg.', 'warn')
+  var old = p.leg || { mode:'direct' }, id = p.id
+  if (old.via === 'gpx') {
+    p.leg = { mode:'track', via:'gpx', points:[a, b] }
+    var t = routeGpx(a, b); if (t) p.leg.points = t; else status('No GPX track loaded: leg drawn straight. Load a GPX in the File tab, or choose another routing type.', 'warn')
+    return Promise.resolve()
+  }
+  var auto = !!old.auto, tier = auto ? null : tierOfLeg(old)
+  p.leg = { mode: auto ? 'direct' : old.mode || 'direct', points:[a, b], pending: auto || tier !== 'offpiste' }
+  if (auto) p.leg.auto = true; else if (old.tier) p.leg.tier = old.tier
+  if (!auto && tier === 'offpiste') return Promise.resolve()
+  var still = function () { var q = st.points[k], o = st.points[k - 1]; return q && q.id === id && o && q.lat === b[0] && q.lon === b[1] && o.lat === a[0] && o.lon === a[1] }
+  var commit = function (r, extra) {
+    if (!still()) return
+    var q = st.points[k]
+    q.leg = Object.assign(r.leg, r.tier === 'mixed' ? {} : { tier:r.tier }, extra || {})
+    if (!r.leg.failed && !r.leg.noTracks && r.tier !== 'offpiste') planLegGaps(k)
     render()
-  }).catch(function (e) {
-    var q = st.points[k]; if (!q || q.id !== id) return
-    q.leg = { mode:'road', points:[a, b], failed:true }
-    status('Routing failed for leg to point ' + (k + 1) + ' (' + e.message + '): drawn straight.', 'warn'); render()
+  }
+  if (!auto) {
+    status('Leg to ' + legName(k) + ': routing on ' + (TIER_WHAT[tier] || 'tracks and paths') + '...')
+    return legTryTier(a, b, tier).then(function (r) { if (!still()) return; if (r.msg) status('Leg to ' + legName(k) + ': ' + r.msg[0], r.msg[1]); commit(r) })
+  }
+  // Auto: what does the straight line run along? Then try that tier, and fall back down the tiers
+  status('Leg to ' + legName(k) + ': Auto, looking at what the line runs along...')
+  return trackRouter().then(function (R) { return R.classify(a, b) }).then(function (cov) {
+    return { cov:cov, order:window.TrackRouter.autoOrder(cov) }
+  }, function (e) { return { cov:null, order:['primary', 'offpiste'], err:e } }).then(function (c) {
+    var tried = []
+    var next = function (i) {
+      var tier = c.order[i]
+      return legTryTier(a, b, tier).then(function (r) {
+        if (!still()) return
+        if (!r.ok && i + 1 < c.order.length) { tried.push(r.tier + ': ' + r.why); return next(i + 1) }
+        var extra = { auto:true }
+        if (c.cov) extra.autoCov = { primary:c.cov.primary, piste:c.cov.piste, traces:c.cov.traces }
+        if (tried.length) extra.autoTried = tried
+        var lead = 'Leg to ' + legName(k) + ': Auto \u2192 ' + TIER_NAMES[r.tier] + (r.strict ? ' (the straight line wanders off them, but a route along them is ' + (r.len / dist(a, b)).toFixed(2) + '\u00d7 the straight line and ' + Math.round(r.onShare * 100) + '% on mapped ways)' : c.cov && r.tier !== 'offpiste' ? ' (' + Math.round(c.cov[r.tier] * 100) + '% of the straight line runs along ' + TIER_WHAT[r.tier] + ')' : c.cov && r.tier === 'offpiste' && !tried.length ? ' (the straight line follows no mapped way for long)' : '') + (tried.length ? '; tried ' + tried.join('; ') : '') + '. '
+        status(lead + (r.msg ? r.msg[0] : ''), r.msg ? r.msg[1] : 'ok')
+        commit(r, extra)
+      })
+    }
+    return next(0)
   })
 }
 
@@ -616,10 +665,10 @@ function render() {
   var showR = document.getElementById('showradii').checked
   st.points.forEach(function (p, i) {
     if (i) {
-      var lp = legPts(i), lu = legUi(p.leg)
-      L.polyline(lp, { color: lu === 'direct' ? '#ff9f43' : lu === 'gpx' ? '#c792ea' : lu === 'track' ? '#2bb673' : '#1e88e5', weight:4, opacity:.85, dashArray: p.leg && p.leg.pending ? '4 6' : null }).addTo(gRoute)
-      // tracks & paths: the parts with no mapped track (drawn straight) dotted red on top
-      var offG = lu === 'track' && p.leg.cover && p.leg.cover.gaps ? p.leg.cover.gaps : lu === 'road' && p.leg.off ? p.leg.off : null
+      var lp = legPts(i), lt = tierOfLeg(p.leg)
+      L.polyline(lp, { color: TIER_COLORS[lt] || '#1e88e5', weight:4, opacity:.85, dashArray: p.leg && p.leg.pending ? '4 6' : null }).addTo(gRoute)
+      // piste / traces: the parts with no mapped way (drawn straight) dotted red on top; roads: the hops on and off
+      var offG = p.leg && p.leg.mode === 'track' && !p.leg.via && p.leg.cover && p.leg.cover.gaps ? p.leg.cover.gaps : p.leg && p.leg.mode === 'road' && p.leg.off ? p.leg.off : null
       if (offG) offG.forEach(function (g) {
         if (lp[g[0]] && lp[g[1]]) L.polyline(lp.slice(g[0], g[1] + 1), { color:'#ff3b3b', weight:4, opacity:.95, dashArray:'2 7', interactive:false }).addTo(gRoute)
       })
@@ -656,14 +705,31 @@ function render() {
   scheduleForestCheck()
   scheduleAutoMeta()
 }
-var LEG_CHOICES = [['road', 'roads', 'Routed by OSRM on roads big enough for cars. Most small tracks are skipped.'], ['track', 'tracks & paths', 'Along small OpenStreetMap ways: tracks, unpaved lanes, paths; village streets and minor roads only to link them. Parts with no mapped way are drawn straight (dotted red).'],
-  ['gpx', 'my GPX track', 'Follows the GPX track loaded in the File tab.'], ['direct', 'straight', 'A straight line: open off-piste terrain.']]
+var LEG_CHOICES = [
+  ['auto', 'Auto', 'The builder picks: it looks at what the straight line between the two points runs along (roads, tracks, trails) and routes on that; if that fails or makes a big detour it tries the next tier down, else off-piste. Shown as "Auto → Piste" etc.'],
+  ['primary', 'Primary Piste (roads)', 'Routed by OSRM on roads big enough for cars (asphalt and main gravel roads). Tracks are skipped.'],
+  ['piste', 'Piste (tracks)', 'Along OpenStreetMap tracks and unpaved minor roads; village streets and minor roads link them, trails only to bridge. Parts with no mapped way are drawn straight (dotted red).'],
+  ['traces', 'Traces (trails, two-track)', 'Along paths, bridleways, faint two-track (tracktype grade4/5) and informal trails; tracks and minor roads only to link them. Parts with no mapped way are drawn straight (dotted red).'],
+  ['offpiste', 'Off-piste', 'Open terrain: a straight line between the points (the roadbook plans the driven line round obstacles and steep ground).'],
+  ['gpx', 'Follow my GPX', 'Follows the GPX track loaded in the File tab (greyed out until one is loaded).']]
+function legChoiceOptions(cur) {
+  return LEG_CHOICES.map(function (m) {
+    var dis = m[0] === 'gpx' && !refTrack && cur !== 'gpx'
+    return '<option value="' + m[0] + '" title="' + esc(m[2]) + '"' + (cur === m[0] ? ' selected' : '') + (dis ? ' disabled' : '') + '>' + m[1] + '</option>'
+  }).join('') + (cur === 'mixed' ? '<option value="mixed" selected title="An older stage file: tracks, paths and minor roads together (track router mixed profile).">Piste + Traces (older stage)</option>' : '')
+}
+function legAutoText(leg) {
+  if (!leg || !leg.auto) return ''
+  if (leg.pending) return 'Auto: choosing...'
+  var t = tierOfLeg(leg), c = leg.autoCov
+  return 'Auto → ' + TIER_NAMES[t] + (c ? ' (straight line along roads ' + Math.round(c.primary * 100) + '%, tracks ' + Math.round(c.piste * 100) + '%, trails ' + Math.round(c.traces * 100) + '%)' : '') + (leg.autoTried && leg.autoTried.length ? '; tried ' + leg.autoTried.join('; ') : '') + '. Pick a type to override.'
+}
 function legCoverText(leg) {
-  if (!leg || legUi(leg) !== 'track' || !leg.cover || leg.pending) return ''
+  if (!leg || leg.mode !== 'track' || leg.via || !leg.cover || leg.pending) return ''
   var c = leg.cover, t = c.onKm + c.straightKm
   if (leg.failed) return 'Tracks could not be loaded (map servers busy?): drawn straight.'
   if (!c.onKm) return 'No mapped tracks or paths here: drawn straight.'
-  return Math.round(c.onKm / t * 100) + '% on tracks and paths' + (c.straightKm >= 0.05 ? ', ' + c.straightKm.toFixed(1) + ' km straight' : '') + '.'
+  return Math.round(c.onKm / t * 100) + '% on ' + (TIER_WHAT[tierOfLeg(leg)] || 'tracks and paths') + (c.straightKm >= 0.05 ? ', ' + c.straightKm.toFixed(1) + ' km straight' : '') + '.'
 }
 function renderEditor() {
   var el = document.getElementById('editor')
@@ -672,8 +738,9 @@ function renderEditor() {
   var r = st.rules.waypoints[p.type] || {}
   el.innerHTML = '<hr><b>' + esc(uiPointLabel(p)) + '</b> <span class="hint">' + esc(TYPES[p.type].label) + ' &middot; ' + p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) + ' &middot; roadbook km ' + p._km.toFixed(2) + '</span>' +
     '<div class="row"><div><label>Type</label><select id="e-type">' + Object.keys(TYPES).map(function (t) { return '<option value="' + t + '" title="' + esc(tipText(t)) + '"' + (t === p.type ? ' selected' : '') + '>' + uiTypeLabel(t) + '</option>' }).join('') + '</select></div>' +
-    '<div><label>Leg to here</label><select id="e-leg"' + (sel ? '' : ' disabled') + '>' + LEG_CHOICES.map(function (m) { return '<option value="' + m[0] + '" title="' + esc(m[2]) + '"' + (legUi(p.leg) === m[0] ? ' selected' : '') + '>' + m[1] + '</option>' }).join('') + '</select></div>' +
+    '<div><label>Leg to here</label><select id="e-leg"' + (sel ? '' : ' disabled') + '>' + legChoiceOptions(legUi(p.leg)) + '</select></div>' +
     '<div><label>Speed limit km/h</label><input id="e-spd" type="number" value="' + esc(p.speedLimit || '') + '"' + (p.type === 'DZ' ? '' : ' disabled') + '></div></div>' +
+    (legAutoText(p.leg) ? '<div class="hint" id="e-auto">' + esc(legAutoText(p.leg)) + '</div>' : '') +
     (legCoverText(p.leg) ? '<div class="hint" id="e-cover">' + esc(legCoverText(p.leg)) + '</div>' : '') +
     '<div class="tsum">' + esc(GUIDE[p.type].short) + ' <a data-g="' + p.type + '">More in the Guide &rarr;</a></div>' +
     '<label>Name (optional)</label><input id="e-name" value="' + esc(p.name || '') + '">' +
@@ -708,7 +775,7 @@ function addPoint(lat, lon) {
 }
 function movePoint(i, lat, lon) {
   var p = st.points[i]
-  var go = document.getElementById('snap').checked && (p.leg ? p.leg.mode === 'road' : (st.points[i + 1] && st.points[i + 1].leg && st.points[i + 1].leg.mode === 'road'))
+  var go = document.getElementById('snap').checked && (p.leg ? p.leg.mode === 'road' && !p.leg.auto : (st.points[i + 1] && st.points[i + 1].leg && st.points[i + 1].leg.mode === 'road' && !st.points[i + 1].leg.auto))
   ;(go ? snapToRoad(lat, lon) : Promise.resolve([lat, lon])).then(function (ll) {
     onStageEdited()
     p.lat = r6(ll[0]); p.lon = r6(wrapLon(ll[1]))
@@ -741,13 +808,15 @@ map.on('click', function (e) {
   var lat = e.latlng.lat, lon = wrapLon(e.latlng.lng)
   var mode = document.getElementById('legmode').value
   if (mode === 'gpx' && refTrack) { var q = refTrack[nearestIdx(refTrack, [lat, lon])]; addPoint(q[0], q[1]); return }
-  if (document.getElementById('snap').checked && mode === 'road') { status('Snapping to the nearest road...'); snapToRoad(lat, lon).then(function (ll) { status('Ready.'); addPoint(ll[0], ll[1]) }) }
+  if (document.getElementById('snap').checked && mode === 'primary') { status('Snapping to the nearest road...'); snapToRoad(lat, lon).then(function (ll) { status('Ready.'); addPoint(ll[0], ll[1]) }) }
   else addPoint(lat, lon)
 })
 function setType(t) { curType = t; document.querySelectorAll('#typebtns button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t) }) }
 document.getElementById('typebtns').innerHTML = Object.keys(TYPES).map(function (t) { return '<button data-t="' + t + '" data-tip="' + t + '" aria-label="' + esc(tipText(t)) + '" style="background:' + TYPES[t].color + ';color:#000">' + uiTypeLabel(t) + '</button>' }).join('')
 document.getElementById('typebtns').addEventListener('click', function (e) { if (e.target.dataset.t) setType(e.target.dataset.t) })
 setType('DSS')
+function fillLegmode() { var el = document.getElementById('legmode'), v = el.value || 'auto'; if (v === 'gpx' && !refTrack) v = 'auto'; el.innerHTML = legChoiceOptions(v); el.value = v }
+fillLegmode()
 document.getElementById('showradii').addEventListener('change', render)
 
 // tabs
@@ -885,8 +954,11 @@ function exportStage() {
       var l = { from:st.points[i].id, to:p.id, mode:p.leg ? p.leg.mode : 'direct', km:+p._legKm.toFixed(3),
         points:legPts(i + 1).map(function (q) { return [r6(q[0]), r6(q[1])] }) }
       // extra, optional fields (readers ignore them): via "gpx" = followed the loaded GPX; cover = how much of a
-      // "tracks & paths" leg is on mapped ways (gaps: [from, to] point indexes drawn straight)
+      // Piste / Traces leg is on mapped ways (gaps: [from, to] point indexes drawn straight)
       if (p.leg && p.leg.via === 'gpx') l.via = 'gpx'
+      // 1.5: the routing tier, and whether the builder chose it (Auto) or the user did
+      if (p.leg && p.leg.tier && !p.leg.via) l.tier = p.leg.tier
+      if (p.leg && p.leg.auto && !p.leg.via) { l.auto = true; if (p.leg.autoCov) l.autoCov = p.leg.autoCov; if (p.leg.autoTried) l.autoTried = p.leg.autoTried }
       if (p.leg && p.leg.mode === 'track' && p.leg.cover && !p.leg.via) l.cover = p.leg.cover
       if (p.leg && (p.leg.mode === 'track' || p.leg.mode === 'road') && p.leg.off && p.leg.off.length && !p.leg.via) l.off = p.leg.off
       return l
@@ -920,6 +992,8 @@ document.getElementById('f-gpx').addEventListener('click', function () {
 function legIn(l) {
   var o = { mode:l.mode, points:l.points }
   if (l.via === 'gpx') o.via = 'gpx'
+  if (!l.via && /^(primary|piste|traces|offpiste)$/.test(l.tier || '')) o.tier = l.tier
+  if (!l.via && l.auto) { o.auto = true; if (l.autoCov) o.autoCov = l.autoCov; if (l.autoTried) o.autoTried = l.autoTried }
   if (l.mode === 'track' && l.cover && !l.via) o.cover = l.cover
   if ((l.mode === 'track' || l.mode === 'road') && l.off && !l.via) o.off = l.off
   return o
@@ -1008,7 +1082,7 @@ function loadGpx(text) {
     pts[0].leg = null
     pts.forEach(function (p, i) { if (i) { if (p.leg.via === 'gpx') { p.leg.points = routeGpx([pts[i - 1].lat, pts[i - 1].lon], [p.lat, p.lon]) } else p.leg.points = [[pts[i - 1].lat, pts[i - 1].lon], [p.lat, p.lon]] } })
   }
-  if (refTrack) { document.getElementById('legmode').value = 'gpx'; map.fitBounds(L.polyline(refTrack).getBounds()) }
+  fillLegmode(); if (refTrack) { document.getElementById('legmode').value = 'gpx'; map.fitBounds(L.polyline(refTrack).getBounds()) }
   else if (pts.length) map.fitBounds(L.latLngBounds(pts.map(function (p) { return [p.lat, p.lon] })))
   sel = -1; render()
   status('GPX loaded: ' + g.wpts.length + ' waypoints, ' + g.track.length + ' track points.', 'ok')

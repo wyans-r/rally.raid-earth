@@ -28,7 +28,9 @@
   else root.StageGen = factory(root.RoadbookGen);
 })(typeof self !== 'undefined' ? self : this, function (RB) {
   'use strict';
-  const VERSION = '1.2.0';
+  // builder 1.5 routing tiers: Stage-Gen legs are marked Auto (the builder re-chooses when a point moves); road = Primary Piste
+const TIER_OF_MODE = { road: 'primary', track: 'piste', direct: 'offpiste' };
+const VERSION = '1.2.0';
   const LEGACY_NOTE_VERSIONS = { '1.0.0': 1, '1.1.0': 1 };
   const GENERATOR = 'rallyraid-stagegen ' + VERSION;
   if (!RB) throw new Error('StageGen needs RoadbookGen (roadbook-gen.js)');
@@ -1090,7 +1092,7 @@
         w.box = i + 1; return w;
       }),
       roadbook: { boxes, file: null },
-      route: { legs: points.slice(1).map((p, i) => ({ from: points[i].id, to: p.id, mode: p.leg.mode, km: +D[i + 1].legKm.toFixed(3), points: p.leg.points.map(q => [r6(q[0]), r6(q[1])]) })) },
+      route: { legs: points.slice(1).map((p, i) => ({ from: points[i].id, to: p.id, mode: p.leg.mode, tier: TIER_OF_MODE[p.leg.mode] || 'offpiste', auto: true, km: +D[i + 1].legKm.toFixed(3), points: p.leg.points.map(q => [r6(q[0]), r6(q[1])]) })) },
       builder: { notes: points.filter(p => p.type === 'NOTE').map(p => p.id) }
     };
   }
@@ -1098,7 +1100,7 @@
     const legs = {}; for (const l of stage.route.legs) legs[l.to] = l;
     const byId = {}; for (const w of stage.waypoints) byId[w.id] = w;
     return stage.roadbook.boxes.map(b => { const w = b.waypoint ? byId[b.waypoint] : null, l = legs[b.id];
-      return Object.assign({ id: b.id, type: w ? w.type : 'NOTE', lat: b.lat, lon: b.lon, name: (w && w.name) || '', leg: l ? { mode: l.mode, points: l.points } : null }, w && w.speedLimit ? { speedLimit: w.speedLimit } : {}); });
+      return Object.assign({ id: b.id, type: w ? w.type : 'NOTE', lat: b.lat, lon: b.lon, name: (w && w.name) || '', leg: l ? { mode: l.mode, tier: l.tier, auto: l.auto, points: l.points } : null }, w && w.speedLimit ? { speedLimit: w.speedLimit } : {}); });
   }
   function corridorSamplePoints(stage, ro) { // as roadbook-gen.js: points every ~250 m over every off-piste corridor
     const pts = [];
