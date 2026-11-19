@@ -2,7 +2,7 @@
 -- as B11 "crash resume" for a crashed CAR; the GAME crashing is rallyRaid/gameResume.lua.) The car half is the repair
 -- system's vehicle extension (lua/vehicle/extensions/rallyRaid/vehRepair.lua: resumeSnapshot / resumeArm). Every
 -- tunable is in rallyRaid/repairConfig.lua: the rules and penalty in M.resume (shared with resets the app did not
--- make: 15 min first, then 30 min; 3 per rally, 1 per stage, none within 1 km of the ASS), the mechanics in
+-- make: 15 min first, then 30 min; since 18 Nov no limits by default: unlimited, anywhere, each one charged), the mechanics in
 -- M.carRecovery (enabled = false switches it off). Players' guide: docs/REPAIR.md "Recover car".
 --
 --   * every 30 s of stage clock: a recovery state. The game keeps where the car is (lat / lon, never game x / y: the
@@ -50,6 +50,7 @@ local function round(x, n) local k = 10 ^ (n or 0); return math.floor(x * k + 0.
 local function copy(t) if type(t) ~= 'table' then return t end local c = {} for k, v in pairs(t) do c[k] = copy(v) end return c end
 local function repairMod() return H.repair end
 local function fmtMin(s) return string.format('%d min', math.floor((s or 0) / 60 + 0.5)) end
+local function countS(n) local mx = RC().maxPerRally; return mx and (tostring(n) .. ' of ' .. mx) or tostring(n) end
 
 ------------------------------------------------------------------------------------------------------------------
 -- the stage route as one line (pure: unit tested). From stage.route.legs[].points ([lat, lon]), else the straight
@@ -329,7 +330,8 @@ function M.preview()
   local out = { used = #L.resumes, max = rc.maxPerRally, stageUsed = stageN, stageMax = rc.maxPerStage,
     firstPenaltyS = rc.firstPenaltyS, laterPenaltyS = rc.laterPenaltyS }
   out.penaltyS = (#L.resumes == 0) and rc.firstPenaltyS or rc.laterPenaltyS
-  out.leftAfter = math.max(0, rc.maxPerRally - #L.resumes - 1)
+  out.leftAfter = rc.maxPerRally and math.max(0, rc.maxPerRally - #L.resumes - 1) or nil   -- nil: no limit
+  out.penaltySoFarS = rm.resumePenaltyS and rm.resumePenaltyS() or nil
   local function no(why, retire) out.allowed, out.reason, out.retireInstead = false, why, retire or false; return out end
   if C().enabled == false then return no('car recovery is switched off (repairConfig carRecovery.enabled)') end
   if not (s and s.phase == 'running') then return no('no car recovery here: only while a stage clock is running') end
@@ -340,9 +342,9 @@ function M.preview()
   if not (n.ok and n.lat) then return no('no position from BeamNG.Earth yet') end
   local ass = s.stage.waypoints[#s.stage.waypoints]
   out.distToFinishM = math.floor(geo.dist(n.lat, n.lon, ass.lat, ass.lon))
-  if stageN + 1 > rc.maxPerStage then return no('second recovery / reset on this stage (max ' .. rc.maxPerStage .. ' per stage): the stage is retired', true) end
-  if #L.resumes + 1 > rc.maxPerRally then return no('all ' .. rc.maxPerRally .. ' recoveries / resets of the rally used: the stage is retired', true) end
-  if out.distToFinishM < rc.noResumeNearFinishM then
+  if rc.maxPerStage and stageN + 1 > rc.maxPerStage then return no('second recovery / reset on this stage (max ' .. rc.maxPerStage .. ' per stage): the stage is retired', true) end
+  if rc.maxPerRally and #L.resumes + 1 > rc.maxPerRally then return no('all ' .. rc.maxPerRally .. ' recoveries / resets of the rally used: the stage is retired', true) end
+  if rc.noResumeNearFinishM and out.distToFinishM < rc.noResumeNearFinishM then
     return no(string.format('within %d m of the ASS (%d m): no recovery here. Get to the finish or retire.', rc.noResumeNearFinishM, out.distToFinishM), true)
   end
   if (n.speed or 0) * 3.6 > C().maxCallKmh then return no(string.format('stop first (under %d km/h)', C().maxCallKmh)) end
@@ -393,8 +395,10 @@ function M.ask()
   local p = M.preview()
   R.ask, R.askRetire, R.msg = { p = p, t = R.t }, nil, nil
   if p.allowed then
-    notify(string.format('rally.raid Earth: RECOVER CAR? +%s penalty, %d of %d recoveries left after it. Back on the route %d m behind you (km %.2f). CONFIRM to go' .. keys.hint('rallyRaid_recoverCar', ' (or %s again)') .. '.',
-      fmtMin(p.penaltyS), p.leftAfter, p.max, math.floor(p.target.fromCarM + 0.5), p.target.km), 8)
+    local left = p.max and string.format('%d of %d recoveries left after it', p.leftAfter or 0, p.max)
+      or string.format('recovery %d of the rally (no limit; %s so far)', (p.used or 0) + 1, fmtMin(p.penaltySoFarS))
+    notify(string.format('rally.raid Earth: RECOVER CAR? +%s penalty, %s. Back on the route %d m behind you (km %.2f). CONFIRM to go' .. keys.hint('rallyRaid_recoverCar', ' (or %s again)') .. '.',
+      fmtMin(p.penaltyS), left, math.floor(p.target.fromCarM + 0.5), p.target.km), 8)
   else
     notify('rally.raid Earth: no car recovery: ' .. p.reason .. '.', 6)
     logAttempt({ kind = 'refused', reason = p.reason, distToFinishM = p.distToFinishM })
@@ -528,7 +532,7 @@ function commit(d)
     damageFrom = b.noReset and 'kept (no reset)' or ((b.capturedNow or not d.fromSnapshot) and 'now' or 'snapshot'), damageAfter = d.after, stats = d.stats, fuel = d.fuel,
     engineFlagsNotRestored = d.engineFlagsNotRestored, far = b.far or false, tripKmBefore = H.tripKm and H.tripKm() or nil }
   if r.allowed then
-    if H.addPenalty then H.addPenalty('carRecovery', r.penaltyS, string.format('car recovery %d/%d (+%s)', e.rallyCount, RC().maxPerRally, fmtMin(r.penaltyS))) end
+    if H.addPenalty then H.addPenalty('carRecovery', r.penaltyS, string.format('car recovery %s (+%s)', countS(e.rallyCount), fmtMin(r.penaltyS))) end
   end
   if H.setTripKm then H.setTripKm(p.target.km) end
   b.entry, b.result = e, r
@@ -587,10 +591,10 @@ local function finishResume()
     if rm0 and rm0.carReport then rm0.carReport('after recovery ' .. tostring(b.reqId), b.reqId) end
     logAttempt({ kind = 'resumed', rallyCount = e.rallyCount, penaltyS = e.penaltyS, km = b.target.km, backM = b.target.backM,
       pausedS = e.resume.pausedS, damageFrom = e.resume.damageFrom, snapshotId = b.snap and b.snap.id or nil })
-    notify(string.format('rally.raid Earth: car recovery %d of %d done: +%s. Back on the route at km %.2f. Go!', e.rallyCount,
-      RC().maxPerRally, fmtMin(e.penaltyS), b.target.km), 6)
+    notify(string.format('rally.raid Earth: car recovery %s done: +%s. Back on the route at km %.2f. Go!', countS(e.rallyCount),
+      fmtMin(e.penaltyS), b.target.km), 6)
     R.msgAt = R.t
-    R.msg = string.format('Car recovery %d of %d: +%s, back on the route at km %.2f.', e.rallyCount, RC().maxPerRally, fmtMin(e.penaltyS), b.target.km)
+    R.msg = string.format('Car recovery %s: +%s, back on the route at km %.2f.', countS(e.rallyCount), fmtMin(e.penaltyS), b.target.km)
   end
   if H.hook then H.hook('onRallyRaidCarRecovery', e) end
   R.lastEntry = e

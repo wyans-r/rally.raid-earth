@@ -16,7 +16,7 @@ Events are listed at https://stagebuilder.wyans.net/events/ (the site part is no
    - no route on any map: the in-game planner, recce and roadbook reload are off;
    - BeamNG's reset keys are blocked;
    - the official rules are forced:
-     - Recover car: 3 per rally, 1 per stage, none within 1 km of the ASS;
+     - Recover car: no limit by default (since 18 Nov), +15 min first, +30 min each after; an event may set the old 3 / 1 / 1 km limits;
      - game-crash resume limits on, with no time penalty unless the event sets one; every resume is flagged for review.
 5. At the ASS, the game writes a **result package** to `rallyraid/results/official/*.rrresult.json` and uploads it.
    - If the upload fails, the app says so. Press RETRY UPLOAD, or drop the file on the event page.

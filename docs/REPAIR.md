@@ -72,12 +72,16 @@ on how badly it is damaged.
 
 Rolled into a ravine, stuck on a rock, or lost far off the route? **Recover car** puts the car back on the stage
 route for a time penalty. It is the **one reset allowed in a stage**: BeamNG's own reset keys stay switched off.
+Since 18 Nov there is **no limit**: as many recoveries as you need, anywhere on the stage (also within 1 km of the
+ASS), and **every one costs its penalty** (Wyans: "let's allow unlimited recoveries, keeping the time penalty for each
+one").
 
 1. Stop the car (under 10 km/h) and press **MENU** > **RECOVER** in the GPS app, or **RECOVER CAR** in the repair menu.
 2. The GPS app's REPAIR panel (MENU > REPAIR; and, in short, the GPS app's menu) shows what it will cost before anything happens:
    - the penalty, **+15 min** for your first recovery of the rally and **+30 min** for each one after that (the same
      penalty as a reset the app didn't make, and they share one count);
-   - how many of your 3 recoveries / resets are used, how many are left after this one, and this stage's 0 of 1;
+   - how many recoveries / resets you have used in the rally and on this stage, and the penalty they have cost so far
+     (the GPS bar shows it as `RESETS 2 +45 MIN`);
    - where the car goes: back on the route, 30 m behind where it got stuck, at the roadbook km shown;
    - that the damage stays: the car keeps every dent, broken part and flat tyre it has now.
 3. Press **CONFIRM RECOVERY** (REPAIR panel), or **CONFIRM** in the GPS app's menu within 15 seconds. **CANCEL** leaves everything as it is.
@@ -103,12 +107,12 @@ to put the car (your place on the route, the waypoints passed). Its damage is no
 
 | situation | what happens |
 |---|---|
-| your second recovery / reset on this stage (1 per stage) | refused; the app offers **RETIRE STAGE** |
-| all 3 recoveries / resets of the rally used | refused; **RETIRE STAGE** offered |
-| within 1 km of the ASS | refused; get to the finish, or **RETIRE STAGE** |
 | moving faster than 10 km/h | refused: stop first |
 | no stage clock running, a repair or a game-crash resume running, no position from BeamNG.Earth | refused |
 | switched off for the event (`carRecovery.enabled = false`) | refused; the button is greyed out |
+
+An event can still set the old limits in `repairConfig.lua` (`resume.maxPerRally = 3`, `maxPerStage = 1`,
+`noResumeNearFinishM = 1000`); then going over one is refused with **RETIRE STAGE** offered. They are off by default.
 
 RETIRE STAGE asks "Really retire?" first, then ends the stage there. The bivouac still opens afterwards.
 
@@ -175,9 +179,10 @@ switched off. Use the repair menu, or **Recover car** (GPS app **MENU** > **RECO
 Any other reset still gets noticed, for example from the radial menu, the console or another mod:
 
 - **In a stage**, it counts like a **Recover car**: **15 min** for the first one in the rally and **30 min** for
-  each one after that, from the same count of 3, but the car stays wherever the reset put it.
-- **Your stage is retired instead** if this is your second recovery / reset on the same stage, if you've already used
-  3 this rally, or if you are within 1 km of the ASS.
+  each one after that, from the same count (no limit), but the car stays wherever the reset put it. Unlike Recover
+  car, such a reset repairs the car, so it is logged in the result as a reset the app didn't make.
+- Only if an event set the old limits is your stage retired instead (second on the stage, over 3 in the rally, or
+  within 1 km of the ASS).
 - **In the bivouac**, a reset isn't charged, but it is written into the next stage's result.
 
 **Start a new rally** (the "rally.raid Earth: start a new rally" binding, unbound by default) sets the recovery / reset

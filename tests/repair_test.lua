@@ -331,6 +331,11 @@ check(repair._R().busy == nil and S.penaltyTotal == pen0, 'timed out: no penalty
 ANSWER = true
 
 -- 4) resets the app did not make ----------------------------------------------------------------------------
+-- (since 18 Nov the limits are off by default; an event can still set them: sections 4 to 6 test them set, the
+-- default unlimited rules are tested after section 6)
+local LIMITS0 = { cfg.resume.maxPerRally, cfg.resume.maxPerStage, cfg.resume.noResumeNearFinishM }
+check(LIMITS0[1] == nil and LIMITS0[2] == nil and LIMITS0[3] == nil, 'default: no recovery / reset limits (unlimited, anywhere)')
+cfg.resume.maxPerRally, cfg.resume.maxPerStage, cfg.resume.noResumeNearFinishM = 3, 1, 1000
 driveTo(leg1.points[#leg1.points][1], leg1.points[#leg1.points][2], 40)
 stop()
 local pen1 = S.penaltyTotal
@@ -346,7 +351,7 @@ step(0.1)
 check(not S.flags.positionJump, 'rewind after a counted reset not flagged as a teleport too')
 car.lat = jlat; step(0.1)
 -- the second one on the same stage retires it
-check(core.onVehicleResetted(VEH_ID) == 'retired', 'second reset on the stage: retired')
+check(core.onVehicleResetted(VEH_ID) == 'retired', 'second reset on the stage: retired (with the old 1-per-stage rule set)')
 check(S.phase == 'finished' and S.flags.retired and S.result and S.result.retired, 'stage ended as retired')
 local res = S.result
 check(#res.repairs == 3 and res.repairTime == (14 + 2 + 18) * 60 and res.sparesUsed == 2, 'result: repairs, repair time, spares')
@@ -437,6 +442,15 @@ check(rr[4].retire and rr[4].reason:find('more than 3'), 'fourth resume of the r
 repair.newRally(); withStage(0)
 local rn = repair.countResume('carRecovery', { distToFinishM = 600 })
 check(rn.retire and rn.reason:find('1000 m'), 'no resume within 1 km of the ASS')
+-- the default rules (Wyans 18 Nov): unlimited, anywhere, every one charged (15 min first, then 30)
+cfg.resume.maxPerRally, cfg.resume.maxPerStage, cfg.resume.noResumeNearFinishM = nil, nil, nil
+repair.newRally(); withStage(0)
+local un, unPen = {}, 0
+for i = 1, 6 do un[i] = repair.countResume('carRecovery', { distToFinishM = i == 6 and 50 or 5000 }); unPen = unPen + un[i].penaltyS end
+local allOk = true; for i = 1, 6 do if not un[i].allowed or un[i].retire then allOk = false end end
+check(allOk, 'unlimited: 6 recoveries in the rally, all on one stage, the last 50 m from the ASS: all allowed')
+check(un[1].penaltyS == 900 and un[2].penaltyS == 1800 and un[6].penaltyS == 1800 and unPen == 900 + 5 * 1800, 'each one charged: 15, then 30 min each (' .. unPen / 60 .. ' min)')
+check(repair.resumePenaltyS() == unPen and repair.countText(4) == '4', 'total penalty so far, and the count shown without a limit')
 -- back to core's hooks
 package.loaded['rallyRaid/core'] = nil
 repair._reset()

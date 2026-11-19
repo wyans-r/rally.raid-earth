@@ -68,12 +68,15 @@ M.rally = {
 
 ------------------------------------------------------------------------------------------------------------------
 -- the resume / reset budget: resets our app did not make (unauthorized) and RECOVER CAR share these rules and penalties
+-- Wyans 2026-11-18: "let's allow unlimited recoveries, keeping the time penalty for each one" and "Drop the 1 km
+-- rule, allow recovers anywhere": no limits by default, every one still costs its penalty. (An event can set them
+-- again: a number puts the old rule back, a second one on the stage / over the rally then retires the stage.)
 M.resume = {
-  maxPerRally = 3,
-  maxPerStage = 1,             -- a second one on the same stage retires the stage
+  maxPerRally = nil,           -- nil = no limit (original rule: 3)
+  maxPerStage = nil,           -- nil = no limit (original rule: 1; a second one on the same stage retired the stage)
   firstPenaltyS = 15 * 60,     -- the first resume of the rally
   laterPenaltyS = 30 * 60,     -- every later one
-  noResumeNearFinishM = 1000,  -- within this distance of the ASS a resume is not allowed (the stage is retired)
+  noResumeNearFinishM = nil,   -- nil = anywhere (original rule: 1000, no resume within 1 km of the ASS)
   expectResetS = 5,            -- how long after our own repair starts a reset counts as ours
 }
 
@@ -81,7 +84,7 @@ M.resume = {
 -- RECOVER CAR (rallyRaid/resume.lua): the one reset allowed in a stage (Wyans 2026-11-16). The car is stuck, rolled or
 -- lost off the route while the game runs: the driver asks for it (RECOVER in the GPS app, or RECOVER CAR in its MENU > REPAIR panel), it
 -- costs the M.resume penalty above (15 min first, then 30 min) and counts in the same resume / reset log and limits
--- (3 per rally, 1 per stage, none within 1 km of the ASS). These are the mechanics. BeamNG's own reset keys stay
+-- (no limits since 18 Nov: unlimited, anywhere, each one charged). These are the mechanics. BeamNG's own reset keys stay
 -- blocked in stages. docs/REPAIR.md "Recover car" explains it to players.
 M.carRecovery = {
   enabled = true,              -- false: RECOVER CAR is refused ("switched off"); resets then only count as unauthorized

@@ -122,7 +122,7 @@ In the GPS app, press **MENU** > **REPAIR**. (There is no separate Repair app an
 - Mid-stage, standing still: change a wheel, fix one corner's suspension, or fix the radiator. The time is added to the stage.
 - After the finish, the bivouac opens: whole-car repair and engine change from a time budget.
 - During a stage, BeamNG's own reset keys are blocked. A reset the app did not make counts as a car recovery.
-- **Stuck or rolled?** GPS app **MENU** > **RECOVER**, then **CONFIRM** (or **RECOVER CAR** in the REPAIR panel), puts the car back on the route a short way behind, with a time penalty. Limits apply per stage and per rally.
+- **Stuck or rolled?** GPS app **MENU** > **RECOVER**, then **CONFIRM** (or **RECOVER CAR** in the REPAIR panel), sets the car upright back on the route a short way behind, damage kept, with a time penalty (+15 min first, +30 min each after). No limit on how many.
 - **The game crashed?** The stage is saved to disk on a short heartbeat and at each waypoint. After you relaunch, load the stage: the GPS app's menu opens with the save; press **RESUME**, then **CONFIRM RESUME** (or use **Resume from last save** in the GPS app's REPAIR panel). There is no time penalty, but the result is flagged for the organiser to review.
 
 Details: [docs/REPAIR.md](docs/REPAIR.md).

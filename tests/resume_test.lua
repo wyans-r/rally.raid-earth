@@ -176,6 +176,11 @@ end
 
 local resume = require('rallyRaid/resume')
 local ccfg = cfg.carRecovery
+-- since 18 Nov the recovery limits are off by default (unlimited, anywhere: Wyans); this scenario runs with the old
+-- limits set (an event can still set them) and checks the default where it matters (sections 4 and 6)
+local rcfg = cfg.resume
+check(rcfg.maxPerRally == nil and rcfg.maxPerStage == nil and rcfg.noResumeNearFinishM == nil, 'default: no recovery limits')
+rcfg.maxPerRally, rcfg.maxPerStage, rcfg.noResumeNearFinishM = 3, 1, 1000
 -- the car's frame for the vehicle half: forward along the heading, up = z
 obj.getDirectionVector = function() local h = math.rad(car.heading or 0); return { x = math.sin(h), y = math.cos(h), z = 0 } end
 obj.getDirectionVectorUp = function()   -- car.upZ: tipped over sideways (its up vector's z)
@@ -348,7 +353,7 @@ step(0.1); step(0.1)
 local clockAtAsk = S.clock
 core.cmd('resumeKey')
 local st = ui.RallyRaidRecover
-check(st.ask and st.ask.allowed == true, 'recoverKey (RECOVER) mid-stage: resume offered')
+check(st.ask and st.ask.allowed == true, 'recoverKey (RECOVER) mid-stage: resume offered ' .. tostring(st.ask and st.ask.reason))
 check(st.ask.penaltyS == 15 * 60 and st.ask.used == 0 and st.ask.max == 3 and st.ask.leftAfter == 2 and st.ask.stageUsed == 0 and st.ask.stageMax == 1, 'shows +15 min, 0 of 3 used, 2 left after it, 0 of 1 on this stage')
 check(lastNote():find('RECOVER CAR%?') and lastNote():find('%+15 min') and lastNote():find('2 of 3 recoveries left'), 'and says it on screen: ' .. lastNote())
 check(st.ask.snapshot and st.ask.snapshot.id == R.snaps[2].id and st.ask.snapshot.ageS >= ccfg.minSnapshotAgeS, 'uses the latest good resume state (' .. tostring(st.ask.snapshot and st.ask.snapshot.ageS) .. ' s old)')
@@ -404,6 +409,15 @@ core.cmd('resumeKey')   -- the key again does not confirm a refused one
 check(not resume.busy() and #repair.ledger().resumes == 1, 'nothing counted for a refused resume')
 check(S.carRecoveryLog and #S.carRecoveryLog >= 2, 'refusals logged')
 core.cmd('resumeCancel')
+-- with the default rules (no limits) the same second recovery on the stage is offered, at 30 min
+rcfg.maxPerRally, rcfg.maxPerStage, rcfg.noResumeNearFinishM = nil, nil, nil
+core.cmd('resumeKey')
+st = ui.RallyRaidRecover
+check(st.ask.allowed == true and st.ask.penaltyS == 30 * 60 and st.ask.max == nil and st.ask.leftAfter == nil and st.ask.used == 1 and st.ask.penaltySoFarS == 15 * 60,
+  'no limits: a second recovery on the same stage is offered, +30 min, 1 used so far (+15 min): ' .. tostring(st.ask.reason))
+check(lastNote():find('recovery 2 of the rally %(no limit; 15 min so far%)'), 'says it on screen: ' .. lastNote())
+core.cmd('resumeCancel')
+rcfg.maxPerRally, rcfg.maxPerStage, rcfg.noResumeNearFinishM = 3, 1, 1000
 -- the speed rule (another stage would allow it): moving at 50 km/h
 -- 5) drive to the finish: everything is in the result -------------------------------------------------------------
 driveOn(1e9, 70)
@@ -462,6 +476,13 @@ check(S.phase == 'running' and geo.dist(car.lat, car.lon, ass.lat, ass.lon) < 10
 core.cmd('resumeKey')
 st = ui.RallyRaidRecover
 check(st.ask.allowed == false and st.ask.reason:find('within 1000 m of the ASS') and st.ask.retireInstead, 'within 1 km of the ASS: refused, retire offered: ' .. st.ask.reason)
+core.cmd('resumeCancel')
+rcfg.maxPerRally, rcfg.maxPerStage, rcfg.noResumeNearFinishM = nil, nil, nil
+core.cmd('resumeKey')
+check(ui.RallyRaidRecover.ask.allowed == true, 'no limits (the default): a recovery within 1 km of the ASS is offered too')
+core.cmd('resumeCancel')
+rcfg.maxPerRally, rcfg.maxPerStage, rcfg.noResumeNearFinishM = 3, 1, 1000
+core.cmd('resumeKey')
 core.cmd('resumeRetire')
 check(S.phase == 'running' and ui.RallyRaidRecover.askRetire == true, 'RETIRE asks "sure?" first')
 core.cmd('resumeRetire')

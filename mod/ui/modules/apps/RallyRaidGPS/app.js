@@ -49,7 +49,7 @@ window.RallyRaidPanels.repair = (function () {
         '<button class="rrr-btn rrr-open" ng-click="toggle(); $event.stopPropagation()">{{ st.open ? \'CLOSE\' : modeText() }}</button>' +
         '<span ng-show="st.mode === \'stage\'">SPARES {{ st.spares.max - st.spares.used }}/{{ st.spares.max }}</span>' +
         '<span ng-show="st.mode === \'bivouac\' && st.bivouac" ng-class="{\'rrr-pen\': st.bivouac.overMin > 0}">LEFT {{ hm(st.bivouac.leftMin) }}</span>' +
-        '<span ng-class="{\'rrr-pen\': st.resumes.rally >= st.resumes.max}" title="car recoveries and resets used in the rally">RESETS {{ st.resumes.rally || 0 }}/{{ st.resumes.max || 3 }}</span>' +
+        '<span ng-class="{\'rrr-pen\': st.resumes.max && st.resumes.rally >= st.resumes.max}" title="car recoveries and resets used in the rally (no limit; each one is a time penalty)">RESETS {{ st.resumes.rally || 0 }}<span ng-show="st.resumes.max">/{{ st.resumes.max }}</span><span ng-show="st.resumes.penaltyS"> +{{ st.resumes.penaltyS / 60 | number:0 }} MIN</span></span>' +
         '<span class="rrr-pen" ng-show="rs.busy || gr.busy">CLOCK STOPPED</span>' +
         '<span class="rrr-held" ng-show="gr.hold && !gr.busy" title="the stage clock is held at the saved time until you drive off">HELD</span>' +
         '<span class="rrr-review" ng-show="gr.flagged" title="resumed after a game crash: flagged for organizer review">REVIEW</span>' +
@@ -89,7 +89,8 @@ window.RallyRaidPanels.repair = (function () {
         '<div ng-show="rs.busy" class="rrr-rline">Putting the car back on the route. The stage clock is stopped.</div>' +
         '<div ng-show="rs.ask && rs.ask.allowed && !rs.busy">' +
           '<div class="rrr-rline big">Penalty <b class="rrr-pen">+{{ round(rs.ask.penaltyS / 60) }} min</b></div>' +
-          '<div class="rrr-rline">Recoveries / resets: {{ rs.ask.used }} of {{ rs.ask.max }} used, <b>{{ rs.ask.leftAfter }} left</b> after this. This stage: {{ rs.ask.stageUsed }} of {{ rs.ask.stageMax }}.</div>' +
+          '<div class="rrr-rline" ng-show="rs.ask.max">Recoveries / resets: {{ rs.ask.used }} of {{ rs.ask.max }} used, <b>{{ rs.ask.leftAfter }} left</b> after this. This stage: {{ rs.ask.stageUsed }} of {{ rs.ask.stageMax }}.</div>' +
+          '<div class="rrr-rline" ng-show="!rs.ask.max">Recoveries / resets so far: {{ rs.ask.used || 0 }} in the rally (+{{ (rs.ask.penaltySoFarS || 0) / 60 | number:0 }} min), {{ rs.ask.stageUsed || 0 }} on this stage. No limit: each one costs its penalty.</div>' +
           '<div class="rrr-rline">Back on the route {{ round(rs.ask.target.backM) }} m behind where you got stuck, at km {{ rs.ask.target.km.toFixed(2) }}, facing along the route.</div>' +
           '<div class="rrr-rline">{{ damageText() }}</div>' +
           '<div class="rrr-rline dim">The clock stops while the car is moved. A second one on this stage retires it. Confirm here, or press RECOVER in the GPS MENU{{ keyText(\'rallyRaid_recoverCar\', \' / \') }} again.</div>' +
@@ -617,7 +618,7 @@ angular.module('beamng.apps')
         if (r.enabled === false) return 'Recover car: switched off for this event'
         if (r.busy) return 'Recover car: moving the car...'
         if (a && !a.allowed && Date.now() - rsAskAt < CONFIRM_MS) return 'No recovery: ' + (a.reason || '')
-        if (scope.rsArmed()) return 'RECOVER CAR? +' + Math.round((a.penaltyS || 0) / 60) + ' min, ' + a.leftAfter + ' of ' + a.max + ' left after it, back ' + Math.round((a.target && a.target.backM) || 0) + ' m on the route'
+        if (scope.rsArmed()) return 'RECOVER CAR? +' + Math.round((a.penaltyS || 0) / 60) + ' min, ' + (a.max ? a.leftAfter + ' of ' + a.max + ' left after it' : 'recovery ' + ((a.used || 0) + 1) + ' (no limit)') + ', back ' + Math.round((a.target && a.target.backM) || 0) + ' m on the route'
         return s_running() ? 'Stuck or rolled? Recover car (+15 / 30 min)' : 'Recover car (in a running stage)'
       }
       function s_running() { return scope.s.phase === 'running' }
@@ -716,7 +717,7 @@ angular.module('beamng.apps')
         var r = scope.rp, t = []
         if (r.mode === 'stage' && r.spares) t.push('spares ' + (r.spares.max - r.spares.used) + '/' + r.spares.max)
         if (r.mode === 'bivouac' && r.bivouac) t.push('bivouac ' + Math.floor((r.bivouac.leftMin || 0) / 60) + ':' + ('0' + Math.round(r.bivouac.leftMin || 0) % 60).slice(-2) + ' left')
-        if (r.resumes) t.push('resets ' + (r.resumes.rally || 0) + '/' + (r.resumes.max || 3))
+        if (r.resumes) t.push('resets ' + (r.resumes.rally || 0) + (r.resumes.max ? '/' + r.resumes.max : '') + (r.resumes.penaltyS ? ' +' + Math.round(r.resumes.penaltyS / 60) + ' min' : ''))
         return t.length ? '(' + t.join(', ') + ')' : ''
       }
       scope.$on('RallyRaidRepair', function (event, data) { if (data) scope.$evalAsync(function () {

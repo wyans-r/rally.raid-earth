@@ -75,7 +75,7 @@ end
 function M.ledger() if not L then M.loadLedger() end return L end
 function M.newRally()
   L = newLedger(); M.saveLedger()
-  notify('rally.raid Earth: new rally started: 0 of ' .. cfg.resume.maxPerRally .. ' resumes used, no bivouac open.', 5)
+  notify('rally.raid Earth: new rally started: ' .. (cfg.resume.maxPerRally and ('0 of ' .. cfg.resume.maxPerRally .. ' resumes used') or 'no recoveries / resets yet') .. ', no bivouac open.', 5)
   M.updateBlocking(); M.push()
 end
 
@@ -239,7 +239,7 @@ function M.state()
   local st = { open = R.open, mode = mode, busy = R.busy and R.busy.what or nil, msg = R.msg, stopped = stopped(),
     survey = R.survey and { ok = R.survey.ok, corners = R.survey.corners, deflated = R.survey.deflated, engineFlags = R.survey.engineFlags } or nil,
     options = M.options(mode, R.survey), rallyId = L.id, retired = L.retired,
-    resumes = { rally = #L.resumes, max = cfg.resume.maxPerRally, stage = s and s.repair and s.repair.resumes or 0, maxStage = cfg.resume.maxPerStage },
+    resumes = { rally = #L.resumes, max = cfg.resume.maxPerRally, stage = s and s.repair and s.repair.resumes or 0, maxStage = cfg.resume.maxPerStage, penaltyS = M.resumePenaltyS() },
     spares = { used = s and s.repair and s.repair.spares or 0, max = cfg.stage.sparesPerStage }, blocked = R.blocked }
   if L.bivouac then
     local b = L.bivouac
@@ -427,6 +427,11 @@ end
 -- the resume / reset budget, shared by resets the app did not make and RECOVER CAR (kind = 'unauthorizedReset' |
 -- 'carRecovery'; a game-crash resume only when repairConfig gameCrashResume.shareRecoveryBudget is on)
 -- returns { allowed, penaltyS, retire, reason, entry }
+-- "2 of 3" with a limit, "2" without (the limits are off by default since 18 Nov)
+function M.countText(n) local mx = cfg.resume.maxPerRally; return mx and (tostring(n) .. ' of ' .. mx) or tostring(n) end
+-- the penalty minutes charged for recoveries / resets in this rally so far
+function M.resumePenaltyS() if not L then M.loadLedger() end local t = 0; for _, e in ipairs(L.resumes) do t = t + (tonumber(e.penaltyS) or 0) end return t end
+
 function M.countResume(kind, info)
   if not L then M.loadLedger() end
   info = info or {}
@@ -437,9 +442,9 @@ function M.countResume(kind, info)
   local entry = { kind = kind, at = now(), t = s and s.clock or nil, stageId = s and s.stage.id or nil, lat = info.lat, lon = info.lon,
     km = info.km, distToFinishM = info.distToFinishM, stageCount = stageN + 1, rallyCount = rallyN + 1 }
   local reason
-  if stageN + 1 > rc.maxPerStage then reason = 'second resume on this stage'
-  elseif rallyN + 1 > rc.maxPerRally then reason = 'more than ' .. rc.maxPerRally .. ' resumes in the rally'
-  elseif info.distToFinishM and info.distToFinishM < rc.noResumeNearFinishM then reason = 'within ' .. rc.noResumeNearFinishM .. ' m of the ASS' end
+  if rc.maxPerStage and stageN + 1 > rc.maxPerStage then reason = 'second resume on this stage'
+  elseif rc.maxPerRally and rallyN + 1 > rc.maxPerRally then reason = 'more than ' .. rc.maxPerRally .. ' resumes in the rally'
+  elseif rc.noResumeNearFinishM and info.distToFinishM and info.distToFinishM < rc.noResumeNearFinishM then reason = 'within ' .. rc.noResumeNearFinishM .. ' m of the ASS' end
   entry.penaltyS = (not reason) and (rallyN == 0 and rc.firstPenaltyS or rc.laterPenaltyS) or 0
   entry.outcome = reason and 'retired' or 'penalty'
   entry.reason = reason
@@ -470,8 +475,8 @@ function M.onVehicleResetted(vehId)
       notify('rally.raid Earth: reset not made by the repair menu (' .. r.reason .. '): STAGE RETIRED.', 8)
       if H.retireStage then H.retireStage('unauthorized reset: ' .. r.reason) end
     else
-      if H.addPenalty then H.addPenalty('resume', r.penaltyS, 'reset not made by the repair menu (counts as recovery / reset ' .. r.entry.rallyCount .. '/' .. cfg.resume.maxPerRally .. ')') end
-      notify(string.format('rally.raid Earth: reset not made by the repair menu: counts as recovery / reset %d of %d, +%d min.', r.entry.rallyCount, cfg.resume.maxPerRally, r.penaltyS / 60), 8)
+      if H.addPenalty then H.addPenalty('resume', r.penaltyS, 'reset not made by the repair menu (counts as recovery / reset ' .. M.countText(r.entry.rallyCount) .. ')') end
+      notify(string.format('rally.raid Earth: reset not made by the repair menu: counts as recovery / reset %s, +%d min.', M.countText(r.entry.rallyCount), r.penaltyS / 60), 8)
     end
     M.push()
     return r.retire and 'retired' or 'counted'
