@@ -150,7 +150,7 @@ test('landmarks: no wells, cairns, guideposts, boulders or point ruins (not in t
 test('rocks in dune fields too (Wyans 18 Nov): bare dunes with steep flanks get a rock note', async () => {
   const st = line(8, 0, 'direct'), N = northOf(st);
   const dunes = (lat, lon) => { const x = N(lat, lon); return x > 2000 && x < 6000 ? 100 + 12 * Math.sin(x / 150 * 2 * Math.PI) : 100; };
-  const rb = await gen(st, dunes, { landCover: () => 60 });
+  const rb = await gen(st, dunes, { landCover: () => 60, duneNeedsSand: false });   // 0.6.2: heights alone only with duneNeedsSand off
   assert.ok(kinds(rb).includes('dunes'), notes(rb));
   assert.ok(rb.stats.enrich.rocks >= 1, 'rock features in the dune field: ' + rb.stats.enrich.rocks);
   const S = RB.resampleRoute(st, 20), H = S.map(s => dunes(s.lat, s.lon));

@@ -305,7 +305,7 @@
     return `<tr class="${b.danger >= 2 ? 'd' + b.danger : ''} ${b.waypoint ? 'wp' : ''} ${b.offPiste ? 'off' : ''}">
 <td class="c1"><span class="no">${b.n}</span><div class="km"><span>${b.km.toFixed(2)}</span></div><div class="part">${b.partial.toFixed(2)}</div><span class="src">${esc(b.source || '')}</span></td>
 <td class="c2">${tulipSVG(b.tulip, 120)}</td>
-<td class="c3"><div class="sym">${(b.symbols || []).map(s => symbolSVG(s, 30)).join('')}</div><div class="note">${esc(noteCase(b.notes))}</div>${dng ? `<span class="dng">${dng}</span>` : ''}<span class="cap">CAP ${pad3(b.capOut != null ? b.capOut : b.cap)}</span></td></tr>`;
+<td class="c3"><div class="sym">${(b.symbols || []).map(s => symbolSVG(s, 30)).join('')}</div><div class="note">${esc(noteCase(b.notes))}</div>${dng ? `<span class="dng">${dng}</span>` : ''}<span class="cap">CAP ${pad3(b.capOut != null ? b.capOut : b.cap)}${(b.capType === "C" || b.offPiste) ? " C" : ""}</span></td></tr>`;
   }
   /** one strip page (real roadbooks read bottom to top; this preview reads top to bottom like a scroll) */
   function stripHTML(rb, from, to, page, pages) {

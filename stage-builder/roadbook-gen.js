@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.6.1';
+  const VERSION = '0.6.2';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -124,6 +124,8 @@
     const k = Math.max(1, Math.round(60 / step));
     const j = back ? Math.max(0, i - k) : Math.min(S.length - 1, i + k);
     if (j === i) return capAround(S, i, !back, step);
+    // 0.6.2: on a dune drive line the CAP is the recce heading box to box, not the swerve under the box
+    if (S[j].navCap != null && S[j].leg === S[i].leg) return S[j].navCap;
     const a = back ? S[j] : S[i], b = back ? S[i] : S[j];
     return bearing([a.lat, a.lon], [b.lat, b.lon]);
   }
@@ -734,6 +736,14 @@
     // interdune corridor that really runs along it). It does not weave round single dunes; steep faces are cautions.
     // A field is OSM natural=sand/dune, or the same height-reversal test used for DNX notes.
     duneRecce: true, duneFrac: 0.35, duneMinStretchM: 600,
+    // 0.6.2: dunes only on or within duneNearM of MAPPED sand / dune / desert (OSM). The height up-and-down scan sizes them
+    // (L1-L3, cautions) but never finds dunes on its own: in hills it took ordinary ridges for dune ripples.
+    duneNeedsSand: true, duneNearM: 500,
+    // 0.6.2 (Wyans 19 Nov: "routing going around dunes to accurately calculate distances"): in a dune field the route
+    // (and so every km in the book) is the line a car really drives between and round the crests and slip faces, from
+    // the terrain tiles; the boxes and their CAPs stay on the sparse recce line (HP CAP from box to box).
+    duneDrive: true, driveCell: 30, driveHalfMinM: 400, driveHalfMaxM: 1000, driveSlopeCost: 60, driveMaxSlope: 0.6,
+    driveClimbCost: 4, driveDescentCost: 0.5, driveStrayCost: 0.4, driveSimplifyM: 12,
     recceStepM: 50, recceCorridorHalfM: 500, recceCorridorMinM: 1500, recceCorridorWallM: 12, recceMinOffsetM: 40,
     recceSmoothM: 1200, recceSimplifyM: 250, recceMaxTurn: 25,
     duneSpacingM: 800, duneDensity: 1, duneMaxGapKm: 25, duneFacePct: 35, duneFaceHardPct: 45
@@ -786,7 +796,7 @@
       const revs = b - a;
       if (revs >= o.duneMinRev) {
         let steep = 0; for (let i = ext[a][0]; i <= ext[b][0]; i++) steep = Math.max(steep, Math.abs(g[i]));
-        if (steep >= o.duneSteep) for (let i = ext[a][0]; i <= ext[b][0]; i++) duneAt[i] = 1;
+        if (steep >= o.duneSteep) for (let i = ext[a][0]; i <= ext[b][0]; i++) if (o.duneNeedsSand === false || (S && S[i] && S[i].nearSand)) duneAt[i] = 1;
       }
     }
     if (S) for (let i = 0; i < N; i++) if (S[i] && S[i].inDune) duneAt[i] = 1;
@@ -1980,6 +1990,8 @@
       const vi = S[i].vtx - 1, vx = leg && leg.points[vi];
       let si = i; if (vx && dist([S[i - 1].lat, S[i - 1].lon], vx) < dist([S[i].lat, S[i].lon], vx)) si = i - 1;
       const inf = planned && leg.vertexInfo ? leg.vertexInfo[vi] : null;
+      if (inf && inf.drive) continue;   // 0.6.2: a swerve of the dune drive line, no box
+      if (inf && inf.nav && leg.ptNavCap) { const ca = leg.ptNavCap[vi - 1], cb = leg.ptNavCap[vi]; if (ca != null && cb != null) { if (Math.abs(rel(ca, cb)) >= 3) F.push({ i: si, kind: 'cap', from: ca, to: cb, danger: 0, planned: true, reason: inf.reason || null, fabricated: false, obstacle: null }); continue; } }
       // 0.5.0: terrain to follow. A bend inside a run with the same guidance ("follow valley floor") is no new box;
       // the bend where a run starts says it, with the run's length and its general CAP
       if (inf && planned) {
@@ -2479,7 +2491,7 @@
 
   // ------------------------------------------------------------------ 0.6.0 dune fields: recce line, not an A* weave
   /** OSM natural=sand / natural=dune (ways and relation outers) as a point-in-polygon index. */
-  function isSandTag(tags) { return !!(tags && (tags.natural === 'sand' || tags.natural === 'dune')); }
+  function isSandTag(tags) { return !!(tags && (tags.natural === 'sand' || tags.natural === 'dune' || tags.natural === 'desert' || tags.landcover === 'sand')); }
   function stitchRings(parts) {
     const unused = parts.map(p => p.slice());
     const rings = [];
@@ -2557,6 +2569,14 @@
     }
     return {
       count: polys.length,
+      /** inside, or within m metres of, a mapped sand area (the point plus 16 points on two circles round it) */
+      near(lat, lon, m) {
+        const hit = this.at(lat, lon); if (hit || !m) return hit;
+        const dLat = m / 111320, dLon = m / (111320 * Math.max(0.05, Math.cos(lat * Math.PI / 180)));
+        if (!polys.some(p => lat >= p.bb[0] - dLat && lat <= p.bb[2] + dLat && lon >= p.bb[1] - dLon && lon <= p.bb[3] + dLon)) return null;
+        for (const r of [m / 2, m]) for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, q = this.at(lat + Math.cos(a) * r / 111320, lon + Math.sin(a) * r / (111320 * Math.max(0.05, Math.cos(lat * Math.PI / 180)))); if (q) return q; }
+        return null;
+      },
       at(lat, lon) {
         for (const p of polys) {
           if (lat < p.bb[0] || lat > p.bb[2] || lon < p.bb[1] || lon > p.bb[3]) continue;
@@ -2568,8 +2588,8 @@
   }
   function sandQuery(bbox) {
     const B = '(' + bbox.map(x => (+x).toFixed(5)).join(',') + ')';
-    return '[out:json][timeout:40];(way["natural"="sand"]' + B + ';way["natural"="dune"]' + B +
-      ';relation["natural"="sand"]' + B + ';relation["natural"="dune"]' + B + ';);out body geom;';
+    return '[out:json][timeout:40];(way["natural"~"^(sand|dune|desert)$"]' + B + ';relation["natural"~"^(sand|dune|desert)$"]' + B +
+      ';way["landcover"="sand"]' + B + ';);out body geom;';
   }
   async function fetchSand(stage, o, log) {
     if (o.sandIndex) return o.sandIndex;
@@ -2642,7 +2662,8 @@
     for (let i = 0; i <= n; i++) {
       const p = i === 0 ? A : (i === n ? B : dest(A, cap, (i / n) * L));
       const h = hfn ? hfn(p[0], p[1]) : 0;
-      out.push({ lat: p[0], lon: p[1], d: (i / n) * L, h: Number.isFinite(h) ? h : NaN, sand: !!(sandIndex && sandIndex.at(p[0], p[1])) });
+      const sand = !!(sandIndex && sandIndex.at(p[0], p[1]));
+      out.push({ lat: p[0], lon: p[1], d: (i / n) * L, h: Number.isFinite(h) ? h : NaN, sand, nearSand: sand || !!(sandIndex && sandIndex.near && sandIndex.near(p[0], p[1], o.duneNearM)) });
     }
     const mask = heightReversalMask(out, out.map(s => s.h), o);
     for (let i = 0; i < out.length; i++) out[i].rev = !!mask[i];
@@ -2675,8 +2696,11 @@
     const km = Math.max(0.001, (S[S.length - 1].d - S[0].d) / 1000);
     const denseRev = extD.length >= 6 && medSp <= 600 && (extD.length / km) >= 3;
     // OSM sand, or a genuinely rippled dune field. A sparse ridge / valley is not a sand sea.
-    const yes = fracSand >= o.duneFrac * 0.8 || (denseRev && fracRev >= o.duneFrac);
-    return { yes, fracSand, fracRev, frac, denseRev, medSp: Number.isFinite(medSp) ? Math.round(medSp) : null, samples: S };
+    // 0.6.2: only mapped sand makes a dune field (on it, or a rippled leg right next to it); ripples alone never do
+    const fracNear = S.filter(s => s.nearSand).length / S.length;
+    const yes = o.duneNeedsSand === false ? (fracSand >= o.duneFrac * 0.8 || (denseRev && fracRev >= o.duneFrac))
+      : (fracSand >= o.duneFrac * 0.8 || (denseRev && fracRev >= o.duneFrac && fracNear >= o.duneFrac));
+    return { yes, fracSand, fracNear, fracRev, frac, denseRev, medSp: Number.isFinite(medSp) ? Math.round(medSp) : null, samples: S };
   }
 
   /**
@@ -2770,6 +2794,101 @@
     return { points, vertexInfo: info, stats: { recce: true, corridorM: Math.round(corridorM), vertices: points.length - 2, longestStraightM: Math.round(Math.max(...points.slice(1).map((p, k) => dist(points[k], p)))), recceLenM: Math.round(len) } };
   }
 
+  /**
+   * 0.6.2: the drivable line through a dune field, for distances. A* on a 30 m terrain grid in a corridor round the
+   * recce line `nav` (planLegRecce): slope costs grow fast, slip faces over driveMaxSlope are blocked, climbing costs
+   * more than descending, and a light pull keeps it near the recce line (a crew drives the heading, round the dunes in
+   * its way). No noise and no seeded doglegs: the same terrain always gives the same line.
+   * Returns { points, vertexInfo, ptNavCap, stats }: the drive line; vertexInfo marks the points nearest the recce
+   * line's vertices as nav (those are the boxes) and every other point drive (no box); ptNavCap[k] is the CAP (C) of
+   * the recce stretch the segment from point k belongs to, measured box to box on the drive line.
+   */
+  function planLegDuneDrive(A, B, nav, hfn, o) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    const L = dist(A, B), navPts = (nav && nav.points && nav.points.length >= 2) ? nav.points : [A, B];
+    const fallback = why => ({ points: navPts, vertexInfo: (nav && nav.vertexInfo) || navPts.map(() => null), ptNavCap: navPts.map((p, k) => k + 1 < navPts.length ? Math.round(bearing(p, navPts[k + 1])) % 360 : null), stats: Object.assign({}, nav && nav.stats, { drive: false, driveWhy: why }) });
+    if (!hfn || L < (o._gap ? o.planMinGapM : o.planMinLegM)) return fallback('short');
+    const P = projector(A[0]), a = P.xy(A), b = P.xy(B);
+    const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L, nx = -uy, ny = ux, c = o.driveCell;
+    const toIJ = q => { const dx = q[0] - a[0], dy = q[1] - a[1]; return [(dx * ux + dy * uy) / c, (dx * nx + dy * ny) / c]; };
+    const navIJ = navPts.map(p => toIJ(P.xy(p)));
+    let maxOff = 0; for (const q of navIJ) maxOff = Math.max(maxOff, Math.abs(q[1]) * c);
+    const W = Math.max(o.driveHalfMinM, Math.min(o.driveHalfMaxM, L * 0.08)) + maxOff;
+    const i0 = -Math.round(150 / c), i1 = Math.round(L / c) + Math.round(150 / c), J = Math.round(W / c);
+    const NI = i1 - i0 + 1, NJ = 2 * J + 1, NC = NI * NJ;
+    if (NC > 4e6) return fallback('too big');
+    const idx = (i, j) => (i - i0) * NJ + (j + J);
+    const xyOf = (i, j) => [a[0] + ux * i * c + nx * j * c, a[1] + uy * i * c + ny * j * c];
+    const H = new Float32Array(NC);
+    for (let i = i0; i <= i1; i++) for (let j = -J; j <= J; j++) { const ll = P.ll(xyOf(i, j)); const v = hfn(ll[0], ll[1]); H[idx(i, j)] = Number.isFinite(v) ? v : NaN; }
+    for (let k = 0; k < NC; k++) if (!Number.isFinite(H[k])) H[k] = 0;
+    // the recce line's offset (cells) at each i, for the pull towards it
+    const navJ = new Float32Array(NI);
+    for (let i = i0; i <= i1; i++) {
+      let jj = 0;
+      for (let k = 1; k < navIJ.length; k++) { const [pi, pj] = navIJ[k - 1], [qi, qj] = navIJ[k]; if (i >= Math.min(pi, qi) && i <= Math.max(pi, qi)) { jj = qi === pi ? pj : pj + (qj - pj) * (i - pi) / (qi - pi); break; } }
+      navJ[i - i0] = jj;
+    }
+    const CM = new Float32Array(NC);
+    for (let i = i0; i <= i1; i++) for (let j = -J; j <= J; j++) {
+      const k = idx(i, j);
+      const hx = (H[idx(Math.min(i1, i + 1), j)] - H[idx(Math.max(i0, i - 1), j)]) / (2 * c), hy = (H[idx(i, Math.min(J, j + 1))] - H[idx(i, Math.max(-J, j - 1))]) / (2 * c);
+      const sl = Math.hypot(hx, hy), off = Math.abs(j - navJ[i - i0]) * c / Math.max(200, W);
+      CM[k] = sl > o.driveMaxSlope ? Infinity : 1 + o.driveSlopeCost * Math.max(0, sl - 0.08) ** 2 + o.driveStrayCost * off * off;
+    }
+    const gi = Math.round(L / c), s0 = idx(0, 0), goal = idx(gi, 0);
+    CM[s0] = Math.min(CM[s0], 1); CM[goal] = Math.min(CM[goal], 1);
+    const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1], [2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]];
+    const g = new Float64Array(NC).fill(Infinity), from = new Int32Array(NC).fill(-1), closed = new Uint8Array(NC);
+    const hk = [], hf = [];
+    const push = (f, k) => { hk.push(k); hf.push(f); let n = hk.length - 1; while (n > 0) { const q = (n - 1) >> 1; if (hf[q] <= hf[n]) break; [hf[q], hf[n]] = [hf[n], hf[q]]; [hk[q], hk[n]] = [hk[n], hk[q]]; n = q; } };
+    const pop = () => { const top = hk[0], lk = hk.pop(), lf = hf.pop(); if (hk.length) { hk[0] = lk; hf[0] = lf; let n = 0; for (;;) { const l = 2 * n + 1, r = l + 1; let m = n; if (l < hk.length && hf[l] < hf[m]) m = l; if (r < hk.length && hf[r] < hf[m]) m = r; if (m === n) break; [hf[m], hf[n]] = [hf[n], hf[m]]; [hk[m], hk[n]] = [hk[n], hk[m]]; n = m; } } return top; };
+    g[s0] = 0; push(Math.hypot(gi, 0) * c, s0);
+    while (hk.length) {
+      const k = pop(); if (closed[k]) continue; closed[k] = 1;
+      if (k === goal) break;
+      const i = Math.floor(k / NJ) + i0, j = (k % NJ) - J;
+      for (const [di, dj] of DIRS) {
+        const ni = i + di, nj = j + dj; if (ni < i0 || ni > i1 || nj < -J || nj > J) continue;
+        const nk = idx(ni, nj); if (closed[nk] || CM[nk] === Infinity) continue;
+        if (Math.abs(di) === 2 || Math.abs(dj) === 2) { const mk = idx(i + Math.sign(di) * (Math.abs(di) === 2 ? 1 : 0), j + Math.sign(dj) * (Math.abs(dj) === 2 ? 1 : 0)); if (CM[mk] === Infinity) continue; }
+        const d = Math.hypot(di, dj) * c, dh = H[nk] - H[k];
+        const ng = g[k] + d * (CM[k] + CM[nk]) / 2 + o.driveClimbCost * Math.max(0, dh) + o.driveDescentCost * Math.max(0, -dh);
+        if (ng < g[nk]) { g[nk] = ng; from[nk] = k; push(ng + Math.hypot(gi - ni, nj) * c, nk); }
+      }
+    }
+    if (from[goal] < 0) return fallback('no path');
+    const cells = []; for (let k = goal; k >= 0; k = from[k]) { cells.push(k); if (k === s0) break; }
+    cells.reverse();
+    let V = cells.map(k => [Math.floor(k / NJ) + i0, (k % NJ) - J]);
+    // Douglas-Peucker (driveSimplifyM), never across a blocked cell: removes the grid stair-steps, keeps the real swerves
+    { const clear = (p, q) => { const n = Math.max(1, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) * 2)); for (let t = 0; t <= n; t++) { const i = Math.round(p[0] + (q[0] - p[0]) * t / n), j = Math.round(p[1] + (q[1] - p[1]) * t / n); if (i < i0 || i > i1 || j < -J || j > J || CM[idx(i, j)] === Infinity) return false; } return true; };
+      const keep = new Uint8Array(V.length); keep[0] = keep[V.length - 1] = 1; const st = [[0, V.length - 1]], tol = o.driveSimplifyM / c;
+      while (st.length) { const [p, q] = st.pop(); let md = 0, mi = -1; for (let k = p + 1; k < q; k++) { const dd = distToSeg(V[k], V[p], V[q])[0]; if (dd > md) { md = dd; mi = k; } } if (mi >= 0 && (md > tol || !clear(V[p], V[q]))) { keep[mi] = 1; st.push([p, mi], [mi, q]); } }
+      V = V.filter((_, k) => keep[k]); }
+    const points = V.map((q, k) => k === 0 ? A : k === V.length - 1 ? B : P.ll(xyOf(q[0], q[1])));
+    // the recce line's interior vertices -> the nearest drive point by distance along the leg (each used once, in order)
+    const navAt = [0]; let last = 0;
+    for (let m = 1; m + 1 < navIJ.length; m++) {
+      let best = -1, bd = Infinity;
+      for (let k = last + 1; k < V.length - 1; k++) { const dd = Math.abs(V[k][0] - navIJ[m][0]) + 0.25 * Math.abs(V[k][1] - navIJ[m][1]); if (dd < bd) { bd = dd; best = k; } }
+      if (best > last && best < V.length - 1) { navAt.push(best); last = best; }
+    }
+    navAt.push(V.length - 1);
+    const navInfo = (nav && nav.vertexInfo) || [];
+    const vertexInfo = points.map(() => null), ptNavCap = points.map(() => null);
+    for (let m = 0; m + 1 < navAt.length; m++) {
+      const cap = Math.round(bearing(points[navAt[m]], points[navAt[m + 1]])) % 360, inf = m ? (navInfo[m] || { reason: null, recce: true }) : null;
+      for (let k = navAt[m]; k < navAt[m + 1]; k++) {
+        ptNavCap[k] = cap;
+        if (k === 0) continue;
+        vertexInfo[k] = k === navAt[m] ? Object.assign({ reason: null, recce: true }, inf, { nav: true }) : { reason: null, recce: true, drive: true, follow: inf && inf.follow ? inf.follow : undefined };
+      }
+    }
+    const len = points.reduce((x, p, k) => k ? x + dist(points[k - 1], p) : 0, 0);
+    return { points, vertexInfo, ptNavCap, stats: Object.assign({}, nav && nav.stats, { recce: true, drive: true, driveLenM: Math.round(len), recceLenM: nav && nav.stats && nav.stats.recceLenM, straightM: Math.round(L), navBoxes: navAt.length - 2, vertices: points.length - 2 }) };
+  }
+
   function capLabel(cap, offPiste) { return 'CAP ' + pad3(cap) + (offPiste ? ' C' : ''); }
 
   /**
@@ -2796,22 +2915,25 @@
     for (const pc of offPieces(stage, o)) if (!pc.whole) (gapsByLeg.get(pc.li) || gapsByLeg.set(pc.li, []).get(pc.li)).push(pc);
     for (const [li, pcs] of gapsByLeg) {
       const leg = legs[li], key = leg.from + '>' + leg.to, P0 = leg.points;
-      const pts = [P0[0]], info = [null], offSegs = [];
+      const pts = [P0[0]], info = [null], offSegs = [], navCap = [null];
       let at = 0;
       for (const pc of pcs.sort((a, b) => a.i0 - b.i0)) {
-        for (let k = at + 1; k <= pc.i0; k++) { pts.push(P0[k]); info.push(null); }
+        for (let k = at + 1; k <= pc.i0; k++) { pts.push(P0[k]); info.push(null); navCap.push(null); }
         let r;
         if (pc.kept) r = { points: P0.slice(pc.i0, pc.i1 + 1), vertexInfo: P0.slice(pc.i0, pc.i1 + 1).map(() => null), stats: { kept: true } };
         else if (o.duneRecce !== false && legInDuneField(P0[pc.i0], P0[pc.i1], hfn, o.sandIndex, o).yes)
-          r = planLegRecce(P0[pc.i0], P0[pc.i1], hfn, Object.assign({}, o, { _gap: true }));
+          { r = planLegRecce(P0[pc.i0], P0[pc.i1], hfn, Object.assign({}, o, { _gap: true }));
+            if (o.duneDrive !== false) r = planLegDuneDrive(P0[pc.i0], P0[pc.i1], r, hfn, Object.assign({}, o, { _gap: true })); }
         else r = planLeg(P0[pc.i0], P0[pc.i1], hfn, obstacles, Object.assign({}, o, { _gap: true }), (stage.id || '') + ':' + key + ':gap' + pc.i0 + ':' + (o.planSeed || 0));
         // the piece's first point is a road / track point: it keeps no CAP, only what the first piece follows
         if (r.vertexInfo[0] && r.vertexInfo[0].follow) info[info.length - 1] = { reason: null, follow: r.vertexInfo[0].follow, gapStart: true };
-        for (let k = 1; k < r.points.length; k++) { pts.push(r.points[k]); info.push(k < r.points.length - 1 ? Object.assign({ gap: true }, r.vertexInfo[k] || {}) : null); offSegs.push(pts.length - 1); }
+        if (r.ptNavCap && r.stats && r.stats.drive) navCap[navCap.length - 1] = r.ptNavCap[0];
+        for (let k = 1; k < r.points.length; k++) { pts.push(r.points[k]); info.push(k < r.points.length - 1 ? Object.assign({ gap: true }, r.vertexInfo[k] || {}) : null); navCap.push(r.ptNavCap && r.stats && r.stats.drive && k < r.points.length - 1 ? r.ptNavCap[k] : null); offSegs.push(pts.length - 1); }
         at = pc.i1;
         stats.push(Object.assign({ from: leg.from, to: leg.to, gap: true }, r.stats));
       }
-      for (let k = at + 1; k < P0.length; k++) { pts.push(P0[k]); info.push(null); }
+      for (let k = at + 1; k < P0.length; k++) { pts.push(P0[k]); info.push(null); navCap.push(null); }
+      if (navCap.some(x => x != null)) { leg.ptNavCap = navCap; leg.drive = true; }
       const L0 = P0.reduce((x, p, k) => k ? x + dist(P0[k - 1], p) : 0, 0), L1 = pts.reduce((x, p, k) => k ? x + dist(pts[k - 1], p) : 0, 0);
       leg.points = pts; leg.vertexInfo = info; leg.offSegs = offSegs; leg.gapsPlanned = true;
       if (typeof leg.km === 'number' && leg.km > 0) leg.km = +(leg.km + (L1 - L0) / 1000).toFixed(3); else leg.km = +(L1 / 1000).toFixed(3);
@@ -2827,6 +2949,7 @@
         leg.edited = true;
       } else if (o.duneRecce !== false && legInDuneField(A, B, hfn, o.sandIndex, o).yes) {
         r = planLegRecce(A, B, hfn, o);
+        if (o.duneDrive !== false) { r = planLegDuneDrive(A, B, r, hfn, o); if (r.stats.drive) { leg.drive = true; leg.ptNavCap = r.ptNavCap; } }
         leg.duneField = true; leg.recce = true;
       } else r = planLeg(A, B, hfn, obstacles, o, (stage.id || '') + ':' + key + ':' + (o.planSeed || 0) + (seed ? ':' + seed : ''));
       if (seed) leg.seed = seed;
@@ -2953,7 +3076,7 @@
     let km = 0;
     for (const leg of st.route.legs) {
       const p = byKey.get(leg.from + '>' + leg.to);
-      if (p && p.planned) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km; leg.planned = true; if (p.recce) leg.recce = true; if (p.duneField) leg.duneField = true; }
+      if (p && p.planned) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km; leg.planned = true; if (p.recce) leg.recce = true; if (p.duneField) leg.duneField = true; if (p.drive && p.ptNavCap) { leg.drive = true; leg.ptNavCap = p.ptNavCap.slice(); } }
       else if (p) { leg.points = p.points.map(q => [q[0], q[1]]); leg.km = p.km != null ? p.km : +(leg.points.reduce((m, q, i) => i ? m + dist(leg.points[i - 1], q) : 0, 0) / 1000).toFixed(3); leg.off = offRuns(p.offSegs); delete leg.cover; }
       km += leg.km;
       const w = st.waypoints.find(x => x.id === leg.to); if (w) w.km = +km.toFixed(3);
@@ -3037,6 +3160,7 @@
         log('planner: ' + plan.stats.map(x => x.from + '>' + x.to + ' ' + (x.recce ? 'recce' : (x.vertices + ' bends')) + ', longest ' + x.longestStraightM + ' m').join('; '));
       }
       const S = resampleRoute(st, o.step);
+      { const lg = (st.route && st.route.legs) || []; for (const sm of S) { const l = lg[sm.leg]; if (l && l.ptNavCap && l.ptNavCap[sm.vtx - 1] != null) sm.navCap = l.ptNavCap[sm.vtx - 1]; } }
       const side = S.map(s => [dest([s.lat, s.lon], s.hdg - 90, o.sideOffset), dest([s.lat, s.lon], s.hdg + 90, o.sideOffset)]);
       if (dem) {
         await dem.load(S.map(s => [s.lat, s.lon]).concat(side.flat()), (d, t) => { pDem(d, t); if (o.onDemProgress) o.onDemProgress(d, t); });
@@ -3050,7 +3174,9 @@
       const hmask = heightReversalMask(S, h, o);
       for (let i = 0; i < S.length; i++) {
         const leg = st.route && st.route.legs && st.route.legs[S[i].leg];
-        S[i].inDune = !!(hmask[i] || (o.sandIndex && o.sandIndex.at(S[i].lat, S[i].lon)) || (leg && leg.duneField));
+        const inSand = !!(o.sandIndex && o.sandIndex.at(S[i].lat, S[i].lon));
+        S[i].nearSand = inSand || !!(o.sandIndex && o.sandIndex.near && o.sandIndex.near(S[i].lat, S[i].lon, o.duneNearM)) || !!(leg && leg.duneField);
+        S[i].inDune = !!((hmask[i] && (S[i].nearSand || o.duneNeedsSand === false)) || inSand || (leg && leg.duneField));
       }
       const fProf = analyseProfile(S, h, hl, hr, o);
       const fOsm = osm ? analyseOsm(S, osm, o, isZone) : [];
@@ -3104,7 +3230,7 @@
           landcover: cov ? (landCover ? { name: LANDCOVER.name, tiles: landCover.loaded, failures: landCover.failures, knownPct: res.stats.enrich.coverKnownPct } : { name: 'supplied' }) : null,
           attribution: 'OpenStreetMap contributors (ODbL)' + (demInfo ? '; ' + demInfo.attribution : '') + (cov && landCover ? '; ' + LANDCOVER.attribution : '') },
         stats: res.stats,
-        route: { legs: ((st.route && st.route.legs) || []).map(l => Object.assign({ from: l.from, to: l.to, mode: l.mode, km: l.km }, l.planned ? { planned: true, recce: l.recce || undefined, duneField: l.duneField || undefined, points: l.points, vertexInfo: l.vertexInfo, edited: l.edited || undefined, seed: l.seed || undefined } : l.gapsPlanned ? { gapsPlanned: true, recce: l.recce || undefined, duneField: l.duneField || undefined, points: l.points, offSegs: l.offSegs, vertexInfo: l.vertexInfo } : { points: l.points, recce: l.recce || undefined, duneField: l.duneField || undefined })) },
+        route: { legs: ((st.route && st.route.legs) || []).map(l => Object.assign({ from: l.from, to: l.to, mode: l.mode, km: l.km }, l.planned ? { planned: true, recce: l.recce || undefined, duneField: l.duneField || undefined, drive: l.drive || undefined, ptNavCap: l.drive ? l.ptNavCap : undefined, points: l.points, vertexInfo: l.vertexInfo, edited: l.edited || undefined, seed: l.seed || undefined } : l.gapsPlanned ? { gapsPlanned: true, recce: l.recce || undefined, duneField: l.duneField || undefined, drive: l.drive || undefined, ptNavCap: l.drive ? l.ptNavCap : undefined, points: l.points, offSegs: l.offSegs, vertexInfo: l.vertexInfo } : { points: l.points, recce: l.recce || undefined, duneField: l.duneField || undefined })) },
         planner: plan ? { settings: { cell: o.planCell, maxSegM: o.planMaxSegM, maxSegFlatM: o.planMaxSegFlatM, seed: o.planSeed }, obstacles: obstInfo, legs: plan.stats } : null,
         speedZones: res.zones.map(([a, b, lim]) => ({ fromKm: +S[a].km.toFixed(2), toKm: +S[b].km.toFixed(2), limit: lim || null })),
         profile: { stepKm: +(every * o.step / 1000).toFixed(3), km: prof.map((_, k) => +S[Math.min(S.length - 1, k * every)].km.toFixed(3)), h: prof },
@@ -3290,5 +3416,5 @@
   }
 
   return { VERSION, GENERATOR, planLegGaps, checkLine, lineHazards, coverObstacle, offPieces, offRuns, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
-    geo: { dist, bearing, dest, rel, simplify, projector }, makeSandIndex, latLonInRing, sandQuery, fetchSand, heightReversalMask, legInDuneField, sampleLegLine, planLegRecce, capLabel, suggestWpType };
+    geo: { dist, bearing, dest, rel, simplify, projector }, makeSandIndex, latLonInRing, sandQuery, fetchSand, heightReversalMask, legInDuneField, sampleLegLine, planLegRecce, planLegDuneDrive, capLabel, suggestWpType };
 });

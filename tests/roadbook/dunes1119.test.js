@@ -48,7 +48,8 @@ test('a sand-covered off-piste leg uses a recce line, not an A* weave around a r
   const hf = along(st, (x, y) => { const ridge = 40 * Math.exp(-(((x - 4000) / 120) ** 2)); const saddle = 1 - 0.85 * Math.exp(-(((y - 600) / 250) ** 2)); return ridge * saddle; });
   const info = RB.legInDuneField([p0, st.route.legs[0].points[1]][0], st.route.legs[0].points[1], hf, RB.makeSandIndex([sand]), {});
   assert.ok(info.yes && info.fracSand > 0.5, JSON.stringify({ yes: info.yes, fracSand: info.fracSand }));
-  const r = RB.planOffPiste(st, hf, [], { sandIndex: RB.makeSandIndex([sand]) });
+  // (0.6.2: duneDrive off = the 0.6.0 recce line as the route; the drive line is tested in dunedrive1119.test.js)
+  const r = RB.planOffPiste(st, hf, [], { sandIndex: RB.makeSandIndex([sand]), duneDrive: false });
   const leg = r.stage.route.legs[0];
   assert.ok(leg.recce && leg.duneField, 'leg marked recce');
   assert.ok(r.stats[0].recce);
@@ -61,15 +62,18 @@ test('a sand-covered off-piste leg uses a recce line, not an A* weave around a r
   assert.ok(Math.abs(leg.km * 1000 - leg.points.slice(1).reduce((s, p, i) => s + dist(leg.points[i], p), 0)) < 2);
 });
 
-test('height-reversal alone (no OSM sand) still counts as a dune field', () => {
+test('0.6.2: height ripples alone (no mapped sand) are NOT a dune field; with duneNeedsSand off they still are', () => {
   const st = line(8, 0, 'direct');
   // 16 m dunes, 200 m wavelength, from 1 km to 7 km
   const hf = along(st, x => (x > 1000 && x < 7000) ? 8 * (1 - Math.cos(2 * Math.PI * (x - 1000) / 200)) : 0);
   const A = st.route.legs[0].points[0], B = st.route.legs[0].points[1];
   const info = RB.legInDuneField(A, B, hf, RB.makeSandIndex([]), {});
-  assert.ok(info.yes && info.fracRev >= 0.35, 'fracRev ' + info.fracRev);
-  const r = RB.planOffPiste(st, hf, [], { sandIndex: RB.makeSandIndex([]) });
-  assert.ok(r.stage.route.legs[0].recce);
+  assert.ok(!info.yes && info.fracRev >= 0.35, 'fracRev ' + info.fracRev);
+  assert.ok(!RB.planOffPiste(st, hf, [], { sandIndex: RB.makeSandIndex([]) }).stage.route.legs[0].recce);
+  assert.ok(RB.legInDuneField(A, B, hf, RB.makeSandIndex([]), { duneNeedsSand: false }).yes);
+  // the same ripples next to mapped sand (within duneNearM) do count
+  const sand = sandSquare([-20, 13], 0, 4000, 3200);
+  assert.ok(RB.legInDuneField(A, B, hf, RB.makeSandIndex([sand]), {}).yes);
 });
 
 test('roadbook in a dune field: DNX, cautions for a steep drop, long gaps, calculated CAP, few boxes', async () => {

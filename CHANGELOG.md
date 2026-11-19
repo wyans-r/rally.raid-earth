@@ -9,22 +9,25 @@ All notable changes to rally.raid Earth: the BeamNG mod (released on [GitHub Rel
 
 ## [Unreleased]
 
+### Changed (mod 0.3.1, not released yet)
+- The in-game Planner app makes the same roadbooks as the website (roadbook 0.6.2): the drivable line round dunes with distances along it, dune fields only where the map shows sand, and the steady progress bar. It also goes round forest, woods and open water. The Roadbook app draws calculated headings with a C, like the website. This reaches players with the next mod download.
+  - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` and `mod/ui/modules/apps/RallyRaidRoadbook/roadbook-render.js` = the website's files byte for byte; the Planner's bar uses the generator's `frac`; mod `VERSION` 0.3.1.
+
+## Website update - 2026-11-19: dune roadbooks, rally viewer, Changelog tab
+
 ### Added
-- **Changelog tab** on the website, on desktop and mobile, after the Guide tab. It reads this file, so each deploy updates it with no extra step. It goes out with the next public deploy of the site.
-  - Technical: `stage-builder/changelog.js`, `CHANGELOG.md` copied by `deploy.sh`.
-- **Rally viewer** (preview): a page that shows a whole rally on one map — every special stage and the prologue, the liaisons, transfers (the 590 km sea crossing is drawn as a dashed teleport), bivouacs, the rest day and marathon flags. Click a day to highlight it and zoom in, or open that stage in the builder. Load a bundled rally with `?rally=`, or drop in a `.rally.json` file. Atlantic to Atlas 2027 is bundled on the preview. A short share link (`/r/<id>`) can store the compiled rally file (preview lines, not full stage tracks); the 256 KB cap is enough (this rally is about 43 KB compressed). The event stays hidden on the live builder until it is validated.
+- **Dune roadbooks that drive like a real crew.** In a dune field the route goes the way a car really drives: between and round the big dunes and steep slip faces, crossing the ridges (cordons) at their lower saddles. Every distance in the book is measured along that driven line, so the kilometres are realistic (on the Erg er Raoui test stage, 112.8 km instead of 106.7 km on the straight line). The book stays easy to read: boxes only where the instruction changes, never one per dune dodged. It opens with DNX (dunes ahead, difficulty L1 to L3), warns of each big ridge (CROSS CORDON) and steep drop, and closes with END DUNES. Headings in the dunes are calculated CAPs (marked C) from box to box. When the builder suggests a waypoint type on a dune leg it offers a navigation waypoint (WPN); a type you set yourself is kept.
+  - Technical: roadbook-gen 0.6.2. `planLegRecce` gives the sparse heading line and the boxes; `planLegDuneDrive` (A* on 30 m terrain cells: slope cost, slip faces over 60 % blocked, climbs cost more than descents, a light pull to the heading) gives the route and the distances; box CAPs come from the heading line (`ptNavCap`). Wider cordon check on the driven line.
+- **Dune fields come from the map only.** A stretch counts as dunes only on, or within 500 m of, sand, dune or desert areas mapped in OpenStreetMap. The up-and-down height scan still sizes the dunes (L1 to L3) but never decides on its own, so hills and rough ground are no longer taken for dunes.
+  - Technical: `duneNeedsSand`, `duneNearM` 500; OSM `natural=sand|dune|desert`, `landcover=sand`.
+- **Rally viewer** at [/rally.html](https://rrearth.wyans.net/rally.html?rally=rallies/atlantic-to-atlas-2027.rally.json): a whole rally on one map, with every special stage and the prologue, the liaisons, transfers (the sea crossing is a dashed line), bivouacs, and the rest-day and marathon flags. Click a day to zoom to it, or open that stage in the builder. Atlantic to Atlas 2027 is included. Short links `/r/<id>` share a rally. Rally events in the builder stay hidden until they have been tested in game.
   - Technical: `/rally.html`, `rally-view.js`; worker `kind=rally`; `EXAMPLE_FLAGS.rallyEvents` stays false.
-- **In a dune field, the roadbook path is a recce line, not a weave around every dune.** It stays on the heading between boxes, or follows a broad trough between dunes only when one really runs along that heading for a long stretch. Big dune ridges and steep faces get caution notes (DNX, difficulty L1–L3, CROSS CORDON, STEEP FACE / STEEP DROP) instead of the line dodging them; the competitor picks their own line. Off-piste headings are written as calculated CAP (C). Inside dunes the usual 300 m minimum and box density are relaxed, so gaps between boxes can be long. When the builder suggests a waypoint type on a dune leg, it offers a navigation waypoint (WPN); a type you already set is left alone. Distances in the book are along this recce line.
-  - Technical: roadbook-gen 0.6.0 (`planLegRecce`, OSM `natural=sand`/`dune` plus the height-reversal test). Preview only until this is put live; the Planner copy updates with the next mod release.
-  - A dune field is OpenStreetMap sand or dune polygons, or the same up-and-down height test used for DNX notes. A single isolated ridge is still crossed at its saddle.
+- **Changelog tab** on the website, on desktop and mobile, after the Guide tab. It shows this page.
+  - Technical: `stage-builder/changelog.js` reads `CHANGELOG.md`, copied by `deploy.sh`.
 
 ### Fixed
-- **The roadbook progress bar no longer empties or jumps back while it works, and the page no longer freezes in dune fields.** The bar now only moves forward, names each step (Dune fields, Planning the line, Reading the terrain, OpenStreetMap, Landmarks, Building boxes) and keeps creeping while a map server is slow. Dune stages are much faster: the Erg er Raoui stage took about 24 s of computer time with the page frozen for up to 10 s; it now takes about 2 s. Roadbooks come out exactly the same.
-  - Technical: roadbook-gen 0.6.1. Progress events carry `frac` (0..1, monotonic); `yieldUI()` between the long steps; the sand index prepares each polygon once (latitude-banded edges) instead of copying the whole ring on every point test; landmark grid limited to the cells the boxes use; landmark polygons checked against their bounding box first; the optional sand query gives up after one round of mirrors.
-
-### Changed (mod)
-- The in-game Planner app's roadbook generator now matches the website's (0.6.0): it goes round forest and woods, ESA WorldCover tree cover and open water, treats heavy vegetation as practically impassable, and in dune fields it writes a recce line with caution notes instead of weaving. This reaches players with the next mod release.
-  - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` = `stage-builder/roadbook-gen.js` 0.6.1.
+- **The roadbook progress bar stays on screen and keeps moving.** It no longer empties or jumps back, it names each step (Dune fields, Planning the line, Reading the terrain, OpenStreetMap, Landmarks, Building boxes), and it keeps creeping while a map server is slow. The page no longer freezes in big dune fields: the dune check that took about 24 s of computer time on the Erg er Raoui stage now takes about 2 s.
+  - Technical: progress events carry `frac` (0..1, only forward); `yieldUI()` between long steps; sand areas prepared once for fast inside / outside checks; landmark grid limited to cells the boxes use.
 
 ## Website update - 2026-11-19: Auto routing, switchbacks, vegetation
 

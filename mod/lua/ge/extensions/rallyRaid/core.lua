@@ -42,7 +42,7 @@ local rallyOk, rally = pcall(require, 'rallyRaid/rally')
 if not rallyOk then rally = { init = function () end, cmd = function () end, update = function () end, stageStarted = function () end, stageFinished = function () end, _reset = function () end, state = function () return { available = false } end } end
 
 local M = {}
-M.VERSION = '0.3.0'   -- 0.3.0: three HUD apps, repair fixes, unlimited recovers, roadbook 0.5.x; 0.2.0: official event runs (rallyRaid/official.lua)
+M.VERSION = '0.3.1'   -- 0.3.1: roadbook 0.6.2 (dune drive line, mapped-only dunes, progress bar) in the Planner; 0.3.0: three HUD apps, repair fixes, unlimited recovers, roadbook 0.5.x; 0.2.0: official event runs (rallyRaid/official.lua)
 
 local SETTINGS_FILE = '/settings/rallyRaid.json'
 local RESULTS_DIR = '/rallyraid/results/'

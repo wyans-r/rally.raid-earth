@@ -81,10 +81,11 @@ test('a V-shaped gully across the line is a wadi', async () => {
   assert.ok(Math.abs(w.km - 2.5) < 0.1);
 });
 
-test('repeated steep short cycles are a dune field with a start and an end', async () => {
+test('repeated steep short cycles are a dune field with a start and an end (on mapped sand; 0.6.2: never from heights alone)', async () => {
   const st = line(10, 0, 'direct');
   const hf = along(st, x => (x > 3000 && x < 6000) ? 8 * (1 - Math.cos(2 * Math.PI * (x - 3000) / 200)) : 0);
-  const rb = await gen(st, hf);
+  assert.ok(!kinds(await gen(st, hf)).includes('dunes'), 'no mapped sand: no DNX');
+  const rb = await gen(st, hf, { duneNeedsSand: false });
   const ds = rb.boxes.find(b => b.symbols.includes('dunes')), de = rb.boxes.find(b => b.symbols.includes('dunes_end'));
   assert.ok(ds && de, kinds(rb).join(','));
   assert.ok(ds.km > 2.8 && ds.km < 3.5 && de.km > 5.5 && de.km < 6.2, ds.km + ' ' + de.km);
