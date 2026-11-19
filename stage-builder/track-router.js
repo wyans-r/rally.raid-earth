@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.1.1';
+  var VERSION = '1.1.2';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -39,7 +39,8 @@
     linkM: 300,           // longest hop from a leg end onto a way (drawn straight)
     linkCost: 1.3,        // cost per metre of such a hop
     gapCost: 2.0,         // cost per metre of a straight gap where no way connects (route ~2x longer on tracks still wins)
-    jumpM: 2500,          // a gap jump from a dead end may reach this far
+    jumpM: 2500,          // a gap jump from a dead end (or the leg start) may reach this far
+    sideJumpM: 0,         // 1.1.2 (off by default: costly in towns): a gap jump from the middle of a way onto another piece
     overpassTimeoutS: 40
   };
 
@@ -95,6 +96,7 @@
     return { xy: function (p) { return [p[1] * kx, p[0] * ky] }, ll: function (q) { return [q[1] / ky, q[0] / kx] } };
   }
   var r6 = function (x) { return Math.round(x * 1e6) / 1e6 };
+  function wrapLon(x) { x = +x; return x >= -180 && x <= 180 ? x : ((x + 180) % 360 + 360) % 360 - 180; }
 
   // ------------------------------------------------------------------ the area to ask for
   function legBbox(a, b, o) {
@@ -201,12 +203,24 @@
     var comp = new Int32Array(ll.length); for (var j = 0; j < ll.length; j++) comp[j] = find(j);
     G.comp = comp;
     xy.forEach(function (p, k) { var kk = key(Math.floor(p[0] / CELL), Math.floor(p[1] / CELL)); (grid.get(kk) || grid.set(kk, []).get(kk)).push(k); });
+    // portals (1.1.2): one node per 250 m cell per network piece, the targets of side jumps from the middle of a way
+    var portal = new Map();
+    grid.forEach(function (l, kk) { var seenC = new Set(), out = []; l.forEach(function (k) { if (!seenC.has(comp[k])) { seenC.add(comp[k]); out.push(k); } }); portal.set(kk, out); });
+    G.portal = portal;
     return G;
   }
   function nodesNear(G, p, r) {
     var out = [], c = G.CELL, x0 = Math.floor((p[0] - r) / c), x1 = Math.floor((p[0] + r) / c), y0 = Math.floor((p[1] - r) / c), y1 = Math.floor((p[1] + r) / c);
     for (var cx = x0; cx <= x1; cx++) for (var cy = y0; cy <= y1; cy++) {
       var l = G.grid.get(G.key(cx, cy)); if (!l) continue;
+      for (var i = 0; i < l.length; i++) { var q = G.xy[l[i]], d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d <= r) out.push([l[i], d]); }
+    }
+    return out;
+  }
+  function portalsNear(G, p, r) {
+    var out = [], c = G.CELL, x0 = Math.floor((p[0] - r) / c), x1 = Math.floor((p[0] + r) / c), y0 = Math.floor((p[1] - r) / c), y1 = Math.floor((p[1] + r) / c);
+    for (var cx = x0; cx <= x1; cx++) for (var cy = y0; cy <= y1; cy++) {
+      var l = G.portal.get(G.key(cx, cy)); if (!l) continue;
       for (var i = 0; i < l.length; i++) { var q = G.xy[l[i]], d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d <= r) out.push([l[i], d]); }
     }
     return out;
@@ -262,7 +276,7 @@
     // the segments, and the segment ends must know about them too (done in snapNode)
     var toT = new Map(); endSnaps.forEach(function (e) { toT.set(e[0], e[1]); });
     // the start may jump straight onto any node within jumpM (when no way is within linkM)
-    nodesNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], n[1] * o.gapCost, n[1], 'gap'); });
+    portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], n[1] * o.gapCost, n[1], 'gap'); });
     var deg = function (k) { return k < N ? G.adj[k].length : 2; };
     var g = new Map(), from = new Map(), closed = new Set(), H = new Heap();
     var h = function (k) { var p = nodeXY(k); return Math.hypot(B[0] - p[0], B[1] - p[1]) * Math.min(1, o.linkCost); };
@@ -285,7 +299,12 @@
         if (toT.has(u)) relax(T, toT.get(u) * o.linkCost, toT.get(u), 'link');
         else relax(T, dT * o.gapCost, dT, dT <= o.linkM ? 'link' : 'gap');
         // a dead end may jump to another piece of the network
-        if (u < N && deg(u) <= 1) nodesNear(G, pu, o.jumpM).forEach(function (n) {
+        if (u < N && deg(u) <= 1) portalsNear(G, pu, o.jumpM).forEach(function (n) {
+          if (G.comp[n[0]] !== G.comp[u]) relax(n[0], n[1] * o.gapCost, n[1], 'gap');
+        });
+        // 1.1.2: ... and so may any point of a way, onto a nearby other piece (a track that passes 1 km from another,
+        // or from the leg start, with no junction between them: before, only dead ends could jump, so such tracks were ignored)
+        else if (u < N && o.sideJumpM > 0) portalsNear(G, pu, o.sideJumpM).forEach(function (n) {
           if (G.comp[n[0]] !== G.comp[u]) relax(n[0], n[1] * o.gapCost, n[1], 'gap');
         });
       }
@@ -359,6 +378,7 @@
      */
     function route(a, b, opts) {
       var o = Object.assign({}, DEFAULTS, opts || {});
+      a = [a[0], wrapLon(a[1])]; b = [b[0], wrapLon(b[1])];   // 1.1.2: Overpass rejects lon outside -180..180
       var rk = [a[0], a[1], b[0], b[1]].map(function (x) { return (+x).toFixed(6) }).join(',');
       if (routes.has(rk)) return Promise.resolve(Object.assign({}, routes.get(rk), { cached: true, ms: 0 }));
       var L = dist(a, b);
@@ -404,5 +424,5 @@
   }
 
   return { VERSION: VERSION, viaRoadbookGen: viaRoadbookGen, DEFAULTS: DEFAULTS, wayCost: wayCost, overpassQuery: overpassQuery, legBbox: legBbox, queryBoxes: queryBoxes,
-    buildGraph: buildGraph, findPath: findPath, createRouter: createRouter, dist: dist };
+    buildGraph: buildGraph, findPath: findPath, createRouter: createRouter, dist: dist, wrapLon: wrapLon };
 });

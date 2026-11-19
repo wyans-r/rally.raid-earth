@@ -89,7 +89,7 @@
   }
 
   // ------------------------------------------------------------------ map
-  const map = L.map('map', { zoomControl: true, preferCanvas: false }).setView([-20, 13], 6);
+  const map = L.map('map', { zoomControl: true, preferCanvas: false, worldCopyJump: true }).setView([-20, 13], 6);
   const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community' });
   const osmL = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
   const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
@@ -140,10 +140,21 @@
   function toastConflicts(c) { banner('conf', 'warn', c.length + ' change(s) could not be applied: ' + esc(c.map(x => x.reason).join('; '))); }
 
   // ------------------------------------------------------------------ loading
+  // longitudes folded into -180..180 (older files / share links could hold e.g. -371.3 after the map was panned a turn west)
+  function wrapStageLons(s) {
+    const bad = x => x < -180 || x > 180, wl = x => ((x + 180) % 360 + 360) % 360 - 180;
+    const legs = (s.route && s.route.legs) || [], boxes = (s.roadbook && s.roadbook.boxes) || [];
+    if (!(s.waypoints || []).some(w => bad(w.lon)) && !boxes.some(b => bad(b.lon)) && !legs.some(l => (l.points || []).some(q => bad(q[1])))) return s;
+    s = JSON.parse(JSON.stringify(s));
+    for (const w of (s.waypoints || []).concat((s.roadbook && s.roadbook.boxes) || [])) if (w.lon != null && bad(w.lon)) w.lon = +wl(w.lon).toFixed(6);
+    for (const l of ((s.route && s.route.legs) || [])) for (const q of (l.points || [])) if (bad(q[1])) q[1] = +wl(q[1]).toFixed(6);
+    return s;
+  }
   async function loadStage(stage, how, starter, opts) {
     if (!stage || stage.format !== 'rallyraid-stage') throw new Error('not a rally raid stage file');
     const legacy = ((stage.roadbook && stage.roadbook.boxes) || []).filter(b => (b.notes && String(b.notes).trim()) || +b.danger > 0).length;
     banner('legacy', 'info', !legacy ? null : legacy + ' point(s) of this stage carry roadbook notes from an older stage file. Roadbook text now lives only in the roadbook: they move in as pinned boxes when you generate (or regenerate).');
+    stage = wrapStageLons(stage);
     E.stage = stage; E.stageHash = await RB.stageHash(stage); E.rb = null; E.sel = null; E.leg = null; E.undo = []; E.redo = [];
     $('#stage-name').textContent = (stage.name || stage.id) + ' \u00b7 ' + (stage.lengthKm != null ? (+stage.lengthKm).toFixed(1) + ' km' : '') + (how ? ' \u00b7 ' + how : '');
     document.title = 'Roadbook: ' + (stage.name || stage.id);
@@ -695,7 +706,7 @@
   $('#edit-line').addEventListener('change', () => { if ($('#edit-line').checked && !E.leg) { const l = ((E.rb && E.rb.route && E.rb.route.legs) || []).find(x => x.mode === 'direct'); if (l) E.leg = legKey(l); renderPanel(); } drawRoute(); });
   function startAdding() { if (!E.rb) return; E.adding = !E.adding; $('#map').classList.toggle('adding', E.adding); $('#b-addbox').classList.toggle('on', E.adding); }
   $('#b-addbox').addEventListener('click', startAdding);
-  map.on('click', ev => { if (E.adding) addBoxAt(ev.latlng); });
+  map.on('click', ev => { if (E.adding) addBoxAt(ev.latlng.wrap()); });
   document.addEventListener('keydown', e => {
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName);
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }

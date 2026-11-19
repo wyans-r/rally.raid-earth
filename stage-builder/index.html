@@ -354,6 +354,8 @@ function capOf(pts) {
   return bearing(pts[0], pts[pts.length - 1])
 }
 function r6(x) { return Math.round(x * 1e6) / 1e6 }
+/** a longitude folded into -180..180 (Leaflet's other world copies give e.g. -371.3 for -11.3) */
+function wrapLon(x) { x = +x; return x >= -180 && x <= 180 ? x : ((x + 180) % 360 + 360) % 360 - 180 }
 
 // ------------------------------------------------------------------ state
 var st = newStage()
@@ -372,7 +374,9 @@ var uid = 1
 function newId() { return 'p' + Date.now().toString(36) + (uid++) }
 
 // ------------------------------------------------------------------ map
-var map = L.map('map', { zoomControl:true }).setView([38.5733, -109.5498], 12)
+// worldCopyJump: panning past the date line jumps back to the main world copy, so clicks keep longitudes in -180..180
+// (18 Nov 2026: a stage placed after panning a turn west had lon -371, which OSRM and Overpass reject)
+var map = L.map('map', { zoomControl:true, worldCopyJump:true }).setView([38.5733, -109.5498], 12)
 var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' })
 var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom:17, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' })
 var sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:19, attribution:'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community' })
@@ -399,6 +403,7 @@ function pump() {
     .finally(function () { setTimeout(function () { osrmBusy = false; pump() }, 1050) })
 }
 function snapToRoad(lat, lon) {
+  lon = wrapLon(lon)
   return osrm('https://router.project-osrm.org/nearest/v1/driving/' + lon + ',' + lat + '?number=1').then(function (j) {
     if (j.code === 'Ok' && j.waypoints && j.waypoints[0] && j.waypoints[0].distance < 250) {
       var l = j.waypoints[0].location; return [l[1], l[0]]
@@ -407,6 +412,7 @@ function snapToRoad(lat, lon) {
   }).catch(function () { return [lat, lon] })
 }
 function routeRoad(a, b) {
+  a = [a[0], wrapLon(a[1])]; b = [b[0], wrapLon(b[1])]
   var url = 'https://router.project-osrm.org/route/v1/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson'
   return osrm(url).then(function (j) {
     if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error(j.message || j.code || 'no route')
@@ -600,7 +606,7 @@ function render() {
     var icon = L.divIcon({ className:'', html:'<div class="wpicon' + (i === sel ? ' sel' : '') + '" data-tip="' + p.type + '" style="background:' + col + '">' + esc(uiPointLabel(p)) + (p.type === 'DZ' ? ' ' + (p.speedLimit || '?') : '') + '</div>', iconSize:null, iconAnchor:[14, 10] })
     var m = L.marker([p.lat, p.lon], { icon:icon, draggable:true, title: uiPointLabel(p) + '  km ' + p._km.toFixed(2) }).addTo(gMarkers)
     m.on('click', function (e) { L.DomEvent.stopPropagation(e); select(i) })
-    m.on('dragend', function () { var ll = m.getLatLng(); movePoint(i, ll.lat, ll.lng) })
+    m.on('dragend', function () { var ll = m.getLatLng(); movePoint(i, ll.lat, wrapLon(ll.lng)) })
   })
   // list
   var counts = {}; st.points.forEach(function (p) { var k = uiTypeLabel(p.type); counts[k] = (counts[k] || 0) + 1 })
@@ -660,7 +666,7 @@ function select(i) { sel = i; render() }
 function addPoint(lat, lon) {
   onStageEdited()
   var at = document.getElementById('insertmode').checked && sel >= 0 ? sel + 1 : st.points.length
-  var p = { id:newId(), type:curType, lat:r6(lat), lon:r6(lon), name:'', leg:legOfUi(document.getElementById('legmode').value) }
+  var p = { id:newId(), type:curType, lat:r6(lat), lon:r6(wrapLon(lon)), name:'', leg:legOfUi(document.getElementById('legmode').value) }
   if (curType === 'DZ') p.speedLimit = 50
   st.points.splice(at, 0, p)
   sel = at
@@ -674,7 +680,7 @@ function movePoint(i, lat, lon) {
   var go = document.getElementById('snap').checked && (p.leg ? p.leg.mode === 'road' : (st.points[i + 1] && st.points[i + 1].leg && st.points[i + 1].leg.mode === 'road'))
   ;(go ? snapToRoad(lat, lon) : Promise.resolve([lat, lon])).then(function (ll) {
     onStageEdited()
-    p.lat = r6(ll[0]); p.lon = r6(ll[1])
+    p.lat = r6(ll[0]); p.lon = r6(wrapLon(ll[1]))
     render()
     Promise.all([computeLeg(i), i + 1 < st.points.length ? computeLeg(i + 1) : null]).then(render)
   })
@@ -701,7 +707,7 @@ document.getElementById('list').addEventListener('click', function (e) {
   map.panTo([st.points[i].lat, st.points[i].lon])
 })
 map.on('click', function (e) {
-  var lat = e.latlng.lat, lon = e.latlng.lng
+  var lat = e.latlng.lat, lon = wrapLon(e.latlng.lng)
   var mode = document.getElementById('legmode').value
   if (mode === 'gpx' && refTrack) { var q = refTrack[nearestIdx(refTrack, [lat, lon])]; addPoint(q[0], q[1]); return }
   if (document.getElementById('snap').checked && mode === 'road') { status('Snapping to the nearest road...'); snapToRoad(lat, lon).then(function (ll) { status('Ready.'); addPoint(ll[0], ll[1]) }) }
@@ -885,6 +891,29 @@ function legIn(l) {
   if (l.mode === 'track' && l.cover && !l.via) o.cover = l.cover
   return o
 }
+/** a copy of a stage file with every longitude folded into -180..180 (files / share links made before 18 Nov 2026
+ * could carry e.g. -371.3 after panning the map a turn west). The whole stage shifts by the same 360 degrees per point. */
+function wrapStageLons(j) {
+  var n = 0, w = function (o) { if (o && o.lon != null && (o.lon < -180 || o.lon > 180)) { o.lon = r6(wrapLon(o.lon)); n++ } }
+  var bad = function (x) { return x < -180 || x > 180 }
+  var any = (j.waypoints || []).some(function (p) { return bad(p.lon) }) || ((j.roadbook && j.roadbook.boxes) || []).some(function (b) { return bad(b.lon) }) ||
+    ((j.route && j.route.legs) || []).some(function (l) { return (l.points || []).some(function (q) { return bad(q[1]) }) })
+  if (!any) return j
+  j = JSON.parse(JSON.stringify(j))
+  ;(j.waypoints || []).forEach(w); ((j.roadbook && j.roadbook.boxes) || []).forEach(w)
+  ;((j.route && j.route.legs) || []).forEach(function (l) { (l.points || []).forEach(function (q) { if (bad(q[1])) { q[1] = r6(wrapLon(q[1])); n++ } }) })
+  lastLonFix = n
+  return j
+}
+var lastLonFix = 0
+// after loading a stage whose longitudes had to be folded back: its road / track legs were never routed (OSRM and
+// Overpass refused them), so route them now and say why
+function lonFixReroute() {
+  if (!lastLonFix) return
+  lastLonFix = 0
+  status('This stage had longitudes outside -180..180 (the map had been panned round the world before the points were placed), so they were folded back and its legs are being re-routed...', 'warn')
+  Promise.all(st.points.map(function (p, i) { return computeLeg(i) })).then(function () { render(); status('Longitudes fixed (the map had been panned round the world) and all legs re-routed.', 'ok') })
+}
 function importStage(j) {
   if (j.format !== 'rallyraid-stage') throw new Error('not a rally raid stage file')
   if ((j.schemaVersion || 0) > 1) throw new Error('made by a newer builder (schema ' + j.schemaVersion + ')')
@@ -893,6 +922,7 @@ function importStage(j) {
   s.rules = Object.assign(clone(FIM2026), j.rules || {})
   s.rules.waypoints = Object.assign(clone(FIM2026.waypoints), (j.rules && j.rules.waypoints) || {})
   s.rules.speedZone = Object.assign(clone(FIM2026.speedZone), (j.rules && j.rules.speedZone) || {})
+  j = wrapStageLons(j)
   var legs = {}; ((j.route && j.route.legs) || []).forEach(function (l) { legs[l.to] = l })
   var boxes = (j.roadbook && j.roadbook.boxes) || []
   var byId = {}; (j.waypoints || []).forEach(function (w) { byId[w.id] = w })
@@ -959,7 +989,7 @@ function loadFile(file) {
       st = importStage(JSON.parse(t)); sel = -1; exampleLock = null; clearUndo = null; updateClearBtns()
       metaToForm(); rulesToForm(); render()
       if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2))
-      status('Loaded ' + file.name + '.', 'ok')
+      status('Loaded ' + file.name + '.', 'ok'); lonFixReroute()
     } catch (e) { status('Cannot import ' + file.name + ': ' + e.message, 'err') }
   }
   rd.readAsText(file)
@@ -1002,7 +1032,7 @@ function storedWork() {
 function restoreStored() {
   try {
     var raw = localStorage.getItem('rallyraid-builder')
-    if (raw) { st = importStage(JSON.parse(raw)); if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2)) }
+    if (raw) { st = importStage(JSON.parse(raw)); if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2)); lonFixReroute() }
   } catch (e) { st = newStage() }
 }
 function bootFromShare() {
@@ -1066,6 +1096,7 @@ function applyStage(j, label) {
   st = importStage(j); sel = -1; metaToForm(); rulesToForm(); render()
   if (st.points.length) map.fitBounds(L.latLngBounds(st.points.map(function (p) { return [p.lat, p.lon] })).pad(0.2))
   status('Loaded ' + (label || st.meta.name || st.meta.id) + '.', 'ok')
+  lonFixReroute()
 }
 function loadExample(id, skipConfirm) {
   var meta = examplesList.filter(function (s) { return s.id === id })[0]

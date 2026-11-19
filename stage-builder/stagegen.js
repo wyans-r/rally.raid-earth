@@ -186,7 +186,7 @@
       if (!p) { if (m) { gSG.removeLayer(m); if (k === 'dss') mDss = null; else mAss = null } return }
       if (!m) {
         m = L.marker(p, { icon: pin(x[1]), draggable: true, title: x[1] + ' for Stage-Gen (drag to move)' }).addTo(gSG)
-        m.on('dragend', function () { var ll = m.getLatLng(); S[k] = [ll.lat, ll.lng]; changed(); render() })
+        m.on('dragend', function () { var ll = m.getLatLng().wrap(); S[k] = [ll.lat, ll.lng]; changed(); render() })
         if (k === 'dss') mDss = m; else mAss = m
       } else m.setLatLng(p)
     })
@@ -495,7 +495,7 @@
     if (!e.target.closest('#map') || e.target.closest('.leaflet-control, .leaflet-popup')) return
     e.stopPropagation(); e.preventDefault()
     if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 8) return   // that was a drag of the map
-    var ll = lmap.mouseEventToLatLng(e), p = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)], which = S.placing
+    var ll = lmap.mouseEventToLatLng(e).wrap(), p = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)], which = S.placing
     changed(); S[which] = p
     if (which === 'dss') guessRegion(p)
     if (which === 'dss' && !S.ass) { setPlacing('ass'); return }

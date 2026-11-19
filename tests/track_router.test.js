@@ -193,3 +193,28 @@ test('1.1.1: the Overpass query stays lean: connector roads only when unpaved or
   }
   assert.ok(/\[!surface\]/.test(q) && /residential/.test(q));
 });
+
+test('1.1.2: longitudes from another world copy (e.g. -371.3 after panning the map a turn west) are folded back before asking Overpass', async () => {
+  assert.strictEqual(TR.wrapLon(-371.034393).toFixed(6), '-11.034393');
+  assert.strictEqual(TR.wrapLon(190), -170);
+  assert.strictEqual(TR.wrapLon(-11.5), -11.5);
+  const asked = [];
+  const R = TR.createRouter({ overpass: (q, box) => { asked.push(box); return Promise.resolve({ elements: [] }) } });
+  // Wyans's stage 18 Nov 2026 (near Tan-Tan, Morocco), leg WPM -> WPS as stored: lon -371.03 / -370.82
+  const r = await R.route([27.886729, -371.034393], [28.012185, -370.818329]);
+  assert.ok(asked.length > 0);
+  for (const b of asked) assert.ok(b[1] >= -180 && b[3] <= 180, 'box outside -180..180: ' + b);
+  assert.ok(Math.abs(r.points[0][1] - -11.034393) < 1e-6, 'route starts at the folded longitude');
+});
+
+test('1.1.2 real data (Wyans 18 Nov 2026, near Tan-Tan): the leg WPM -> WPS stored with lon -371 follows the tracks (was drawn straight)', async () => {
+  const tiles = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/tracks/tantan_t83_leg4.json'), 'utf8'));
+  const R = TR.createRouter({ overpass: (q, box) => {
+    assert.ok(!/-3\d\d\./.test(q), 'query with an unwrapped longitude: ' + q.slice(0, 120));
+    return Promise.resolve(tiles[box.join(',')] || { elements: [] });
+  } });
+  const r = await R.route([27.886729, -371.034393], [28.012185, -370.818329]);
+  assert.ok(r.onShare > 0.9, 'on tracks: ' + Math.round(r.onShare * 100) + '%');
+  assert.ok(r.gapM < 1500, 'straight gaps: ' + Math.round(r.gapM) + ' m');
+  assert.ok(r.points.every(p => p[1] > -12 && p[1] < -10), 'points in -180..180');
+});
