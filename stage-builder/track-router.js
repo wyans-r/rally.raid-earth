@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.1.0';
+  var VERSION = '1.1.1';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -74,9 +74,12 @@
     var B = '(' + b.map(function (x) { return (+x).toFixed(4) }).join(',') + ')';
     return '[out:json][timeout:' + (timeoutS || DEFAULTS.overpassTimeoutS) + '];(' +
       'way[highway~"^(track|path|bridleway|unclassified|road)$"]' + B + ';' +
-      'way[highway~"^(residential|living_street|tertiary|tertiary_link|secondary|secondary_link)$"]' + B + ';' +
-      'way[highway~"^(service|footway|cycleway)$"][surface~"^(' + UNPAVED_Q + ')$"]' + B + ';' +
-      'way[highway=service][!service]' + B + ';' +
+      // connectors (1.1.1): unpaved or untagged only. Paved ones cost ~1.8-1.9 vs a straight gap's 2.0, so they barely
+      // change a route, but in towns they were 3-4x the answer (a 0.2 degree tile near Lisbon: 36 MB instead of 10 MB),
+      // which is what made legs time out on a cold cache.
+      'way[highway~"^(residential|living_street|tertiary|tertiary_link|secondary|secondary_link|service|footway|cycleway)$"][surface~"^(' + UNPAVED_Q + ')$"]' + B + ';' +
+      'way[highway~"^(residential|living_street|tertiary|tertiary_link|secondary|secondary_link)$"][!surface]' + B + ';' +
+      'way[highway=service][!surface][!service]' + B + ';' +
       ');out body geom qt;';
   }
 
@@ -329,7 +332,7 @@
     var loaded = []; // [box, answer] already in memory, for "inside a loaded box" hits
     var inside = function (b, c) { return b[0] >= c[0] && b[1] >= c[1] && b[2] <= c[2] && b[3] <= c[3] };
     function tile(box, o) {
-      var key = 'tr2:' + box.join(',');   // tr2 = 1.1.0 query (connector roads); tr1 answers lack them
+      var key = 'tr3:' + box.join(',');   // tr3 = 1.1.1 query (lean connector roads); tr1/tr2 answers differ
       if (mem.has(key)) return Promise.resolve(mem.get(key));
       for (var i = 0; i < loaded.length; i++) if (inside(box, loaded[i][0])) return Promise.resolve(loaded[i][1]);
       if (inflight.has(key)) return inflight.get(key);

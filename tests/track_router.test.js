@@ -184,3 +184,12 @@ test('1.1.0: two track networks joined by a paved village street are routed thro
   assert.ok(r2.gapM > 500, 'primary is road mode only: gap ' + r2.gapM);
   assert.match(TR.overpassQuery([31, -4.1, 31.1, -4]), /residential\|living_street\|tertiary\|tertiary_link\|secondary/);
 });
+
+test('1.1.1: the Overpass query stays lean: connector roads only when unpaved or untagged, no any-surface clauses', () => {
+  const q = TR.overpassQuery([30, -6, 30.2, -5.8]);
+  const clauses = q.split(';').filter(c => /^\(?way\[highway/.test(c));
+  for (const c of clauses) {
+    if (/residential|tertiary|secondary|service|footway/.test(c)) assert.ok(/\[surface~|\[!surface\]/.test(c), 'connector clause without a surface filter: ' + c);
+  }
+  assert.ok(/\[!surface\]/.test(q) && /residential/.test(q));
+});
