@@ -71,11 +71,11 @@
   }
 
   // ------------------------------------------------------------------ progress / banners / status
-  const PHASE = { terrain: 'Terrain (elevation tiles)', osm: 'OpenStreetMap', landmarks: 'Landmarks (OpenStreetMap)', landcover: 'Land cover (ESA WorldCover)', assemble: 'Building boxes', done: 'Done' };
+  const PHASE = { terrain: 'Terrain (elevation tiles)', sand: 'Dune fields (sand areas)', plan: 'Planning the line', analyse: 'Reading the terrain', osm: 'OpenStreetMap', landmarks: 'Landmarks (OpenStreetMap)', landcover: 'Land cover (ESA WorldCover)', assemble: 'Building boxes', done: 'Done' };
   function progress(on, phase, frac, msg) {
     const p = $('#progress'); p.hidden = !on; if (!on) return;
     if (phase) p.querySelector('.phase').textContent = PHASE[phase] || phase;
-    if (frac != null) p.querySelector('.bar i').style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%';
+    if (frac != null) p.querySelector('.bar i').style.width = Math.round(Math.max(0, Math.min(1, frac)) * 1000) / 10 + '%';
     if (msg != null) p.querySelector('.msg').textContent = msg;
   }
   const progressMsg = m => { const el = $('#progress .msg'); if (el) el.textContent = m; };
@@ -202,11 +202,12 @@
     const tok = ++E.gen; E.busy = true; setBusy(true);
     const old = E.rb, ed = (old && old.editor) || {};
     const density = +$('#density').value;
-    progress(true, 'terrain', 0, 'starting');
+    E.progFrac = 0; progress(true, 'terrain', 0, 'starting');
     let shownPartial = false;
     const opts = Object.assign({ density, osmOptional: true, lineOverrides: ed.lineOverrides || {}, legSeeds: ed.legSeeds || {},
       log: m => console.log('[roadbook]', m),
-      onProgress: e => { if (cancelled(tok)) return; const base = { terrain: 0, osm: 0.35, landmarks: 0.8, landcover: 0.9, assemble: 0.95, done: 1 }[e.phase] || 0, span = { terrain: 0.35, osm: 0.45, landmarks: 0.1, landcover: 0.05 }[e.phase] || 0;
+      // e.frac (generator 0.6.1+): share of the whole job, never going back. Older generators: worked out from the phase.
+      onProgress: e => { if (cancelled(tok)) return; if (typeof e.frac === 'number') { E.progFrac = Math.max(E.progFrac || 0, e.frac); return progress(true, e.phase, E.progFrac, e.msg || (e.total > 1 ? e.done + ' / ' + e.total + (/osm|landmarks/.test(e.phase) ? ' map requests' : ' tiles') : null)); } const base = { terrain: 0, osm: 0.35, landmarks: 0.8, landcover: 0.9, assemble: 0.95, done: 1 }[e.phase] || 0, span = { terrain: 0.35, osm: 0.45, landmarks: 0.1, landcover: 0.05 }[e.phase] || 0;
         progress(true, e.phase, base + span * (e.total ? e.done / e.total : 0), e.msg || (e.total > 1 ? e.done + ' / ' + e.total + (/osm|landmarks/.test(e.phase) ? ' map requests' : ' tiles') : null)); },
       onPartial: p => { if (cancelled(tok)) return; if (!old) { shownPartial = true; p.editor = { lineOverrides: opts.lineOverrides, legSeeds: opts.legSeeds }; setRoadbook(p, { keepView: false }); banner('partial', 'info', 'Terrain notes are in. Junctions, fords, gates and villages from OpenStreetMap are loading (the public map servers can be slow; answers are cached in this browser).'); } }
     }, makeFetchers(tok));

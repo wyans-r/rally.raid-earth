@@ -404,7 +404,7 @@
     if (!rbPromise) {
       var io = makeIo()
       rbPromise = window.RoadbookGen.generate(sealedStage, { density: window.StageGen.DEFAULTS.wp.density, osmOptional: true, overpassRace: true, overpassStatusCheck: true, fetchBytes: io.fetchBytes, fetchOverpass: io.fetchOverpass,
-        onProgress: function (e) { var base = { terrain: 0, osm: 0.35, landmarks: 0.8, landcover: 0.9, assemble: 0.95, done: 1 }[e.phase] || 0, span = { terrain: 0.35, osm: 0.45, landmarks: 0.1, landcover: 0.05 }[e.phase] || 0; progress(base + span * (e.total ? e.done / e.total : 0), 'Making the sealed roadbook…') }
+        onProgress: function (e) { if (typeof e.frac === 'number') return progress(e.frac, 'Making the sealed roadbook…'); var base = { terrain: 0, osm: 0.35, landmarks: 0.8, landcover: 0.9, assemble: 0.95, done: 1 }[e.phase] || 0, span = { terrain: 0.35, osm: 0.45, landmarks: 0.1, landcover: 0.05 }[e.phase] || 0; progress(base + span * (e.total ? e.done / e.total : 0), 'Making the sealed roadbook…') }
       }).catch(function (e) { rbPromise = null; return { failed: e.message || String(e) } })
     }
     return rbPromise

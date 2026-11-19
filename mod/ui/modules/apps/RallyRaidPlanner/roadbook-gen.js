@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.6.0';
+  const VERSION = '0.6.1';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -377,10 +377,15 @@
     return out;
   }
   /** distance (m) from p to a landmark and the nearest point on it */
+  // 0.6.1: bounding box first (outside it a point is never inside the ring), cached on the landmark
+  function inBox(L, p) {
+    if (!L._bb) { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; for (const q of L.pts) { if (q[0] < a) a = q[0]; if (q[1] < b) b = q[1]; if (q[0] > c) c = q[0]; if (q[1] > d) d = q[1]; } Object.defineProperty(L, '_bb', { value: [a, b, c, d], enumerable: false }); }
+    const bb = L._bb; return p[0] >= bb[0] && p[0] <= bb[2] && p[1] >= bb[1] && p[1] <= bb[3];
+  }
   function landmarkNear(L, p) {
     let best = Infinity, np = L.pts[0];
     if ((L.line || L.area || L.closed) && L.pts.length > 1) {
-      if ((L.area || L.closed) && !L.line && pointInRing(p, L.pts)) return { d: 0, np: p, inside: true };
+      if ((L.area || L.closed) && !L.line && inBox(L, p) && pointInRing(p, L.pts)) return { d: 0, np: p, inside: true };
       for (let i = 0; i + 1 < L.pts.length; i++) { const [d, t] = distToSeg(p, L.pts[i], L.pts[i + 1]); if (d < best) { best = d; np = [L.pts[i][0] + (L.pts[i + 1][0] - L.pts[i][0]) * t, L.pts[i][1] + (L.pts[i + 1][1] - L.pts[i][1]) * t]; } }
     } else for (const q of L.pts) { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < best) { best = d; np = q; } }
     return { d: best, np };
@@ -563,7 +568,11 @@
     const seen = (L, km) => used.has(L.id) && (!(L.line || L.area || L.far) || km - used.get(L.id) < 10);   // a shore, a sand sea, a peak: again 10 km on
     // grid for the landmarks (500 m cells)
     const G = 500, grid = new Map();
-    lms.forEach(L => { const xs = L.pts.map(p => p[0]), ys = L.pts.map(p => p[1]); for (let gx = Math.floor((Math.min(...xs) - L.r) / G); gx <= Math.floor((Math.max(...xs) + L.r) / G); gx++) for (let gy = Math.floor((Math.min(...ys) - L.r) / G); gy <= Math.floor((Math.max(...ys) + L.r) / G); gy++) { const k = gx + ',' + gy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(L); } });
+    // 0.6.1: only the cells a box can look up (a sand sea or a big landuse area used to fill thousands of empty cells)
+    let cx0 = Infinity, cx1 = -Infinity, cy0 = Infinity, cy1 = -Infinity;
+    for (const b of boxes) { const q = P.xy([b.lat, b.lon]), gx = Math.floor(q[0] / G), gy = Math.floor(q[1] / G); if (gx < cx0) cx0 = gx; if (gx > cx1) cx1 = gx; if (gy < cy0) cy0 = gy; if (gy > cy1) cy1 = gy; }
+    lms.forEach(L => { let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity; for (const p of L.pts) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+      for (let gx = Math.max(cx0, Math.floor((x0 - L.r) / G)); gx <= Math.min(cx1, Math.floor((x1 + L.r) / G)); gx++) for (let gy = Math.max(cy0, Math.floor((y0 - L.r) / G)); gy <= Math.min(cy1, Math.floor((y1 + L.r) / G)); gy++) { const k = gx + ',' + gy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(L); } });
     const bySi = new Map(); S.forEach((s, i) => bySi.set(s.km.toFixed(2), i));
     const siOf = b => { const k = (+b.km).toFixed(2); if (bySi.has(k)) return bySi.get(k); return sampleAtKm(S, b.km); };
     const addSym = (b, s) => { if (s && !b.symbols.includes(s)) b.symbols.push(s); };
@@ -2517,6 +2526,24 @@
   function latLonInRing(lat, lon, ring) {
     return pointInRing([lon, lat], ring.map(p => [p[1], p[0]]));
   }
+  // 0.6.1: a ring prepared once for fast point-in-polygon: [lon,lat] flipped once (latLonInRing used to copy the whole ring
+  // on every call) and the edges bucketed in latitude bands, so a test only looks at the edges at the point's latitude.
+  // Same crossing rule as pointInRing, so the answer is identical; a big erg polygon (thousands of nodes) went from
+  // ~17 s to well under 0.1 s on the Erg er Raoui stage.
+  function prepRing(ring) {
+    const n = ring.length, xs = new Float64Array(n), ys = new Float64Array(n);
+    let s = Infinity, nn = -Infinity;
+    for (let i = 0; i < n; i++) { xs[i] = ring[i][1]; ys[i] = ring[i][0]; if (ys[i] < s) s = ys[i]; if (ys[i] > nn) nn = ys[i]; }
+    const nb = Math.max(1, Math.min(1024, Math.round(n / 4))), bh = (nn - s) / nb || 1, bands = Array.from({ length: nb }, () => []);
+    const band = y => Math.max(0, Math.min(nb - 1, Math.floor((y - s) / bh)));
+    for (let i = 0, j = n - 1; i < n; j = i++) { const b0 = band(Math.min(ys[i], ys[j])), b1 = band(Math.max(ys[i], ys[j])); for (let b = b0; b <= b1; b++) bands[b].push(i, j); }
+    return { xs, ys, bands, band };
+  }
+  function inPrepRing(lat, lon, R) {
+    const e = R.bands[R.band(lat)], xs = R.xs, ys = R.ys; let c = false;
+    for (let k = 0; k < e.length; k += 2) { const i = e[k], j = e[k + 1]; if ((ys[i] > lat) !== (ys[j] > lat) && lon < (xs[j] - xs[i]) * (lat - ys[i]) / (ys[j] - ys[i]) + xs[i]) c = !c; }
+    return c;
+  }
   function makeSandIndex(elements) {
     const polys = [];
     for (const e of elements || []) {
@@ -2525,7 +2552,7 @@
         if (ring.length < 4) continue;
         let s = 90, n = -90, w = 180, ea = -180;
         for (const p of ring) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); ea = Math.max(ea, p[1]); }
-        polys.push({ ring, bb: [s, w, n, ea], name: (e.tags && (e.tags.name || e.tags['name:en'])) || null });
+        polys.push({ ring, prep: null, bb: [s, w, n, ea], name: (e.tags && (e.tags.name || e.tags['name:en'])) || null });
       }
     }
     return {
@@ -2533,7 +2560,7 @@
       at(lat, lon) {
         for (const p of polys) {
           if (lat < p.bb[0] || lat > p.bb[2] || lon < p.bb[1] || lon > p.bb[3]) continue;
-          if (latLonInRing(lat, lon, p.ring)) return p;
+          if (inPrepRing(lat, lon, p.prep || (p.prep = prepRing(p.ring)))) return p;
         }
         return null;
       }
@@ -2942,10 +2969,33 @@
    * opts: density, step, ... (DEFAULTS); fetchBytes/decodeImage (DEM tiles); fetchOverpass(ep, query) or osm
    * ({elements}) to skip the network; heightFn(lat, lon) to skip the DEM entirely (tests); log(msg).
    */
+  // let the page repaint (progress bar, Cancel button) between the long synchronous steps; plain setTimeout in Node
+  function yieldUI() {
+    return new Promise(r => (typeof requestAnimationFrame === 'function' && typeof document !== 'undefined' && !document.hidden) ? requestAnimationFrame(() => setTimeout(r, 0)) : setTimeout(r, 0));
+  }
   async function generate(stage, opts) {
     const o = Object.assign({}, DEFAULTS, opts || {});
     const log = o.log || (() => {});
-    const progress = (phase, done, total, msg) => { if (o.onProgress) try { o.onProgress({ phase, done, total, msg }); } catch (e) { /* UI errors must not stop us */ } };
+    // 0.6.1: every progress event carries frac, the share of the whole job done (0..1), and it never goes backwards. Before,
+    // the page worked the bar out from the phase alone, so the new sand / dune step showed an empty bar and the final pass
+    // (terrain + land cover again) threw it back from 95 % to 2 %. Phases: terrain 0-10 %, sand 10-12 %, first pass 12-38 %
+    // (plan, terrain, landcover, analyse), osm 38-72 %, landmarks 72-82 %, final pass 82-100 % (as phase "assemble").
+    let lastFrac = 0, lastHi = 0, lastPhase = null, lastAt = Date.now();
+    const SPAN = { terrain: [0, 0.10], sand: [0.10, 0.12], osm: [0.38, 0.72], landmarks: [0.72, 0.82], assemble: [0.82, 0.82], done: [1, 1] };
+    const progress = (phase, done, total, msg, frac, hi) => {
+      if (frac == null) { const sp = SPAN[phase]; frac = sp ? sp[0] + (sp[1] - sp[0]) * (total ? Math.min(1, done / total) : 0) : lastFrac; if (sp) hi = sp[1]; }
+      frac = Math.max(lastFrac, Math.min(1, frac)); lastFrac = frac; lastHi = Math.max(frac, hi != null ? hi : lastHi); lastPhase = phase; lastAt = Date.now();
+      if (o.onProgress) try { o.onProgress({ phase, done, total, msg, frac }); } catch (e) { /* UI errors must not stop us */ }
+    };
+    // while a slow map server keeps us waiting, ease the bar on towards the end of the current step (never past it), so a
+    // long Overpass answer does not look like a hang. Only with a progress listener; stopped in the finally below.
+    const creep = o.onProgress && o.progressCreep !== false ? setInterval(() => {
+      if (Date.now() - lastAt < 1500 || lastHi - lastFrac < 0.002) return;
+      const f = lastFrac + (lastHi - lastFrac) * 0.06, at = lastAt;
+      progress(lastPhase, null, null, null, f); lastAt = at;
+    }, 750) : null;
+    if (creep && creep.unref) creep.unref();
+    try {
     let hfn = o.heightFn, demInfo = null, dem = null;
     if (!hfn) { dem = createDem({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, sources: o.demSources, concurrency: o.demConcurrency }); hfn = dem.h; }
     const demProgress = (d, t) => { progress('terrain', d, t); if (o.onDemProgress) o.onDemProgress(d, t); };
@@ -2959,28 +3009,41 @@
     const landCover = !o.landCover && dem && o.useLandCover !== false ? createLandCover({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, maxFailures: 30 }) : null;
     let lmData = o.landmarks ? (Array.isArray(o.landmarks) ? { elements: o.landmarks, supplied: true } : Object.assign({ supplied: true }, o.landmarks)) : null;
     if (planning || o.duneRecce !== false) {
-      progress('sand', 0, 1, 'sand and dune areas');
-      o.sandIndex = await fetchSand(stage, o, log);
+      progress('sand', 0, 1, 'sand and dune areas (OpenStreetMap)');
+      // optional data: one round of mirrors, then carry on without it (height reversals still find the dunes)
+      o.sandIndex = await fetchSand(stage, Object.assign({}, o, { overpassRounds: 1 }), log);
+      progress('sand', 1, 1, o.sandIndex.count ? o.sandIndex.count + ' sand / dune area(s)' : 'no mapped sand areas');
+      await yieldUI();
     }
 
     // one full pass: plan the off-piste line (with the obstacles known so far), sample, analyse, assemble
-    async function pass(obstacles, osm, osmInfo, obstInfo, lmData) {
+    // R: this pass's share of the bar [from, to]; final: the last pass, shown as phase "assemble" with its step as the message
+    async function pass(obstacles, osm, osmInfo, obstInfo, lmData, R, final) {
+      const step = (k0, k1, phase, label) => (d, t, msg) => progress(final ? 'assemble' : phase, d, t, final ? label + (t > 1 ? ' ' + d + ' / ' + t : '') : (msg != null ? msg : label), R[0] + (R[1] - R[0]) * (k0 + (k1 - k0) * (t ? Math.min(1, d / t) : 0)), R[0] + (R[1] - R[0]) * k1);
+      const pPlan = step(0, 0.35, 'plan', 'planning the line'), pDem = step(0.35, 0.6, 'terrain', 'route terrain'), pAn = step(0.6, 0.65, 'analyse', 'reading the terrain'), pCov = step(0.65, 0.8, 'landcover', 'land cover'), pAn2 = step(0.8, 1, 'analyse', 'writing the boxes');
       let st = stage, plan = null;
       if (planning) {
+        pPlan(0, 1, 'planning the off-piste line');
+        await yieldUI();
         // 0.5.3: the planner avoids ESA WorldCover tree cover / water as well as the OSM obstacles
         let coverAt = typeof o.landCover === 'function' ? o.landCover : null;
-        if (!coverAt && landCover) { if (!landCover._corridor) { await landCover.load(corridorSamplePoints(stage, o)); landCover._corridor = true; } if (landCover.loaded) coverAt = landCover.at; }
+        if (!coverAt && landCover) { if (!landCover._corridor) { await landCover.load(corridorSamplePoints(stage, o), (d, t) => pPlan(0.8 * d, t, 'land cover for the off-piste corridors' + (t > 1 ? ' ' + d + ' / ' + t : ''))); landCover._corridor = true; } if (landCover.loaded) coverAt = landCover.at; }
+        pPlan(0.85, 1, o.sandIndex && o.sandIndex.count ? 'checking legs for dune fields, planning the line' : 'planning the off-piste line'); await yieldUI();
         plan = planOffPiste(stage, hfn, obstacles || [], Object.assign({}, o, { planZeroIsSea: zeroIsSea, coverAt }));
         st = plan.stage;
+        const dn = plan.stats.filter(x => x.recce).length;
+        pPlan(1, 1, dn ? 'recce line on ' + dn + ' leg(s) (dunes / rippled ground)' : 'line planned');
+        await yieldUI();
         log('planner: ' + plan.stats.map(x => x.from + '>' + x.to + ' ' + (x.recce ? 'recce' : (x.vertices + ' bends')) + ', longest ' + x.longestStraightM + ' m').join('; '));
       }
       const S = resampleRoute(st, o.step);
       const side = S.map(s => [dest([s.lat, s.lon], s.hdg - 90, o.sideOffset), dest([s.lat, s.lon], s.hdg + 90, o.sideOffset)]);
       if (dem) {
-        await dem.load(S.map(s => [s.lat, s.lon]).concat(side.flat()), demProgress);
+        await dem.load(S.map(s => [s.lat, s.lon]).concat(side.flat()), (d, t) => { pDem(d, t); if (o.onDemProgress) o.onDemProgress(d, t); });
         const prim = dem.sources[0];
         demInfo = { name: Object.keys(dem.used).join('+') || 'none', primary: prim.name, url: prim.url, zoom: prim.zoom, tiles: dem.used, failures: dem.failures, attribution: dem.sources.filter(s => dem.used[s.name]).map(s => s.attribution).join('; ') };
       }
+      pAn(0, 1); await yieldUI();
       const h = S.map(s => hfn(s.lat, s.lon)), hl = side.map(p => hfn(p[0][0], p[0][1])), hr = side.map(p => hfn(p[1][0], p[1][1]));
       const anchorsZ = (() => { const z = []; let d = null; for (const w of st.waypoints) { const si = sampleAtKm(S, typeof w.km === 'number' ? w.km : 0); if (w.type === 'DZ') d = si; else if (w.type === 'FZ' && d !== null) { z.push([d, si]); d = null; } } return z; })();
       const isZone = i => anchorsZ.some(([a, b]) => i >= a && i <= b);
@@ -2998,7 +3061,8 @@
       const fLm = lms.length ? landmarkFeatures(S, lms, o).filter(f => !(f.kind === 'landmark_pass' && isZone(f.i) && /building|tree|palm/.test(f.what))) : [];
       let cov = null;
       if (o.landCover) cov = coverAlong(S, o.landCover, o);
-      else if (landCover) { await landCover.load(S.filter((_, i) => i % 2 === 0).map(s => [s.lat, s.lon]), (d, t) => progress('landcover', d, t)); if (landCover.loaded) cov = coverAlong(S, landCover.at, o); }
+      else if (landCover) { await landCover.load(S.filter((_, i) => i % 2 === 0).map(s => [s.lat, s.lon]), (d, t) => pCov(d, t)); if (landCover.loaded) cov = coverAlong(S, landCover.at, o); }
+      pAn2(0, 1); await yieldUI();
       const fCov = cov ? coverFeatures(S, cov, o) : [];
       const tcls = fOsm.trackClass || S.map(s => s.mode === 'direct' ? 'offpiste' : null);
       const fRock = rockFeatures(S, fProf.H, hl, hr, cov, tcls, o);
@@ -3017,6 +3081,7 @@
       for (const b of res.boxes) { const m = b.notes.match(/, GENERAL CAP (\d{3})/); if (m && new RegExp('(^|[^L] )CAP ' + m[1]).test(b.notes.replace(m[0], ''))) b.notes = b.notes.replace(m[0], ''); }
       for (const b of res.boxes) if (/FOLLOW WADI|IN WADI BED|FOLLOW VALLEY [A-Z]/.test(b.notes.replace(/FOLLOW VALLEY FLOOR/g, '')))
         b.notes = b.notes.replace(/,? ?(FOLLOW VALLEY FLOOR|FOLLOW DUNE CORRIDOR|SKIRT HIGH GROUND ON [LR]|FOLLOW FOOT OF ESCARPMENT ON [LR])( \d+\.\d KM)?(, GENERAL CAP \d{3})?/, '').replace(/^[,. ]+/, '');
+      pAn2(1, 2); await yieldUI();
       const enr = enrichBoxes(res.boxes, S, { landmarks: lms, cover: cov, terrain: fProf.terrainClass }, o);
       const offB = res.boxes.filter(b => b.offPiste && !b.waypoint), bare = b => b.symbols.every(x => x === 'cap' || x === 'continue');
       res.stats.enrich = Object.assign(enr, { landmarkObjects: lms.length, landmarkPass: fLm.filter(f => f.kind === 'landmark_pass').length, powerLineCrossings: fLm.filter(f => f.kind === 'landmark_cross').length,
@@ -3050,7 +3115,7 @@
     // 1. terrain first: shown at once (onPartial) while OpenStreetMap loads
     let obst = o.obstacles || (o.osm ? o.osm : null), obstInfo = null;
     if (willFetch && o.onPartial) {
-      const first = await pass(obst ? obst.elements : [], null, null, null, lmData);
+      const first = await pass(obst ? obst.elements : [], null, null, null, lmData, [0.12, 0.38], false);
       try { o.onPartial(first); } catch (e) { /* ignore UI errors */ }
     }
     // 2. OpenStreetMap: obstacles for the planner + the route's own features
@@ -3070,11 +3135,13 @@
       progress('landmarks', 0, 1, 'landmarks along the route');
       try { lmData = await fetchLandmarks(stage, o, log, (d, t) => progress('landmarks', d, t)); } catch (e) { log('landmarks failed: ' + e.message); lmData = { elements: [], failed: -1 }; }
     }
-    progress('assemble', 0, 1);
-    const rb = await pass(obst ? obst.elements : [], osm, osmInfo, obstInfo, lmData);
+    progress('assemble', 0, 1, 'building the boxes');
+    await yieldUI();
+    const rb = await pass(obst ? obst.elements : [], osm, osmInfo, obstInfo, lmData, willFetch ? [0.82, 1] : [0.12, 1], willFetch);
     if (osmInfo && osmInfo.failed) rb.partial = 'terrain-only';
     progress('done', 1, 1);
     return rb;
+    } finally { if (creep) clearInterval(creep); }
   }
 
   // ------------------------------------------------------------------ merging (regeneration, recce, editor)
@@ -3223,5 +3290,5 @@
   }
 
   return { VERSION, GENERATOR, planLegGaps, checkLine, lineHazards, coverObstacle, offPieces, offRuns, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
-    geo: { dist, bearing, dest, rel, simplify, projector }, makeSandIndex, sandQuery, fetchSand, heightReversalMask, legInDuneField, sampleLegLine, planLegRecce, capLabel, suggestWpType };
+    geo: { dist, bearing, dest, rel, simplify, projector }, makeSandIndex, latLonInRing, sandQuery, fetchSand, heightReversalMask, legInDuneField, sampleLegLine, planLegRecce, capLabel, suggestWpType };
 });

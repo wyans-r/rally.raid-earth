@@ -608,7 +608,7 @@ angular.module('beamng.apps')
           say(online ? 'Generating with the map data (terrain, OpenStreetMap)... the game may stutter for a few seconds.' : 'Generating offline (route + the heights you drove)...')
           var stage = PC.exportStage(D.stage)
           var res = await PC.generateRoadbook(RB, stage, { online: online, drive: D.drive, old: keep ? D.rb : null, density: +scope.ui.density,
-            onProgress: function (e) { var base = { terrain: 0, osm: 0.35, landmarks: 0.8, landcover: 0.9, assemble: 0.95, done: 1 }[e.phase] || 0; apply(function () { scope.ui.prog = Math.min(1, base + (e.total ? 0.3 * e.done / e.total : 0)) }) } })
+            onProgress: function (e) { var base = { terrain: 0, osm: 0.35, landmarks: 0.8, landcover: 0.9, assemble: 0.95, done: 1 }[e.phase] || 0; apply(function () { scope.ui.prog = typeof e.frac === 'number' ? Math.max(scope.ui.prog || 0, e.frac) : Math.min(1, base + (e.total ? 0.3 * e.done / e.total : 0)) }) } })
           snapshot(); D.rb = res.rb; D.fits = 'ok'; scope.ui.boxId = null
           changed()
           var n = PC.liveBoxes(D.rb).length

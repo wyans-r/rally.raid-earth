@@ -18,9 +18,13 @@ All notable changes to rally.raid Earth: the BeamNG mod (released on [GitHub Rel
   - Technical: roadbook-gen 0.6.0 (`planLegRecce`, OSM `natural=sand`/`dune` plus the height-reversal test). Preview only until this is put live; the Planner copy updates with the next mod release.
   - A dune field is OpenStreetMap sand or dune polygons, or the same up-and-down height test used for DNX notes. A single isolated ridge is still crossed at its saddle.
 
+### Fixed
+- **The roadbook progress bar no longer empties or jumps back while it works, and the page no longer freezes in dune fields.** The bar now only moves forward, names each step (Dune fields, Planning the line, Reading the terrain, OpenStreetMap, Landmarks, Building boxes) and keeps creeping while a map server is slow. Dune stages are much faster: the Erg er Raoui stage took about 24 s of computer time with the page frozen for up to 10 s; it now takes about 2 s. Roadbooks come out exactly the same.
+  - Technical: roadbook-gen 0.6.1. Progress events carry `frac` (0..1, monotonic); `yieldUI()` between the long steps; the sand index prepares each polygon once (latitude-banded edges) instead of copying the whole ring on every point test; landmark grid limited to the cells the boxes use; landmark polygons checked against their bounding box first; the optional sand query gives up after one round of mirrors.
+
 ### Changed (mod)
 - The in-game Planner app's roadbook generator now matches the website's (0.6.0): it goes round forest and woods, ESA WorldCover tree cover and open water, treats heavy vegetation as practically impassable, and in dune fields it writes a recce line with caution notes instead of weaving. This reaches players with the next mod release.
-  - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` = `stage-builder/roadbook-gen.js` 0.6.0.
+  - Technical: `mod/ui/modules/apps/RallyRaidPlanner/roadbook-gen.js` = `stage-builder/roadbook-gen.js` 0.6.1.
 
 ## Website update - 2026-11-19: Auto routing, switchbacks, vegetation
 
