@@ -94,8 +94,9 @@ field, so it is deterministic per stage). The path is simplified to drivable pie
   built: (a) the minimum-slope line (A* over the run's box, cost = length x (1 + 12 x slope^2) + climbing, no noise) and
   (b) the approximate valley centre (midway between the walls, `valleyWallM` 10 m higher, up to `valleyMaxHalfM` 600 m
   out, on a cross-section every 60 m); both smoothed (~400 m running mean, simplified to 30 m, no piece under 150 m).
-  The shorter one is driven if its along-line grade keeps within `planMaxUp` / `planMaxDown` (22 % / 35 %) and it
-  crosses nothing blocked; else the other; if neither, the planner's own line stays (`stats[].valley[]` lists both
+  Since 0.5.2 (19 Nov 2026) the valley centre is driven unless it is untenable (along-line grade over `planMaxUp` /
+  `planMaxDown`, 22 % / 35 %, or crossing anything blocked); then the minimum-slope line if that one is tenable; if
+  neither, the planner's own line stays (0.5.1 took the shorter of the two) (`stats[].valley[]` lists both
   lengths, grades and the pick; `planValleyCentre: false` turns it off).
 - All roadbook distances (`km`) are along this line. The stage file is not changed: the in-game GPS keeps the waypoint
   CAPs and the stage's km. Optionally `RoadbookGen.applyPlannedLine(stage, roadbook)` (or `RB_WRITE_STAGE=<file>
@@ -222,12 +223,12 @@ own code (v1.10.1-beta330), written up in `BEAMNG_EARTH_DATA_1118.txt` (box) / `
 
 ### Spacing, junction complexes and wording (0.3)
 
-- **Minimum spacing**: no two boxes closer than `minSpacingM` (250 m since 0.5.0; was 150), or `fastSpacingM` (300 m;
-  was 200) when both are on a tarmac / gravel road (RO / PP). Real roadbooks: neither the FIM / W2RC nor the Dakar
+- **Minimum spacing**: no two boxes closer than `minSpacingM` (300 m everywhere since 0.5.2; 0.5.0 had 250 m, 0.4 150 m),
+  and `fastSpacingM` (300 m) on tarmac / gravel roads (RO / PP). Real roadbooks: neither the FIM / W2RC nor the Dakar
   rules set a minimum box distance, but the Dakar roadbook lexicon treats a partial under 300 m as a "short distance"
   and combines elements that close into one "extended note" with the distance in it; sample rally rolls run about one
   box per 0.6-1 km with only a few under 300 m. Boxes still under `shortFlagM` (300 m) from the one before get
-  `short: true`. Plotted NOTE points now ride on a box within `minSpacingM` too (0.4.0 used 70 m). Two boxes closer than that become one: the things that matter (never-prune items:
+  `short: true`. Plotted NOTE points ride on a box within `minSpacingM` too (0.4.0 used 70 m). Gaps under 300 m are left only next to waypoints (two waypoints, or a must-keep note 100-300 m before one), and those are flagged `short`. Two boxes closer than that become one: the things that matter (never-prune items:
   real-choice junctions, crossings, gates, leaving / joining a track, planned CAP turns; anything with danger) move into
   the first box of the pair (into the waypoint's box when one is a waypoint), so a run of junctions and crossings is one
   box describing the way through it; the rest of the weaker box is dropped. Exceptions: two waypoints keep their own

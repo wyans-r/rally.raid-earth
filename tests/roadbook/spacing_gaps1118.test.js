@@ -73,16 +73,16 @@ test('minimum spacing: no two boxes closer than minSpacingM unless a waypoint is
     waypoints: [{ id: 'a', n: 0, type: 'DSS', lat: P0[0], lon: P0[1], km: 0 }, { id: 'b', n: 1, type: 'ASS', lat: b[0], lon: b[1] }],
     route: { legs: [{ from: 'a', to: 'b', mode: 'direct', points: pts }] } };
   const rb = await RB.generate(st, { heightFn: (la, lo) => 100 + 30 * Math.sin(la * 3000) * Math.cos(lo * 2000), useOsm: false, planOffPiste: false, density: 40 });
-  assert.strictEqual(RB.DEFAULTS.minSpacingM, 250);
+  assert.strictEqual(RB.DEFAULTS.minSpacingM, 300);
   for (let i = 1; i < rb.boxes.length; i++) {
     const A = rb.boxes[i - 1], B = rb.boxes[i], gap = Math.round((B.km - A.km) * 1000);
     if (A.waypoint || B.waypoint) continue;
-    assert.ok(gap >= 250 - 15, 'gap ' + gap + ' m between ' + A.notes + ' / ' + B.notes);
+    assert.ok(gap >= 300 - 15, 'gap ' + gap + ' m between ' + A.notes + ' / ' + B.notes);
   }
   rb.boxes.forEach(x => { if (x.partial != null && x.partial < 0.3 && rb.boxes.indexOf(x) > 0) assert.ok(x.short, 'short flag at ' + x.km); });
 });
 
-test('0.5.1 valley runs: min-slope and centre candidates, the shorter safe one is driven, FOLLOW VALLEY FLOOR said once', async () => {
+test('0.5.2 valley runs: the valley centre unless untenable, then the min-slope line, FOLLOW VALLEY FLOOR said once', async () => {
   // a 6 km valley winding round a sine (amplitude 400 m, wavelength 3 km), walls rising 15 % either side
   const a = P0, b = dest(P0, 90, 6000);
   const curve = x => 400 * Math.sin(2 * Math.PI * x / 3000);
@@ -95,15 +95,13 @@ test('0.5.1 valley runs: min-slope and centre candidates, the shorter safe one i
   assert.ok(runs.length >= 1, 'a valley run: ' + JSON.stringify(plan.stats[0]));
   for (const r of runs) {
     assert.ok(['min-slope', 'centre', 'planner line'].includes(r.chosen));
-    if (r.chosen === 'min-slope' || r.chosen === 'centre') {
-      const other = r.chosen === 'min-slope' ? 'Centre' : 'MinSlope';
-      const mine = r.chosen === 'min-slope' ? r.lenMinSlopeM : r.lenCentreM, theirs = r['len' + other + 'M'];
-      assert.ok(mine <= theirs || /shorter but/.test(r.why), JSON.stringify(r));
-      assert.ok((r.chosen === 'min-slope' ? r.maxGradeMinSlopePct : r.maxGradeCentrePct) <= 22, JSON.stringify(r));
-    }
+    // 0.5.2: the centre whenever it is tenable; the min-slope line only when the centre is not
+    if (r.maxGradeCentrePct <= 22 && !/blocked/.test(r.why)) assert.strictEqual(r.chosen, 'centre', JSON.stringify(r));
+    if (r.chosen === 'min-slope') assert.match(r.why, /centre untenable/);
+    if (r.chosen !== 'planner line') assert.ok((r.chosen === 'min-slope' ? r.maxGradeMinSlopePct : r.maxGradeCentrePct) <= 22, JSON.stringify(r));
   }
   const rb = await RB.generate(st, { heightFn: hf, useOsm: false, density: 10 });
   const fv = rb.boxes.filter(x => /FOLLOW VALLEY FLOOR/.test(x.notes));
   assert.ok(fv.length >= 1 && fv.length <= 3, rb.boxes.map(x => x.notes).join(' | '));
-  for (let i = 1; i < rb.boxes.length; i++) if (!rb.boxes[i].waypoint && !rb.boxes[i - 1].waypoint) assert.ok(rb.boxes[i].partial >= 0.235, 'gap ' + rb.boxes[i].partial);
+  for (let i = 1; i < rb.boxes.length; i++) if (!rb.boxes[i].waypoint && !rb.boxes[i - 1].waypoint) assert.ok(rb.boxes[i].partial >= 0.285, 'gap ' + rb.boxes[i].partial);
 });

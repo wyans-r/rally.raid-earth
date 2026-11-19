@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.5.1';
+  const VERSION = '0.5.2';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -660,10 +660,10 @@
                            // danger >= 2, gates, leaving / joining tracks are always kept; the rest is ranked and pruned
     maxGapKm: null,        // longest stretch without a box before a filler CAP / FOLLOW box (null: 40 / density km, min 1)
     mergeM: 70,            // features closer than this share a box
-    // 0.5.0 (Wyans 18 Nov: "notes jammed on top of each other"): 250 m / 300 m. The Dakar roadbook lexicon flags any
+    // 0.5.0 (Wyans 18 Nov: "notes jammed on top of each other"): 250 m / 300 m; 0.5.2 (19 Nov): 300 m everywhere. The Dakar roadbook lexicon flags any
     // partial under 300 m as a "short distance" (green box, arrow on the line before); several elements a short way
     // apart are drawn in ONE diagram with the distance between them ("extended note"). So: closer notes merge.
-    minSpacingM: 250,      // no two boxes closer than this (fastSpacingM on fast roads); closer ones merge (AT n M ...) or the weaker goes
+    minSpacingM: 300,      // no two boxes closer than this (fastSpacingM on fast roads); closer ones merge (AT n M ...) or the weaker goes
     fastSpacingM: 300,     // minimum spacing between boxes on tarmac / gravel roads (RO / PP)
     wpShortM: 100,         // a must-keep note this close before a waypoint merges into the waypoint's box (else it keeps its own, flagged short)
     shortFlagM: 300,       // partials under this are flagged `short` (the Dakar "short distance" mark)
@@ -2366,12 +2366,13 @@
         const cen = smoothLine(C2, [run0[0], run0[run0.length - 1]]);
         const lenCen = polyLen(cen), gMin = grades(run), gCen = grades(cen), gOld = grades(run0);
         const safe = g => g.ok && g.up <= o.planMaxUp && g.dn <= o.planMaxDown;
-        // the shorter of the two, if it keeps within the limits; else the other; neither: the planner's own line
-        const cands = [{ k: 'min-slope', Q: run, len: lenMin, g: gMin }, { k: 'centre', Q: cen, len: lenCen, g: gCen }].sort((x, y) => x.len - y.len);
-        let pick = cands.find(x => safe(x.g)), why;
-        if (pick === cands[0]) why = 'shorter, within limits';
-        else if (pick) why = cands[0].k + ' shorter but ' + (!cands[0].g.ok ? 'blocked' : 'grade ' + Math.round(cands[0].g.max * 100) + '%');
-        else { pick = { k: 'planner line', Q: run0 }; why = 'both over the limits'; }
+        // 0.5.2 (Wyans, 19 Nov): the valley centre unless it is untenable (over the grade limits or blocked); then the
+        // minimum-slope line; neither: the planner's own line. Length does not decide
+        const bad = g => !g.ok ? 'blocked' : 'grade ' + Math.round(g.max * 100) + '%';
+        let pick, why;
+        if (safe(gCen)) { pick = { k: 'centre', Q: cen }; why = 'centre within limits'; }
+        else if (safe(gMin)) { pick = { k: 'min-slope', Q: run }; why = 'centre untenable (' + bad(gCen) + ')'; }
+        else { pick = { k: 'planner line', Q: run0 }; why = 'both untenable (centre ' + bad(gCen) + ', min-slope ' + bad(gMin) + ')'; }
         const chosen = pick.k;
         valleyRuns.push({ fromV: a0, toV: b0, plannerLineM: Math.round(lenRun), maxGradePlannerPct: Math.round(gOld.max * 100), lenMinSlopeM: Math.round(lenMin), lenCentreM: Math.round(lenCen), chosen, why, maxGradeMinSlopePct: Math.round(gMin.max * 100), maxGradeCentrePct: Math.round(gCen.max * 100), centreVertices: cen.length - 2, minSlopeVertices: run.length - 2,
           ...(o.planDebug ? { centreLine: cen.map(v => P.ll(xyOf(v[0], v[1])).map(x => +x.toFixed(6))), minSlopeLine: run.map(v => P.ll(xyOf(v[0], v[1])).map(x => +x.toFixed(6))) } : {}) });
