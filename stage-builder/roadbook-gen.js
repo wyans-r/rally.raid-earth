@@ -1878,12 +1878,12 @@
       const MAXP = acts.length >= 2 ? 2 : 3, out1 = [];
       for (const pt of keep) {
         if (pt.grp === 1 && out1.length && out1[out1.length - 1].grp === 1 && out1[out1.length - 1].joined < 3) { const l = out1[out1.length - 1]; l.txt += ', ' + pt.txt; l.joined++; continue; }
-        if (out1.length >= MAXP) continue;
+        if (out1.length >= MAXP && !/^(DNX |END DUNES)/.test(pt.txt)) continue;   // 0.6.2: the dune-field start / end is never cut
         out1.push(Object.assign({}, pt, { joined: 1 }));
       }
       for (const t of lead) notes.push(t);
       for (const pt of out1) if (!notes.includes(pt.txt)) notes.push(pt.txt);
-      if (duneAt(b.si) && s.mode === 'direct' && (!b.wp || b.wp.type !== 'ASS') && !notes.some(t => /^CAP /.test(t))) notes.unshift(capLabel(capOut, true));
+      if (duneAt(b.si) && s.mode === 'direct' && (!b.wp || b.wp.type !== 'ASS') && !notes.some(t => /(^|, )CAP \d{3}/.test(t))) notes.unshift(capLabel(capOut, true));
       if (b.wp && !b.items.length && b.wp.type !== 'ASS' && !notes.length) notes.push(capLabel(capOut, s.mode === 'direct'));
       // 0.4.0: a waypoint box whose only items are the lie of the land (rocks, a river followed) still gives its CAP first
       else if (b.wp && b.wp.type !== 'ASS' && b.items.length && b.items.every(it => /^(rocks|along_water|rocky_track)$/.test(it.f.kind)) && !notes.some(t => /^CAP /.test(t))) notes.unshift(capLabel(capOut, s.mode === 'direct'));
