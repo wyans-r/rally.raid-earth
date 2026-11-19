@@ -853,6 +853,28 @@
         if (relief < 20) continue;
         F.push({ i, kind: 'cordon', relief: Math.round(relief), grade: Math.round(convC), danger: convC >= 40 || relief >= 40 ? 2 : 1 });
       }
+      // 0.6.2: the drive line climbs a cordon at a saddle, so its grade over 80 m stays gentle. Wide check: the highest
+      // point within 150 m that stands 20 m or more above the lowest ground within 400 m on BOTH sides (one per 1.5 km)
+      const kp = Math.max(1, Math.round(150 / step)), kw = Math.max(1, Math.round(400 / step)), wide = [];
+      for (let i = kw; i < N - kw; i++) {
+        if (!inDunes(i)) continue;
+        let top = true;
+        for (let j = i - kp; j <= i + kp && top; j++) if (j !== i && (H[j] > H[i] || (H[j] === H[i] && j < i))) top = false;
+        if (!top) continue;
+        let lo1 = Infinity, lo2 = Infinity;
+        for (let j = i - kw; j < i; j++) lo1 = Math.min(lo1, H[j]);
+        for (let j = i + 1; j <= i + kw; j++) lo2 = Math.min(lo2, H[j]);
+        const relief = Math.min(H[i] - lo1, H[i] - lo2);
+        if (relief >= 20) wide.push({ i, relief });
+      }
+      wide.sort((x, y) => y.relief - x.relief);
+      const sepW = Math.round(1500 / step), cord = F.filter(f => f.kind === 'cordon').map(f => f.i);
+      for (const w of wide) {
+        if (cord.some(c => Math.abs(c - w.i) < sepW)) continue;
+        cord.push(w.i);
+        const before = (H[w.i] - H[w.i - kp]) / (kp * step) * 100, after = (H[w.i + kp] - H[w.i]) / (kp * step) * 100;
+        F.push({ i: w.i, kind: 'cordon', relief: Math.round(w.relief), grade: Math.round(Math.max(0, before - after)), danger: w.relief >= 40 ? 2 : 1 });
+      }
     }
 
     // crests and dips: change of grade across the point
@@ -1866,7 +1888,13 @@
       // 0.4.0: a waypoint box whose only items are the lie of the land (rocks, a river followed) still gives its CAP first
       else if (b.wp && b.wp.type !== 'ASS' && b.items.length && b.items.every(it => /^(rocks|along_water|rocky_track)$/.test(it.f.kind)) && !notes.some(t => /^CAP /.test(t))) notes.unshift(capLabel(capOut, s.mode === 'direct'));
       if (b.filler) {
-        if (b.filler === 'offpiste') { const t = terr[b.si]; notes.push(capLabel(capOut, true) + (t && t !== 'dunes' ? ', ' + ({ flat: 'FLAT, FAST', rolling: 'ROLLING', broken: 'BROKEN, SLOW' }[t]) : t === 'dunes' ? ', IN DUNES' : '')); symbols.push('cap'); }
+        if (b.filler === 'offpiste') {
+          const t = terr[b.si], tail = t && t !== 'dunes' ? ', ' + ({ flat: 'FLAT, FAST', rolling: 'ROLLING', broken: 'BROKEN, SLOW' }[t]) : t === 'dunes' ? ', IN DUNES' : '';
+          // 0.6.2: the dune rule above may already have put "CAP xxx C" first: add the terrain to it, not a second CAP
+          const ci = notes.findIndex(x => /^CAP \d{3}( C)?$/.test(x));
+          if (ci >= 0) notes[ci] += tail; else notes.push(capLabel(capOut, true) + tail);
+          symbols.push('cap');
+        }
         else { const tc = tclass[b.si]; notes.push(tc === 'dual' || tc === 'tarmac' ? 'FRO' : tc === 'gravel' ? 'FPP' : 'FOLLOW ' + (TRACK_CODE[tc] || 'P')); symbols.push('continue'); }
       }
       const trIn = tclass[Math.max(0, b.si - 2)] || (s.mode === 'direct' ? 'offpiste' : 'track');

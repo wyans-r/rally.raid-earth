@@ -38,6 +38,7 @@ test('dune drive line goes round the big dunes; distance = the drive line; boxes
   assert.ok(rb.boxes.some(b => /END DUNES/.test(b.notes)));
   for (const b of rb.boxes.slice(0, -1)) { assert.ok(Math.abs(RB.geo.rel(b.capOut, 0)) <= 3, 'CAP out ' + b.capOut + ' at ' + b.km); if (b.offPiste) assert.strictEqual(b.capType, 'C'); }
   for (let i = 1; i < rb.boxes.length; i++) assert.ok((rb.boxes[i].km - rb.boxes[i - 1].km) * 1000 >= 300 - 1);
+  for (const b of rb.boxes) assert.ok(((b.notes || "").match(/CAP \d{3}/g) || []).length <= 1, "one CAP per box: " + b.notes);
 });
 
 test('same terrain, same line (no noise); duneDrive off gives the straight recce line', () => {
