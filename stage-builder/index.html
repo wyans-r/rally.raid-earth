@@ -525,38 +525,51 @@ function tierOfLeg(leg) {
   if (leg.tier) return leg.tier
   return leg.mode === 'road' ? 'primary' : leg.mode === 'track' ? 'mixed' : 'offpiste'
 }
+// 1.6 (Wyans 19 Nov 2026): a route is a detour when its detour length (TrackRouter.detourLen: measured at 50 m steps,
+// switchback stacks counted as the straight line through them) is over DETOUR_MAX x the straight line (short legs:
+// straight + 600 m). Auto's "~" tries (the straight line runs along nothing) also need >= 80 % on mapped ways.
+var DETOUR_MAX = 2.0
+function detourLenOf(pts) { return window.TrackRouter && window.TrackRouter.detourLen ? window.TrackRouter.detourLen(pts) : pts.reduce(function (m, q, i) { return i ? m + dist(pts[i - 1], q) : 0 }, 0) }
 function legTryTier(a, b, tier0) {
-  // "piste~" / "traces~" (Auto only): the straight line itself runs along nothing, so accept the route only if it stays
-  // on mapped ways (>= 80 %) and is short (<= 1.5x straight)
   var strict = /~$/.test(tier0), tier = tier0.replace(/~$/, '')
-  var straight = dist(a, b)
+  var straight = dist(a, b), cap = Math.max(DETOUR_MAX * straight, straight + 600)
   if (tier === 'offpiste') return Promise.resolve({ tier:tier, ok:true, leg:{ mode:'direct', points:[a, b] } })
   if (tier === 'primary') return routeRoad(a, b).then(function (pts) {
     var len = 0; for (var n = 1; n < pts.length; n++) len += dist(pts[n - 1], pts[n])
     var hop = 0; (pts.off || []).forEach(function (g) { hop += dist(pts[g[0]], pts[g[1]]) })
-    var onShare = len > 0 ? 1 - hop / len : 0
-    var detour = straight > 500 && len > straight * (strict ? 1.5 : 1.8), far = strict && onShare < 0.8
-    return { tier:tier, ok:!detour && !far, strict:strict, onShare:onShare, leg:{ mode:'road', points:pts.slice(), off:pts.off || [] }, len:len,
-      why: detour ? 'roads go ' + (len / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight' : far ? 'the nearest road is ' + (hop / 1000).toFixed(1) + ' km off the points' : '',
+    var onShare = len > 0 ? 1 - hop / len : 0, dlen = detourLenOf(pts)
+    var detour = dlen > cap, far = strict && onShare < 0.8
+    return { tier:tier, ok:!detour && !far, relaxOk:onShare >= 0.5, strict:strict, onShare:onShare, leg:{ mode:'road', points:pts.slice(), off:pts.off || [] }, len:len, dlen:dlen,
+      why: detour ? 'roads go ' + (dlen / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight' : far ? 'the nearest road is ' + (hop / 1000).toFixed(1) + ' km off the points' : '',
       msg: detour ? ['Road routing went ' + (len / 1000).toFixed(1) + ' km for ' + (straight / 1000).toFixed(1) + ' km straight (road routing never uses tracks); try Piste or Traces for this leg.', 'warn'] : null }
   }).catch(function (e) { return { tier:tier, ok:false, failed:true, why:'road routing failed (' + e.message + ')', leg:{ mode:'road', points:[a, b], failed:true }, msg:['Road routing failed (' + e.message + '): drawn straight.', 'warn'] } })
   // piste / traces / mixed (older "tracks & paths" legs): the track router with that profile
   return trackRouter().then(function (R) { return R.route(a, b, { profile: tier === 'mixed' ? undefined : tier }) }).then(function (r) {
     var leg = { mode:'track', points:r.points, cover:{ onKm:+(r.wayM / 1000).toFixed(3), straightKm:+((r.linkM + r.gapM) / 1000).toFixed(3), gaps:r.gapIdx } }
     if (r.status === 'none') leg.noTracks = true
-    var ok = strict ? r.status !== 'none' && r.onShare >= 0.8 && r.totalM <= 1.5 * straight
-      : r.status !== 'none' && r.onShare >= 0.5 && r.totalM <= Math.max(3 * straight, straight + 600)
+    var dlen = r.status === 'none' ? straight : detourLenOf(r.points)
+    var ok = r.status !== 'none' && r.onShare >= (strict ? 0.8 : 0.5) && dlen <= cap
     var km = r.totalM / 1000, on = Math.round(r.onShare * 100), what = TIER_WHAT[tier] || 'tracks and paths'
     var msg = r.status === 'none' ? ['No ' + what + ' connect here, so it is drawn straight (dotted red).', 'warn']
       : r.status === 'partial' ? [km.toFixed(1) + ' km, ' + on + '% on ' + what + '. ' + (r.gapM / 1000).toFixed(1) + ' km is drawn straight where no mapped way connects (dotted red).', 'warn']
       : [km.toFixed(1) + ' km along ' + what + (r.linkM >= 1 ? ' (' + Math.round(r.linkM) + ' m straight to reach them)' : '') + '.', 'ok']
-    return { tier:tier, ok:ok, strict:strict, leg:leg, status:r.status, onShare:r.onShare, len:r.totalM, msg:msg,
-      why: !ok ? (r.status === 'none' ? 'no ' + what + ' connect' : r.onShare < (strict ? 0.8 : 0.5) ? 'only ' + on + '% on ' + what : 'a ' + (r.totalM / 1000).toFixed(1) + ' km detour for ' + (straight / 1000).toFixed(1) + ' km') : '' }
+    return { tier:tier, ok:ok, relaxOk:r.status !== 'none' && r.onShare >= 0.5, strict:strict, leg:leg, status:r.status, onShare:r.onShare, len:r.totalM, dlen:dlen, msg:msg,
+      why: !ok ? (r.status === 'none' ? 'no ' + what + ' connect' : r.onShare < (strict ? 0.8 : 0.5) ? 'only ' + on + '% on ' + what : 'a ' + (dlen / 1000).toFixed(1) + ' km detour for ' + (straight / 1000).toFixed(1) + ' km') : '' }
   }).catch(function (e) {
     var why = /abort|timed? ?out|no answer|stalled|no complete answer/i.test(e && e.message) ? 'the map servers did not answer in time' : /HTTP|Overpass|fetch|network/i.test(e && e.message) ? 'the map servers are busy or unreachable' : (e && e.message)
     return { tier:tier, ok:false, failed:true, why:why, leg:{ mode:'track', points:[a, b], failed:true, cover:{ onKm:0, straightKm:+(straight / 1000).toFixed(3), gaps:[[0, 1]] } },
       msg:['Could not get ' + (TIER_WHAT[tier] || 'tracks') + ' from OpenStreetMap (' + why + '), so it is drawn straight. Choose the routing again in a minute to retry.', 'warn'] }
   })
+}
+// 1.6 (Wyans 19 Nov 2026): before Auto settles on a straight off-piste line it checks what the line crosses (tree
+// cover / forest, scrub, water, wetland, buildings, restricted areas, cliffs, ground over 60 %: RoadbookGen.checkLine,
+// OSM obstacles + ESA WorldCover + terrain tiles). -> Promise<{ hazards, ctx } | null> (null: could not check)
+function offCheck(a, b) {
+  return loadScriptOnce('roadbook-gen.js', function () { return !!window.RoadbookGen }).then(function () {
+    var RB = window.RoadbookGen; if (!RB.checkLine) return null
+    var fetchBytes = function (url) { return fetch(url).then(function (r) { if (r.status === 404) return null; if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer() }) }
+    return RB.checkLine([a, b], Object.assign({}, gapPlanOpts, { fetchBytes:fetchBytes, stageId:st.meta.id || 'stage' }))
+  }).catch(function (e) { console.warn('off-piste check:', e && e.message); return null })
 }
 function computeLeg(k) {
   var p = st.points[k]
@@ -584,23 +597,66 @@ function computeLeg(k) {
     status('Leg to ' + legName(k) + ': routing on ' + (TIER_WHAT[tier] || 'tracks and paths') + '...')
     return legTryTier(a, b, tier).then(function (r) { if (!still()) return; if (r.msg) status('Leg to ' + legName(k) + ': ' + r.msg[0], r.msg[1]); commit(r) })
   }
-  // Auto: what does the straight line run along? Then try that tier, and fall back down the tiers
+  // Auto: what does the straight line run along? Then try that tier, and fall back down the tiers. Off-piste comes last,
+  // and only as a straight line when that line crosses nothing impassable; otherwise the off-piste line is planned round
+  // the obstacles, and when even that cannot get clear, any network route wins (even past 2x). Never straight through a wood.
   status('Leg to ' + legName(k) + ': Auto, looking at what the line runs along...')
   return trackRouter().then(function (R) { return R.classify(a, b) }).then(function (cov) {
     return { cov:cov, order:window.TrackRouter.autoOrder(cov) }
   }, function (e) { return { cov:null, order:['primary', 'offpiste'], err:e } }).then(function (c) {
-    var tried = []
+    var tried = [], results = {}
+    var finish = function (r, more) {
+      if (!still()) return
+      var extra = Object.assign({ auto:true }, more || {})
+      if (c.cov) extra.autoCov = { primary:c.cov.primary, piste:c.cov.piste, traces:c.cov.traces }
+      if (tried.length) extra.autoTried = tried
+      var why = r.relaxed ? ' (the straight line crosses ' + extra.autoOffBlock + ', so a ' + (r.dlen / dist(a, b)).toFixed(1) + '\u00d7 route on mapped ways wins)'
+        : r.planned ? ' (the straight line crosses ' + extra.autoOffBlock + ': planned round it' + (r.stillBlocked ? ', but no clear way round was found: move a point' : '') + ')'
+        : r.strict ? ' (the straight line wanders off them, but a route along them is ' + (r.dlen / dist(a, b)).toFixed(2) + '\u00d7 the straight line and ' + Math.round(r.onShare * 100) + '% on mapped ways)'
+        : c.cov && r.tier !== 'offpiste' ? ' (' + Math.round(c.cov[r.tier] * 100) + '% of the straight line runs along ' + TIER_WHAT[r.tier] + ')'
+        : c.cov && r.tier === 'offpiste' && !tried.length ? ' (the straight line follows no mapped way for long)' : ''
+      var lead = 'Leg to ' + legName(k) + ': Auto \u2192 ' + TIER_NAMES[r.tier] + why + (tried.length ? '; tried ' + tried.join('; ') : '') + '. '
+      status(lead + (r.msg ? r.msg[0] : ''), r.stillBlocked ? 'warn' : r.msg ? r.msg[1] : 'ok')
+      commit(r, extra)
+    }
+    var offStep = function () {
+      status('Leg to ' + legName(k) + ': Auto, checking the straight line for trees, water, cliffs and steep ground...')
+      return offCheck(a, b).then(function (chk) {
+        if (!still()) return
+        if (!chk || !chk.hazards.blocked) return finish({ tier:'offpiste', ok:true, leg:{ mode:'direct', points:[a, b] } }, chk ? {} : { autoOffUnchecked:true })
+        var block = chk.hazards.text
+        tried.push('off-piste straight: crosses ' + block)
+        // 1) the off-piste line planned round it (the roadbook's planner: trees, water, cliffs, steep ground...)
+        var pl = chk.ctx.plan()
+        var planned = { tier:'offpiste', ok:true, planned:true, stillBlocked:pl.hazards.blocked, leg:{ mode:'direct', points:pl.points, planned:true } }
+        if (!pl.hazards.blocked) return finish(planned, { autoOffBlock:block })
+        tried.push('off-piste planned: still crosses ' + pl.hazards.text)
+        // 2) no clear way round: any network route on mapped ways (even over 2x); tiers not tried yet are tried now
+        var net = ['primary', 'piste', 'traces']
+        var pick = function (i) {
+          if (i >= net.length) return finish(planned, { autoOffBlock:block })   // 3) the planned line, with a warning
+          var t = net[i]
+          var have = results[t] ? Promise.resolve(results[t]) : legTryTier(a, b, t).then(function (r) { results[t] = r; return r })
+          return have.then(function (r) {
+            if (!still()) return
+            if (r.relaxOk && !r.failed) { r.relaxed = true; return finish(r, { autoOffBlock:block }) }
+            return pick(i + 1)
+          })
+        }
+        // the shortest acceptable network route first
+        net.sort(function (x, y) { var rx = results[x], ry = results[y]; return (rx && rx.relaxOk ? rx.dlen : Infinity) - (ry && ry.relaxOk ? ry.dlen : Infinity) })
+        return pick(0)
+      })
+    }
     var next = function (i) {
       var tier = c.order[i]
+      if (tier === 'offpiste') return offStep()
       return legTryTier(a, b, tier).then(function (r) {
         if (!still()) return
-        if (!r.ok && i + 1 < c.order.length) { tried.push(r.tier + ': ' + r.why); return next(i + 1) }
-        var extra = { auto:true }
-        if (c.cov) extra.autoCov = { primary:c.cov.primary, piste:c.cov.piste, traces:c.cov.traces }
-        if (tried.length) extra.autoTried = tried
-        var lead = 'Leg to ' + legName(k) + ': Auto \u2192 ' + TIER_NAMES[r.tier] + (r.strict ? ' (the straight line wanders off them, but a route along them is ' + (r.len / dist(a, b)).toFixed(2) + '\u00d7 the straight line and ' + Math.round(r.onShare * 100) + '% on mapped ways)' : c.cov && r.tier !== 'offpiste' ? ' (' + Math.round(c.cov[r.tier] * 100) + '% of the straight line runs along ' + TIER_WHAT[r.tier] + ')' : c.cov && r.tier === 'offpiste' && !tried.length ? ' (the straight line follows no mapped way for long)' : '') + (tried.length ? '; tried ' + tried.join('; ') : '') + '. '
-        status(lead + (r.msg ? r.msg[0] : ''), r.msg ? r.msg[1] : 'ok')
-        commit(r, extra)
+        results[r.tier] = r
+        if (r.ok) return finish(r)
+        tried.push(r.tier + ': ' + r.why)
+        return i + 1 < c.order.length ? next(i + 1) : offStep()
       })
     }
     return next(0)
@@ -706,7 +762,7 @@ function render() {
   scheduleAutoMeta()
 }
 var LEG_CHOICES = [
-  ['auto', 'Auto', 'The builder picks: it looks at what the straight line between the two points runs along (roads, tracks, trails) and routes on that; if that fails or makes a big detour it tries the next tier down, else off-piste. Shown as "Auto → Piste" etc.'],
+  ['auto', 'Auto', 'The builder picks: it looks at what the straight line between the two points runs along (roads, tracks, trails) and routes on that; if that fails or makes a big detour (over 2x, switchbacks not counted) it tries the next tier down, else off-piste. A straight off-piste line never goes through trees, water, cliffs or ground over 60 %: it is planned round them, or a route on mapped ways is taken instead. Shown as "Auto → Piste" etc.'],
   ['primary', 'Primary Piste (roads)', 'Routed by OSRM on roads big enough for cars (asphalt and main gravel roads). Tracks are skipped.'],
   ['piste', 'Piste (tracks)', 'Along OpenStreetMap tracks and unpaved minor roads; village streets and minor roads link them, trails only to bridge. Parts with no mapped way are drawn straight (dotted red).'],
   ['traces', 'Traces (trails, two-track)', 'Along paths, bridleways, faint two-track (tracktype grade4/5) and informal trails; tracks and minor roads only to link them. Parts with no mapped way are drawn straight (dotted red).'],
@@ -958,7 +1014,7 @@ function exportStage() {
       if (p.leg && p.leg.via === 'gpx') l.via = 'gpx'
       // 1.5: the routing tier, and whether the builder chose it (Auto) or the user did
       if (p.leg && p.leg.tier && !p.leg.via) l.tier = p.leg.tier
-      if (p.leg && p.leg.auto && !p.leg.via) { l.auto = true; if (p.leg.autoCov) l.autoCov = p.leg.autoCov; if (p.leg.autoTried) l.autoTried = p.leg.autoTried }
+      if (p.leg && p.leg.auto && !p.leg.via) { l.auto = true; if (p.leg.autoCov) l.autoCov = p.leg.autoCov; if (p.leg.autoTried) l.autoTried = p.leg.autoTried; if (p.leg.autoOffBlock) l.autoOffBlock = p.leg.autoOffBlock; if (p.leg.planned) l.planned = true }
       if (p.leg && p.leg.mode === 'track' && p.leg.cover && !p.leg.via) l.cover = p.leg.cover
       if (p.leg && (p.leg.mode === 'track' || p.leg.mode === 'road') && p.leg.off && p.leg.off.length && !p.leg.via) l.off = p.leg.off
       return l
@@ -993,7 +1049,7 @@ function legIn(l) {
   var o = { mode:l.mode, points:l.points }
   if (l.via === 'gpx') o.via = 'gpx'
   if (!l.via && /^(primary|piste|traces|offpiste)$/.test(l.tier || '')) o.tier = l.tier
-  if (!l.via && l.auto) { o.auto = true; if (l.autoCov) o.autoCov = l.autoCov; if (l.autoTried) o.autoTried = l.autoTried }
+  if (!l.via && l.auto) { o.auto = true; if (l.autoCov) o.autoCov = l.autoCov; if (l.autoTried) o.autoTried = l.autoTried; if (l.autoOffBlock) o.autoOffBlock = l.autoOffBlock; if (l.planned) o.planned = true }
   if (l.mode === 'track' && l.cover && !l.via) o.cover = l.cover
   if ((l.mode === 'track' || l.mode === 'road') && l.off && !l.via) o.off = l.off
   return o

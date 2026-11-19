@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.5.0';
+  var VERSION = '1.6.0';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -51,8 +51,14 @@
     // more than backtrackM; a stretch that fails is taken out and the leg searched again (up to roadRetries times).
     // 1.4.0: 3x (was 1.5x): mountain roads that zigzag up a slope (switchbacks) are 2-3x their straight length while
     // closing in all the way (Ourika: an unclassified road 3.15 km for 1.3 km); at 1.5x they were thrown out for off-piste
-    roadDetourMax: 3.0,
+    // 1.6.0 (Wyans 19 Nov 2026): 2x again, but measured with detourLen() (50 m steps, switchback stacks count as the
+    // straight line through them), so a road zigzagging up a slope is no longer a detour by length
+    roadDetourMax: 2.0,
     backtrackM: 250,
+    detourStepM: 50,      // 1.6.0: detourLen() measures the line at 50 m steps
+    hairpinDeg: 120,      // 1.6.0: a turn of more than this within hairpinWinM is a hairpin
+    hairpinWinM: 150,
+    hairpinLegM: 600,     // 1.6.0: hairpins at most this far apart (alternating) are one stack of switchbacks
     roadRetries: 4,
     // 1.4.0 (Wyans 19 Nov 2026, Ourika): a straight jump from the leg start onto a network the start is already on (a way
     // within linkM), or from such a network to the leg end, costs samePieceGapF x as much. Before, the start could jump to
@@ -157,6 +163,64 @@
     return { xy: function (p) { return [p[1] * kx, p[0] * ky] }, ll: function (q) { return [q[1] / ky, q[0] / kx] } };
   }
   var r6 = function (x) { return Math.round(x * 1e6) / 1e6 };
+
+  /* 1.6.0 (Wyans 19 Nov 2026): the length a detour test compares with the straight line, not the full polyline.
+   * 1. the line is measured at 50 m steps along it (detourStepM), so wiggles shorter than that count as straight;
+   * 2. a hairpin is a turn of more than 120 deg (hairpinDeg) within 150 m (hairpinWinM) of the line; two or more
+   *    hairpins in a row that alternate left / right, each within 600 m (hairpinLegM) of the last, are a stack of
+   *    switchbacks, and the stack counts as the straight line from its first hairpin to its last.
+   * A mountain track zigzagging up a slope therefore counts as about the ground it gains, not its full length; a loop or
+   * an out-and-back (turns the same way, or legs over 600 m) still counts in full. xy in metres -> { m, pts } */
+  function resampleXY(P, step) {
+    var out = [P[0]], carry = 0;
+    for (var i = 1; i < P.length; i++) {
+      var a = P[i - 1], b = P[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]), at = step - carry;
+      while (at <= L) { out.push([a[0] + (b[0] - a[0]) * at / L, a[1] + (b[1] - a[1]) * at / L]); at += step; }
+      carry = L - (at - step);
+    }
+    var z = P[P.length - 1], y = out[out.length - 1]; if (z[0] !== y[0] || z[1] !== y[1]) out.push(z);
+    return out;
+  }
+  function detourLenXY(P, o) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    if (!P || P.length < 2) return { m: 0, pts: (P || []).slice() };
+    var Q = resampleXY(P, o.detourStepM), n = Q.length, h = [];
+    for (var k = 0; k + 1 < n; k++) h.push(Math.atan2(Q[k + 1][1] - Q[k][1], Q[k + 1][0] - Q[k][0]));
+    var dturn = function (k) { var d = (h[k + 1] - h[k]) * 180 / Math.PI; while (d > 180) d -= 360; while (d < -180) d += 360; return d };
+    // hairpins: windows of up to hairpinWinM / step turns whose net turn is past hairpinDeg -> [{ s, e, sign }] (Q indexes)
+    var W = Math.max(1, Math.round(o.hairpinWinM / o.detourStepM)), ev = [];
+    for (k = 0; k + 1 < h.length; k++) {
+      var net = 0;
+      for (var w = 0; w < W && k + w + 1 < h.length; w++) {
+        net += dturn(k + w);
+        if (Math.abs(net) > o.hairpinDeg) {
+          var e = { s: k, e: k + w + 2, sign: Math.sign(net) }, last = ev[ev.length - 1];
+          if (last && e.s <= last.e && last.sign === e.sign) last.e = Math.max(last.e, e.e); else ev.push(e);
+          break;
+        }
+      }
+    }
+    // stacks: consecutive hairpins alternating, each within hairpinLegM of the last
+    var cut = [];
+    for (var a = 0; a < ev.length; a++) {
+      var b = a;
+      while (b + 1 < ev.length && ev[b + 1].sign === -ev[b].sign && (ev[b + 1].s - ev[b].e) * o.detourStepM <= o.hairpinLegM) b++;
+      if (b > a) { cut.push([ev[a].s, Math.min(n - 1, ev[b].e)]); a = b; }
+    }
+    var out = [], c = 0;
+    for (k = 0; k < n; k++) {
+      if (c < cut.length && k === cut[c][0]) { out.push(Q[k]); k = cut[c][1]; out.push(Q[k]); c++; continue; }
+      out.push(Q[k]);
+    }
+    var m = 0; for (k = 1; k < out.length; k++) m += Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]);
+    return { m: m, pts: out, stacks: cut.length };
+  }
+  /** detourLenXY() for [lat, lon] points -> metres */
+  function detourLen(pts, o) {
+    if (!pts || pts.length < 2) return 0;
+    var P = projector(pts[0][0]);
+    return detourLenXY(pts.map(P.xy), o).m;
+  }
   function wrapLon(x) { x = +x; return x >= -180 && x <= 180 ? x : ((x + 180) % 360 + 360) % 360 - 180; }
 
   // ------------------------------------------------------------------ the area to ask for
@@ -516,10 +580,12 @@
       var straight = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
       // 1.4.0: back-track = at some point the road gets farther from the leg end than it already was, by more than
       // backtrackM, or a tenth of the stretch (before: farther than where the stretch started, which missed a loop that comes back)
+      // 1.6.0: both tests on the detourLen() line (50 m steps, switchback stacks straightened)
+      var D = detourLenXY(r.pts, o);
       var best = Infinity, regress = 0;
-      r.pts.forEach(function (p) { var d = Math.hypot(B[0] - p[0], B[1] - p[1]); best = Math.min(best, d); regress = Math.max(regress, d - best); });
-      if (regress > Math.max(o.backtrackM, 0.1 * r.m)) return true;   // a long winding road may dip away a little more
-      return r.m > o.roadDetourMax * Math.max(straight, 1);
+      D.pts.forEach(function (p) { var d = Math.hypot(B[0] - p[0], B[1] - p[1]); best = Math.min(best, d); regress = Math.max(regress, d - best); });
+      if (regress > Math.max(o.backtrackM, 0.1 * D.m)) return true;   // a long winding road may dip away a little more
+      return D.m > o.roadDetourMax * Math.max(straight, 1);
     });
   }
 
@@ -580,8 +646,8 @@
     var tiers = ['primary', 'piste', 'traces'].sort(function (x, y) { return cov[y] - cov[x] });
     var first = cov[tiers[0]] >= o.autoMin || (cov.any >= o.autoMin && cov[tiers[0]] > 0) ? tiers[0] : 'offpiste';
     // nothing runs along the line itself: still try roads, Piste, then Traces, but builders accept those only when the
-    // route stays on mapped ways (>= 80 %) and is short (<= 1.5x the straight line); "~" marks that stricter test
-    if (first === 'offpiste') return ['primary~', 'piste~', 'traces~', 'offpiste'];
+    // route stays on mapped ways (>= 80 %) and is short (detourLen <= 2x the straight line); "~" marks that stricter test
+    if (first === 'offpiste') return ['primary~', 'piste~', 'traces~', 'offpiste'];   // 1.6.0: the short test is 2x detourLen()
     // fall back down the tiers (Primary Piste -> Piste -> Traces), skipping tiers the line does not touch at all; off-piste last
     var down = { primary: ['piste', 'traces'], piste: ['traces'], traces: ['piste'] }[first].filter(function (t) { return cov[t] > 0.05 });
     return [first].concat(down, ['offpiste']);
@@ -690,6 +756,6 @@
     };
   }
 
-  return { VERSION: VERSION, viaRoadbookGen: viaRoadbookGen, DEFAULTS: DEFAULTS, wayCost: wayCost, tierOf: tierOf, classifyLine: classifyLine, autoOrder: autoOrder, overpassQuery: overpassQuery, legBbox: legBbox, queryBoxes: queryBoxes,
+  return { VERSION: VERSION, viaRoadbookGen: viaRoadbookGen, DEFAULTS: DEFAULTS, wayCost: wayCost, tierOf: tierOf, classifyLine: classifyLine, autoOrder: autoOrder, detourLen: detourLen, detourLenXY: detourLenXY, overpassQuery: overpassQuery, legBbox: legBbox, queryBoxes: queryBoxes,
     buildGraph: buildGraph, findPath: findPath, wayClass: wayClass, badRoadRuns: badRoadRuns, createRouter: createRouter, dist: dist, wrapLon: wrapLon };
 });

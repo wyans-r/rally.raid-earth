@@ -20,7 +20,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSION = '0.5.2';
+  const VERSION = '0.5.3';
   const GENERATOR = 'rallyraid-roadbook-gen ' + VERSION;
 
   // ------------------------------------------------------------------ geometry (points are [lat, lon])
@@ -715,6 +715,10 @@
     planOffPiste: true, planCell: 30, planWidthFrac: 0.18, planMinHalfWidth: 500, planMaxHalfWidth: 2500, planMinLegM: 400, planMinGapM: 150, planFollow: true, followMinM: 300, followRiseM: 8, followMaxTurn: 50, planValleyCentre: true, valleyWallM: 10, valleyMaxHalfM: 600, valleySmoothM: 30, followDuneRoughM: 2,
     planNoise: 0.7, planNoiseCell: 450, planSlopeCost: 40, planCliff: 0.6, planClimbCost: 6, planDescentCost: 1.5,
     planMaxUp: 0.22, planMaxDown: 0.35, planFenceCost: 600, planSimplifyM: 45, planZeroIsSea: false, planMinSegM: 250,
+    // 0.5.3 (Wyans 19 Nov 2026): heavy vegetation is avoided at all costs: forest / wood (OSM) and ESA WorldCover tree
+    // cover cost planTreeCost x a cell (was 6x: effectively impassable, yet a waypoint inside a wood can still get out),
+    // scrub planScrubCost x (was 2.5x). lineHazards() says what a straight line crosses (hazardMinM of a kind counts).
+    planTreeCost: 400, planScrubCost: 40, planWetCost: 8, hazardStepM: 20, hazardMinM: 60, hazardEndM: 60,
     planMaxSegM: 1800, planMaxSegFlatM: 3000, planFlatSlope: 0.02, planJitterMinM: 50, planJitterMaxM: 140, planSeed: 0,
     planVertexShare: 0.6, planKeepTurn: 35
   };
@@ -1962,6 +1966,8 @@
       return (v(i, j) * (1 - tx) + v(i + 1, j) * tx) * (1 - ty) + (v(i, j + 1) * (1 - tx) + v(i + 1, j + 1) * tx) * ty; };
   }
   const OBST = { 1: 'buildings', 2: 'trees', 3: 'water', 4: 'wetland', 5: 'restricted area', 6: 'fence', 7: 'cliff', 8: 'scrub', 9: 'sea' };
+  /** 0.5.3: ESA WorldCover class -> OBST kind (10 tree cover, 95 mangroves -> trees; 80 open water; 90 wetland) */
+  function coverObstacle(raw) { return raw === 10 || raw === 95 ? 2 : raw === 80 ? 3 : raw === 90 ? 4 : 0; }
   function obstacleKind(t) {
     if (!t) return 0;
     if (t.building) return 1;
@@ -2143,6 +2149,11 @@
         }
       }
     }
+    // 0.5.3: ESA WorldCover where OSM maps nothing: tree cover / mangroves -> trees, open water -> water, wetland
+    if (o.coverAt) for (let i = i0; i <= i1; i++) for (let j = -J; j <= J; j++) {
+      const k = idx(i, j); if (OB[k] && OB[k] !== 9) continue;
+      const ll = P.ll(xyOf(i, j)), kind = coverObstacle(o.coverAt(ll[0], ll[1])); if (kind) OB[k] = kind;
+    }
     // per-cell cost multiplier
     const nz = noise2(seedStr, o.planNoiseCell), nz2 = noise2(seedStr + 'b', o.planNoiseCell / 3);
     const CM = new Float32Array(NC), SL = new Float32Array(NC);
@@ -2155,7 +2166,7 @@
       if (s > o.planCliff) m = Infinity;
       const ob = OB[k];
       if (ob === 1 || ob === 3 || ob === 5 || ob === 7) m = Infinity;
-      else if (ob === 2) m *= 6; else if (ob === 4) m *= 8; else if (ob === 8) m *= 2.5; else if (ob === 9) m *= 3;
+      else if (ob === 2) m *= o.planTreeCost; else if (ob === 4) m *= o.planWetCost; else if (ob === 8) m *= o.planScrubCost; else if (ob === 9) m *= 3;
       CM[k] = m;
     }
     // the endpoints are always open
@@ -2446,6 +2457,87 @@
     if (legs.length) st.lengthKm = +km.toFixed(3);
     return { stage: st, stats };
   }
+  /*
+   * 0.5.3 (Wyans 19 Nov 2026): what a straight off-piste line crosses that no crew would drive through: tree cover and
+   * forest, scrub, open water and wetland, buildings, restricted areas (OSM obstacles and ESA WorldCover), a mapped
+   * cliff, and ground steeper than planCliff (60 %). The line is sampled every hazardStepM (20 m); the first and last
+   * hazardEndM (60 m) are left out (a waypoint may stand in a wood or a village); a kind counts once it adds up to
+   * hazardMinM (60 m: the planner's 30 m cells may clip an edge), a cliff when the line crosses it.
+   * ctx { hfn, coverAt, obstacles } -> { blocked, m: { trees: 420, ... }, text: 'trees 420 m, ...', at: [lat, lon] }
+   */
+  const HAZARD_NAME = { 1: 'buildings', 2: 'trees', 3: 'water', 4: 'wetland', 5: 'restricted area', 7: 'cliff', 8: 'scrub', steep: 'ground over 60 %' };
+  function hazardIndex(obstacles, P) {
+    const polys = [], lines = [], G = new Map(), C = 500;
+    for (const e of obstacles || []) {
+      const kind = obstacleKind(e.tags); if (!kind || kind === 6 || !e.geometry || e.geometry.length < 2) continue;
+      const pts = e.geometry.filter(Boolean).map(g => P.xy([g.lat, g.lon]));
+      const closed = pts.length > 3 && e.geometry[0].lat === e.geometry[e.geometry.length - 1].lat && e.geometry[0].lon === e.geometry[e.geometry.length - 1].lon;
+      let x0 = 1e15, y0 = 1e15, x1 = -1e15, y1 = -1e15; for (const q of pts) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); }
+      const it = { kind, pts, bb: [x0, y0, x1, y1] };
+      if (closed && kind !== 7) polys.push(it); else if (kind === 7) lines.push(it); else continue;
+      if ((x1 - x0) * (y1 - y0) / (C * C) > 4000) { (G.get('big') || G.set('big', []).get('big')).push(it); continue; }
+      for (let cx = Math.floor(x0 / C); cx <= Math.floor(x1 / C); cx++) for (let cy = Math.floor(y0 / C); cy <= Math.floor(y1 / C); cy++) { const k = cx + ',' + cy; (G.get(k) || G.set(k, []).get(k)).push(it); }
+    }
+    const near = q => (G.get(Math.floor(q[0] / C) + ',' + Math.floor(q[1] / C)) || []).concat(G.get('big') || []);
+    const inside = (q, pts) => { let c = false; for (let k = 0, l = pts.length - 1; k < pts.length; l = k++) { const a = pts[k], b = pts[l]; if (((a[1] > q[1]) !== (b[1] > q[1])) && (q[0] < (b[0] - a[0]) * (q[1] - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; };
+    return { near, inside, lines };
+  }
+  function lineHazards(points, ctx, o) {
+    o = Object.assign({}, DEFAULTS, o || {});
+    const out = { blocked: false, m: {}, text: '', at: null };
+    if (!points || points.length < 2) return out;
+    const P = projector(points[0][0]), X = hazardIndex(ctx.obstacles, P);
+    let total = 0; for (let i = 1; i < points.length; i++) total += dist(points[i - 1], points[i]);
+    const step = o.hazardStepM, firstAt = {}, Q = points.map(p => P.xy(p)), cum = [0];
+    for (let i = 1; i < Q.length; i++) cum.push(cum[i - 1] + Math.hypot(Q[i][0] - Q[i - 1][0], Q[i][1] - Q[i - 1][1]));
+    const add = (nm, ll, m) => { out.m[nm] = (out.m[nm] || 0) + m; if (!firstAt[nm]) firstAt[nm] = ll; };
+    let seg = 1;
+    for (let along = o.hazardEndM; along <= total - o.hazardEndM; along += step) {
+      while (seg < Q.length - 1 && cum[seg] < along) seg++;
+      const L = cum[seg] - cum[seg - 1], t = L ? (along - cum[seg - 1]) / L : 0;
+      const q = [Q[seg - 1][0] + (Q[seg][0] - Q[seg - 1][0]) * t, Q[seg - 1][1] + (Q[seg][1] - Q[seg - 1][1]) * t], ll = P.ll(q);
+      let kind = 0;
+      for (const it of X.near(q)) { if (it.kind === 7 || q[0] < it.bb[0] || q[0] > it.bb[2] || q[1] < it.bb[1] || q[1] > it.bb[3]) continue; if (X.inside(q, it.pts)) { kind = it.kind; if (kind !== 8) break; } }
+      if (!kind && ctx.coverAt) kind = coverObstacle(ctx.coverAt(ll[0], ll[1]));
+      if (!kind && ctx.hfn) {   // slope over planCliff, measured like the planner does (terrain planCell either side)
+        const e = o.planCell, dl = e / 111320, dn = e / (111320 * Math.cos(rad(ll[0])));
+        const hx = (ctx.hfn(ll[0], ll[1] + dn) - ctx.hfn(ll[0], ll[1] - dn)) / (2 * e), hy = (ctx.hfn(ll[0] + dl, ll[1]) - ctx.hfn(ll[0] - dl, ll[1])) / (2 * e);
+        if (Number.isFinite(hx) && Number.isFinite(hy) && Math.hypot(hx, hy) > o.planCliff) kind = 'steep';
+      }
+      if (kind) add(HAZARD_NAME[kind], ll, step);
+    }
+    // mapped cliffs the line crosses
+    for (let i = 1; i < Q.length; i++) for (const it of X.lines) for (let k = 1; k < it.pts.length; k++) if (segIntersect(Q[i - 1], Q[i], it.pts[k - 1], it.pts[k])) { add('cliff', P.ll(it.pts[k]), o.hazardMinM); break; }
+    const big = Object.keys(out.m).filter(k => out.m[k] >= o.hazardMinM).sort((a, b) => out.m[b] - out.m[a]);
+    out.blocked = big.length > 0;
+    out.text = big.map(k => k === 'cliff' ? 'a cliff' : k + ' ' + Math.round(out.m[k]) + ' m').join(', ');
+    out.at = big.length ? firstAt[big[0]] : null;
+    return out;
+  }
+  /**
+   * 0.5.3, for the builder's Auto routing: load what lineHazards() needs round a leg (terrain tiles, ESA WorldCover,
+   * OSM obstacles for the off-piste corridor) and check the straight line. -> Promise<{ hazards, ctx }>; ctx.more(points)
+   * loads tiles for other lines (a route's off-piste hops), ctx.check(points) / ctx.plan() reuse what is loaded.
+   * opts: fetchBytes / decodeImage, Overpass options as for generate, stageId, obstacles / heightFn / coverAt (tests).
+   */
+  async function checkLine(points, opts) {
+    const o = Object.assign({}, DEFAULTS, opts || {});
+    const A = points[0], B = points[points.length - 1];
+    const stage = { id: o.stageId || 'leg', waypoints: [], route: { legs: [{ from: 'a', to: 'b', mode: 'direct', points: [A, B] }] } };
+    const dem = o.heightFn ? null : createDem({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, sources: o.demSources, concurrency: o.demConcurrency });
+    const lc = o.coverAt || o.useLandCover === false ? null : createLandCover({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, maxFailures: 10 });
+    const cps = corridorSamplePoints(stage, o);
+    await Promise.all([dem ? dem.load(cps) : null, lc ? lc.load(cps) : null]);
+    const obst = o.obstacles ? { elements: o.obstacles } : await fetchObstacles(stage, o, o.log);
+    const ctx = { hfn: o.heightFn || dem.h, coverAt: o.coverAt || (lc && lc.loaded ? lc.at : null), obstacles: obst.elements || [], obstaclesFailed: !!obst.failed };
+    const samples = pts => { const S = []; for (let i = 1; i < pts.length; i++) { const n = Math.max(1, Math.ceil(dist(pts[i - 1], pts[i]) / 100)); for (let k = 0; k <= n; k++) S.push([pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k / n, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k / n]); } return S; };
+    ctx.more = async pts => { const S = samples(pts); await Promise.all([dem ? dem.load(S) : null, lc ? lc.load(S) : null]); if (lc && lc.loaded && !ctx.coverAt) ctx.coverAt = lc.at; };
+    ctx.check = pts => lineHazards(pts, ctx, o);
+    // the off-piste line round what the straight line crosses (the roadbook's planner, with the same data)
+    ctx.plan = () => { const r = planLeg(A, B, ctx.hfn, ctx.obstacles, Object.assign({}, o, { planZeroIsSea: true, coverAt: ctx.coverAt }), (o.stageId || 'leg') + ':auto:' + A.join(',') + '>' + B.join(','));
+      return { points: r.points, stats: r.stats, hazards: lineHazards(r.points, ctx, o) }; };
+    return { hazards: lineHazards(points, ctx, o), ctx };
+  }
   // planned gap segments [s, ...] (segment s = points[s-1] -> points[s]) -> [[i0, i1]] point-index runs
   function offRuns(segs) { const out = []; for (const sg of (segs || []).slice().sort((a, b) => a - b)) { const l = out[out.length - 1]; if (l && l[1] === sg - 1) l[1] = sg; else out.push([sg - 1, sg]); } return out; }
   /**
@@ -2461,7 +2553,9 @@
     const dem = createDem({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, sources: o.demSources, concurrency: o.demConcurrency });
     await dem.load(corridorSamplePoints(stage, o));
     const obst = o.obstacles ? { elements: o.obstacles } : await fetchObstacles(stage, o, o.log);
-    const plan = planOffPiste(stage, dem.h, obst.elements || [], Object.assign({}, o, { planZeroIsSea: true }));
+    let coverAt = o.coverAt || null;   // 0.5.3: tree cover / water from ESA WorldCover too
+    if (!coverAt && o.useLandCover !== false) { const lc = createLandCover({ fetchBytes: o.fetchBytes, decodeImage: o.decodeImage, maxFailures: 10 }); await lc.load(corridorSamplePoints(stage, o)); if (lc.loaded) coverAt = lc.at; }
+    const plan = planOffPiste(stage, dem.h, obst.elements || [], Object.assign({}, o, { planZeroIsSea: true, coverAt }));
     const l = plan.stage.route.legs[0];
     if (!l.gapsPlanned) return null;
     return { points: l.points, off: offRuns(l.offSegs), stats: plan.stats, obstacles: (obst.elements || []).length };
@@ -2510,7 +2604,10 @@
     async function pass(obstacles, osm, osmInfo, obstInfo, lmData) {
       let st = stage, plan = null;
       if (planning) {
-        plan = planOffPiste(stage, hfn, obstacles || [], Object.assign({}, o, { planZeroIsSea: zeroIsSea }));
+        // 0.5.3: the planner avoids ESA WorldCover tree cover / water as well as the OSM obstacles
+        let coverAt = typeof o.landCover === 'function' ? o.landCover : null;
+        if (!coverAt && landCover) { if (!landCover._corridor) { await landCover.load(corridorSamplePoints(stage, o)); landCover._corridor = true; } if (landCover.loaded) coverAt = landCover.at; }
+        plan = planOffPiste(stage, hfn, obstacles || [], Object.assign({}, o, { planZeroIsSea: zeroIsSea, coverAt }));
         st = plan.stage;
         log('planner: ' + plan.stats.map(x => x.from + '>' + x.to + ' ' + x.vertices + ' bends, longest ' + x.longestStraightM + ' m').join('; '));
       }
@@ -2757,6 +2854,6 @@
     return n;
   }
 
-  return { VERSION, GENERATOR, planLegGaps, offPieces, offRuns, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
+  return { VERSION, GENERATOR, planLegGaps, checkLine, lineHazards, coverObstacle, offPieces, offRuns, migrateStageNotes, mergeRegenerated, applyChanges, readRecce, previewChanges, describeChange, rescaleToDriven, renumber, DEFAULTS, DEM_SOURCES, generate, resampleRoute, routeBoxes, planOffPiste, planLeg, applyPlannedLine, corridorBoxes, obstacleQuery, analyseProfile, analyseOsm, assemble, bends, createDem, fetchOsm, overpassQuery, askOverpass, overpassOrder, defaultOverpass, overpassStatus, queryVariant, landmarkQuery, landmarkBoxes, landformQuery, landformBoxes, fetchLandmarks, fetchChunks, landmarkKind, prepLandmarks, landmarkFeatures, enrichBoxes, createLandCover, coverAlong, coverFeatures, rockFeatures, alongWaterFeatures, gateTerrain, gradeSigma, worldCoverItem, LANDCOVER, LC_GROUP, TRACK_CODE, junctionNote, projector, stageHash, trackClass, describe,
     geo: { dist, bearing, dest, rel, simplify, projector } };
 });

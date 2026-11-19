@@ -346,3 +346,20 @@ test('1.5.0 profiles: Traces follows a path where Piste takes the track beside i
   assert.ok(rp.byClass.track > 2000 && rp.byClass.path < 1, JSON.stringify(rp.byClass));
   assert.ok(rt.byClass.path > 1900 && rt.byClass.track < 1, JSON.stringify(rt.byClass));
 });
+
+// 1.6.0 (Wyans 19 Nov 2026): detour length = measured at 50 m steps, switchback stacks counted as the straight line through them
+test('1.6.0 detourLen: a switchback stack counts as the ground it gains; a loop or a long zigzag still counts in full', () => {
+  const zig = [[0, 0]]; for (let k = 1; k <= 8; k++) zig.push([k % 2 ? 300 : 0, k * 40]);           // 8 hairpins, 300 m legs, 40 m apart
+  zig.push([0, 700]);
+  const full = zig.reduce((m, p, i) => i ? m + Math.hypot(p[0] - zig[i - 1][0], p[1] - zig[i - 1][1]) : 0, 0);
+  const D = TR.detourLenXY(zig);
+  assert.ok(full > 2400 && D.m < 1200, 'full ' + Math.round(full) + ' detour ' + Math.round(D.m));
+  assert.ok(D.stacks >= 1);
+  const big = [[0, 0], [3000, 0], [3000, 400], [0, 400], [0, 800]];                                  // 3 km legs: a real detour
+  assert.ok(Math.abs(TR.detourLenXY(big).m - 6800) < 60);
+  const loop = [[0, 0], [400, 0], [400, 400], [0, 400], [0, 10], [500, 10]];                          // turns the same way: in full
+  assert.ok(TR.detourLenXY(loop).m > 1500);
+  // the router's re-route test uses it: a 3x zigzag up a slope is no longer a detour, a 3 km out-and-back still is
+  const ll = q => [q[1] / 111195, q[0] / 111195];
+  assert.ok(TR.detourLen(zig.map(ll)) < 1200);
+});

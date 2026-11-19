@@ -105,3 +105,24 @@ test('0.5.2 valley runs: the valley centre unless untenable, then the min-slope 
   assert.ok(fv.length >= 1 && fv.length <= 3, rb.boxes.map(x => x.notes).join(' | '));
   for (let i = 1; i < rb.boxes.length; i++) if (!rb.boxes[i].waypoint && !rb.boxes[i - 1].waypoint) assert.ok(rb.boxes[i].partial >= 0.285, 'gap ' + rb.boxes[i].partial);
 });
+
+// 0.5.3 (Wyans 19 Nov 2026): heavy vegetation / impassable ground on an off-piste line
+test('0.5.3 lineHazards: trees, water and steep ground on a straight line; the planner goes round a wood', () => {
+  const RBm = require('../../stage-builder/roadbook-gen.js');
+  const wood = { type: 'way', tags: { natural: 'wood' }, geometry: [[31.0, -7.004], [31.0, -6.996], [31.01, -6.996], [31.01, -7.004], [31.0, -7.004]].map(p => ({ lat: p[0], lon: p[1] })) };
+  const flat = () => 500;
+  const h1 = RBm.lineHazards([[30.99, -7.0], [31.02, -7.0]], { obstacles: [wood], hfn: flat });
+  assert.ok(h1.blocked && h1.m.trees > 1000 && /trees/.test(h1.text), JSON.stringify(h1));
+  assert.ok(!RBm.lineHazards([[30.99, -7.02], [31.02, -7.02]], { obstacles: [wood], hfn: flat }).blocked);
+  // ESA WorldCover tree cover (10) and water (80) count too; shrubland (20) does not
+  const cov = (la) => la > 31.0 && la < 31.002 ? 10 : la > 31.005 && la < 31.006 ? 80 : 20;
+  const h2 = RBm.lineHazards([[30.99, -7.02], [31.02, -7.02]], { obstacles: [], coverAt: cov, hfn: flat });
+  assert.ok(h2.m.trees >= 200 && h2.m.water >= 100 && !h2.m.scrub, JSON.stringify(h2));
+  // steep: a 70 % face
+  const h3 = RBm.lineHazards([[30.99, -7.02], [31.02, -7.02]], { obstacles: [], hfn: (la) => la * 111320 * 0.7 });
+  assert.ok(h3.m['ground over 60 %'] > 2000);
+  // the planner round the wood: the planned line crosses no trees, the straight line 1.1 km
+  const r = RBm.planLeg([30.99, -7.0], [31.02, -7.0], flat, [wood], Object.assign({}, RBm.DEFAULTS, { planNoise: 0 }), 't');
+  const hp = RBm.lineHazards(r.points, { obstacles: [wood], hfn: flat });
+  assert.ok(!hp.blocked, JSON.stringify(hp) + ' ' + JSON.stringify(r.points));
+});
