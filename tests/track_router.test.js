@@ -267,3 +267,28 @@ test('1.3.0: highways are a last resort: off-piste is preferred to a primary roa
   assert.strictEqual(TR.wayCost({ highway: 'motorway' }), null);
   assert.strictEqual(TR.wayCost({ highway: 'motorway_link' }), null);
 });
+
+// 1.4.0 (Wyans 19 Nov 2026): "from 31.325267, -7.842693 to 31.290507, -7.822019, tracks and paths don't seem to be
+// connecting". Everything there is one OSM network; the start jumped 522 m straight onto its own trail lower down.
+test('1.4.0: the start does not cut straight across the switchbacks of the way it stands on', async () => {
+  // a zigzag path from the start, then a straight run to the end; a jump from the start to the zigzag's far end is short
+  const pts = [[0, 0]]; for (let i = 1; i <= 8; i++) pts.push([i % 2 ? 80 : -80, i * 70]); pts.push([0, 2560]);
+  const r = await TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) }).route(ll(0, 0), ll(0, 2560));
+  assert.strictEqual(r.status, 'ok'); assert.ok(r.gapM === 0, JSON.stringify({ way: r.wayM, gap: r.gapM, link: r.linkM }));
+  const r0 = await TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) }).route(ll(0, 0), ll(0, 2560), { samePieceGapF: 1 });
+  assert.ok(r0.gapM > 150, 'without the 1.4.0 rule the start cuts across: ' + JSON.stringify({ way: r0.wayM, gap: r0.gapM }));
+});
+test('1.4.0: two ways that cross without a shared node are joined at the crossing (not over a bridge)', async () => {
+  const a = way({ highway: 'track' }, [[0, 0], [2000, 0]]), b = way({ highway: 'track' }, [[1000, -1000], [1000, 1000]]);
+  const r = await TR.createRouter({ overpass: async () => answer([a, b]) }).route(ll(0, 0), ll(1000, 1000));
+  assert.strictEqual(r.status, 'ok'); assert.ok(r.gapM === 0 && r.wayM > 1900, JSON.stringify({ way: r.wayM, gap: r.gapM }));
+  const br = way({ highway: 'track', bridge: 'yes', layer: '1' }, [[1000, -1000], [1000, 1000]]);
+  const G = TR.buildGraph([answer([a, br])], LAT0, null, true);
+  assert.strictEqual(G.joined, 0, 'a bridge over a track is not a junction');
+});
+test('1.4.0 real data (Wyans 19 Nov 2026, Ourika): 31.325267,-7.842693 -> 31.290507,-7.822019 is on paths end to end', async () => {
+  const ans = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/tracks/ourika_leg_1119.json'), 'utf8'));
+  const r = await TR.createRouter({ overpass: async () => ans }).route([31.325267, -7.842693], [31.290507, -7.822019]);
+  assert.strictEqual(r.status, 'ok', JSON.stringify({ way: r.wayM, gap: r.gapM, link: r.linkM }));
+  assert.ok(r.gapM === 0 && r.wayM > 5000 && r.linkM < 150, JSON.stringify({ way: r.wayM, gap: r.gapM, link: r.linkM }));
+});

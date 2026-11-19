@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.3.0';
+  var VERSION = '1.4.0';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -52,6 +52,12 @@
     roadDetourMax: 1.5,
     backtrackM: 250,
     roadRetries: 4,
+    // 1.4.0 (Wyans 19 Nov 2026, Ourika): a straight jump from the leg start onto a network the start is already on (a way
+    // within linkM), or from such a network to the leg end, costs samePieceGapF x as much. Before, the start could jump to
+    // any node within jumpM, so it cut 522 m straight across the switchbacks of the trail it was standing on (793 m of path).
+    // Jumps between different pieces (the dead-end rule) are unchanged.
+    samePieceGapF: 2.0,
+    joinCrossings: true,  // 1.4.0: two ways that cross without a shared node (and no bridge / tunnel / layer) are joined there
     overpassTimeoutS: 40
   };
 
@@ -154,7 +160,7 @@
 
   // ------------------------------------------------------------------ graph
   /* elements: Overpass ways with nodes + geometry (any number of answers merged; duplicates skipped) */
-  function buildGraph(answers, lat0, skip) {
+  function buildGraph(answers, lat0, skip, joinX) {
     var P = projector(lat0), idx = new Map(), ll = [], xy = [], adj = [], seen = new Set(), nWays = 0, kinds = {};
     function node(id, g) {
       var k = idx.get(id);
@@ -217,6 +223,47 @@
         G.healed++;
       });
     }
+    // 1.4.0: ways that cross without a shared node (common in OSM for paths) are joined at the crossing, unless one is a
+    // bridge / tunnel or they are on different layers
+    if (joinX) {
+      var lvl = function (t) { t = t || {}; return (t.bridge && t.bridge !== 'no') || (t.tunnel && t.tunnel !== 'no') ? 'x' : (t.layer || '0'); };
+      var nSeg = segs.length, xs = [], done = new Set();
+      sgrid.forEach(function (l, kk) {
+        var cxy = kk.split(','), gx = +cxy[0], gy = +cxy[1];
+        for (var i = 0; i < l.length; i++) {
+          var si = l[i]; if (si >= nSeg) continue;
+          var s1 = segs[si], p1 = xy[s1[0]], p2 = xy[s1[1]];
+          var ax0 = Math.min(p1[0], p2[0]), ax1 = Math.max(p1[0], p2[0]), ay0 = Math.min(p1[1], p2[1]), ay1 = Math.max(p1[1], p2[1]);
+          for (var j = i + 1; j < l.length; j++) {
+            var sj = l[j]; if (sj >= nSeg) continue;
+            var s2 = segs[sj]; if (s1[3] === s2[3]) continue;
+            var p3 = xy[s2[0]], p4 = xy[s2[1]];
+            if (Math.max(p3[0], p4[0]) < ax0 || Math.min(p3[0], p4[0]) > ax1 || Math.max(p3[1], p4[1]) < ay0 || Math.min(p3[1], p4[1]) > ay1) continue;
+            if (s1[0] === s2[0] || s1[0] === s2[1] || s1[1] === s2[0] || s1[1] === s2[1]) continue;
+            var dd = (p2[0] - p1[0]) * (p4[1] - p3[1]) - (p2[1] - p1[1]) * (p4[0] - p3[0]); if (!dd) continue;
+            var tt = ((p3[0] - p1[0]) * (p4[1] - p3[1]) - (p3[1] - p1[1]) * (p4[0] - p3[0])) / dd, uu = ((p3[0] - p1[0]) * (p2[1] - p1[1]) - (p3[1] - p1[1]) * (p2[0] - p1[0])) / dd;
+            if (!(tt > 0 && tt < 1 && uu > 0 && uu < 1)) continue;
+            var cx_ = p1[0] + tt * (p2[0] - p1[0]), cy_ = p1[1] + tt * (p2[1] - p1[1]);
+            if (Math.floor(cx_ / CELL) !== gx || Math.floor(cy_ / CELL) !== gy) continue;   // each crossing once: in its own cell
+            var w1 = ways[s1[3]].tags, w2 = ways[s2[3]].tags; if (lvl(w1) === 'x' || lvl(w2) === 'x' || lvl(w1) !== lvl(w2)) continue;
+            var xk = Math.round(cx_) + ',' + Math.round(cy_);
+            if (done.has(xk)) continue; done.add(xk);   // the same crossing seen through a duplicate / healed segment
+            xs.push([si, sj, cx_, cy_]);
+          }
+        }
+      });
+      xs.forEach(function (x) {
+        var k = ll.length; xy.push([x[2], x[3]]); ll.push(P.ll([x[2], x[3]])); adj.push([]);
+        [segs[x[0]], segs[x[1]]].forEach(function (sg) {
+          [sg[0], sg[1]].forEach(function (e) {
+            var d = Math.hypot(xy[e][0] - x[2], xy[e][1] - x[3]);
+            adj[k].push([e, d * sg[2], d, sg[3]]); adj[e].push([k, d * sg[2], d, sg[3]]);
+            segs.push([e, k, sg[2], sg[3]]); indexSeg(segs.length - 1);
+          });
+        });
+      });
+      G.joined = xs.length;
+    }
     // components (union-find)
     var par = new Int32Array(ll.length); for (var i = 0; i < par.length; i++) par[i] = i;
     var find = function (x) { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
@@ -276,7 +323,7 @@
    */
   function findPath(G, a, b, o) {
     o = Object.assign({}, DEFAULTS, o || {});
-    var N = G.ll.length, S = N, T = N + 1, extra = [], extraXY = [], extraLL = [];
+    var N = G.ll.length, S = N, T = N + 1, extra = [], extraXY = [], extraLL = [], extraSeg = [];
     var A = G.P.xy(a), B = G.P.xy(b);
     var nodeXY = function (k) { return k < N ? G.xy[k] : k === S ? A : k === T ? B : extraXY[k - N - 2]; };
     var nodeLL = function (k) { return k < N ? G.ll[k] : k === S ? a : k === T ? b : extraLL[k - N - 2]; };
@@ -285,7 +332,7 @@
     // snap points: split the segment with a virtual node, joined both ways to its segment ends
     function snapNode(sn) {
       var s = G.segs[sn.si], k = N + 2 + extraXY.length, f = s[2];
-      extraXY.push([sn.x, sn.y]); extraLL.push(G.P.ll([sn.x, sn.y]));
+      extraXY.push([sn.x, sn.y]); extraLL.push(G.P.ll([sn.x, sn.y])); extraSeg.push(sn.si);
       var pu = G.xy[s[0]], pv = G.xy[s[1]];
       var lu = Math.hypot(sn.x - pu[0], sn.y - pu[1]), lv = Math.hypot(sn.x - pv[0], sn.y - pv[1]);
       addE(k, s[0], lu * f, lu, 'way', s[3]); addE(s[0], k, lu * f, lu, 'way', s[3]); addE(k, s[1], lv * f, lv, 'way', s[3]); addE(s[1], k, lv * f, lv, 'way', s[3]);
@@ -295,12 +342,17 @@
     var L = Math.hypot(B[0] - A[0], B[1] - A[1]);
     addE(S, T, gapC(L), L, 'gap');
     snapsNear(G, A, o.linkM, 6).forEach(function (sn) { addE(S, snapNode(sn), sn.d * o.linkCost, sn.d, 'link'); });
+    var nStartSnaps = extraSeg.length;
     var endSnaps = snapsNear(G, B, o.linkM, 6).map(function (sn) { return [snapNode(sn), sn.d]; });
     // snap nodes next to the end can reach T with a link (added on expansion); the end snap nodes are joined to
     // the segments, and the segment ends must know about them too (done in snapNode)
     var toT = new Map(); endSnaps.forEach(function (e) { toT.set(e[0], e[1]); });
-    // the start may jump straight onto any node within jumpM (when no way is within linkM)
-    portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], gapC(n[1]), n[1], 'gap'); });
+    // 1.4.0: the network pieces the leg start / end already stand on (a way within linkM)
+    var startC = new Set(), endC = new Set();
+    extraSeg.forEach(function (si, i) { (i < nStartSnaps ? startC : endC).add(G.comp[G.segs[si][0]]); });
+    var spf = o.samePieceGapF || 1;
+    // the start may jump straight onto any node within jumpM (dearer onto the piece it already stands on)
+    portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], gapC(n[1]) * (startC.has(G.comp[n[0]]) ? spf : 1), n[1], 'gap'); });
     // 1.3.0: a node counts as a dead end when at most one non-highway way meets it, so a track that ends on a highway
     // may still jump off-piste to the next track (the highway is a last resort, not the only way on)
     var hiW = G.ways.map(function (w) { return wayClass(w.tags) === 'highway'; });
@@ -324,7 +376,7 @@
       if (u !== S) {
         var dT = Math.hypot(B[0] - pu[0], B[1] - pu[1]);
         if (toT.has(u)) relax(T, toT.get(u) * o.linkCost, toT.get(u), 'link');
-        else relax(T, dT <= o.linkM ? dT * o.gapCost : gapC(dT), dT, dT <= o.linkM ? 'link' : 'gap');
+        else relax(T, dT <= o.linkM ? dT * o.gapCost : gapC(dT) * (u < N && endC.has(G.comp[u]) ? spf : 1), dT, dT <= o.linkM ? 'link' : 'gap');
         // a dead end may jump to another piece of the network
         if (u < N && deg(u) <= 1) portalsNear(G, pu, o.jumpM).forEach(function (n) {
           if (G.comp[n[0]] !== G.comp[u]) relax(n[0], gapC(n[1]), n[1], 'gap');
@@ -439,7 +491,7 @@
         var t1 = Date.now();
         var skip = new Set(), G, res, dropped = 0;
         for (var tries = 0; ; tries++) {
-          G = buildGraph(answers, (a[0] + b[0]) / 2, skip);
+          G = buildGraph(answers, (a[0] + b[0]) / 2, skip, o.joinCrossings);
           res = findPath(G, a, b, o);
           var bad = res ? badRoadRuns(res, o) : [];
           if (!bad.length || tries >= o.roadRetries) break;
