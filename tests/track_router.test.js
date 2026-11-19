@@ -229,7 +229,7 @@ test('1.2.0: a winding mountain path (1.5x the straight line) is followed, not c
   const R = TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) });
   const r = await R.route(ll(-70, 0), ll(-70, 2500));
   assert.strictEqual(r.status, 'ok'); assert.ok(r.gapM < 1 && r.wayM > 2900, JSON.stringify({ way: r.wayM, gap: r.gapM }));
-  const r0 = await TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) }).route(ll(-70, 0), ll(-70, 2500), { gapLongM: Infinity });
+  const r0 = await TR.createRouter({ overpass: async () => answer([way({ highway: 'path' }, pts)]) }).route(ll(-70, 0), ll(-70, 2500), { gapLongM: Infinity, samePieceGapF: 1 });
   assert.ok(r0.gapM > 1000, 'with the old flat gap cost the straight line wins: ' + r0.gapM);
   // short hops cost the same as before (<= 300 m)
   assert.strictEqual(TR.DEFAULTS.gapCost, 2.0); assert.strictEqual(TR.DEFAULTS.gapLongM, 300);
@@ -251,7 +251,7 @@ test('1.3.0: a paved village road beats off-piste when it heads the right way', 
   const r = await TR.createRouter({ overpass: async () => answer(els) }).route(ll(0, 0), ll(2000, 0));
   assert.strictEqual(r.status, 'ok'); assert.ok(r.byClass.road > 1900 && r.gapM === 0, JSON.stringify(r.byClass));
 });
-test('1.3.0: a road that re-routes (> 1.5x) or back-tracks is not taken; the leg goes off-piste instead', async () => {
+test('1.3.0 / 1.4.0: a road that back-tracks or re-routes (> roadDetourMax) is not taken; the leg goes off-piste instead', async () => {
   // a 2 km leg; the road loops 1.2 km away from the finish first (back-track), 6.8 km long (re-route)
   const loop = [way({ highway: 'unclassified', surface: 'asphalt' }, [[0, 0], [-1200, 0], [-1200, 1200], [2000, 1200], [2000, 0]])];
   const r = await TR.createRouter({ overpass: async () => answer(loop) }).route(ll(0, 0), ll(2000, 0), { gapCostLong: 8 });
@@ -291,4 +291,19 @@ test('1.4.0 real data (Wyans 19 Nov 2026, Ourika): 31.325267,-7.842693 -> 31.290
   const r = await TR.createRouter({ overpass: async () => ans }).route([31.325267, -7.842693], [31.290507, -7.822019]);
   assert.strictEqual(r.status, 'ok', JSON.stringify({ way: r.wayM, gap: r.gapM, link: r.linkM }));
   assert.ok(r.gapM === 0 && r.wayM > 5000 && r.linkM < 150, JSON.stringify({ way: r.wayM, gap: r.gapM, link: r.linkM }));
+});
+// 1.4.0 switchbacks (Wyans 19 Nov 2026: "a lot of paths and tracks seem to have trouble when they have tight switchbacks")
+test('1.4.0 switchbacks: a leg between two points of a hairpin track follows it, no hop across the hairpin', async () => {
+  // a track that climbs in 4 hairpins: legs of 400 m, 120 m apart
+  const pts = []; for (let i = 0; i < 5; i++) { pts.push([0, i * 120]); pts.push([400, i * 120]); if (i % 2) pts.splice(pts.length - 2, 2, [400, i * 120], [0, i * 120]); }
+  const R = TR.createRouter({ overpass: async () => answer([way({ highway: 'track' }, pts)]) });
+  const r = await R.route(ll(200, 0), ll(200, 480));
+  assert.strictEqual(r.status, 'ok'); assert.ok(r.gapM === 0 && r.linkM < 5 && r.wayM > 1900, JSON.stringify({ way: r.wayM, gap: r.gapM, link: r.linkM }));
+  const r0 = await TR.createRouter({ overpass: async () => answer([way({ highway: 'track' }, pts)]) }).route(ll(200, 0), ll(200, 480), { samePieceGapF: 1 });
+  assert.ok(r0.wayM < 1900, 'without 1.4.0 the start / end hop across hairpins: ' + JSON.stringify({ way: r0.wayM, gap: r0.gapM, link: r0.linkM }));
+});
+test('1.4.0 switchbacks: a mountain road 2.4x its straight line that keeps closing in is not thrown out as a re-route', async () => {
+  const pts = []; for (let i = 0; i <= 6; i++) pts.push([i % 2 ? 260 : -260, i * 220]);   // 1.32 km straight, ~3.2 km of road
+  const r = await TR.createRouter({ overpass: async () => answer([way({ highway: 'unclassified', surface: 'gravel' }, pts)]) }).route(ll(-260, 0), ll(-260, 1320));
+  assert.ok(r.roadWaysDropped === 0 && r.byClass.road > 3000, JSON.stringify({ byClass: r.byClass, dropped: r.roadWaysDropped }));
 });

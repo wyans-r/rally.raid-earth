@@ -49,7 +49,9 @@
     // 1.3.0 (Wyans 19 Nov 2026): small roads beat off-piste unless they back-track or re-route. After the search, every
     // stretch on small roads must stay within roadDetourMax x its straight length and never head away from the leg end by
     // more than backtrackM; a stretch that fails is taken out and the leg searched again (up to roadRetries times).
-    roadDetourMax: 1.5,
+    // 1.4.0: 3x (was 1.5x): mountain roads that zigzag up a slope (switchbacks) are 2-3x their straight length while
+    // closing in all the way (Ourika: an unclassified road 3.15 km for 1.3 km); at 1.5x they were thrown out for off-piste
+    roadDetourMax: 3.0,
     backtrackM: 250,
     roadRetries: 4,
     // 1.4.0 (Wyans 19 Nov 2026, Ourika): a straight jump from the leg start onto a network the start is already on (a way
@@ -295,6 +297,36 @@
     }
     return out;
   }
+  /** 1.4.0: like snapsNear, but a way that passes p more than once (the two legs of a hairpin) gives one snap per pass,
+   *  as long as the farther pass is not much farther than the nearest (<= 2x + 30 m): a click between the legs of a
+   *  switchback can join either leg, a click on one leg never hops across to the other */
+  function snapsBranches(G, p, r, max) {
+    var c = G.CELL, cand = new Map(), seen = new Set();
+    for (var cx = Math.floor((p[0] - r) / c); cx <= Math.floor((p[0] + r) / c); cx++)
+      for (var cy = Math.floor((p[1] - r) / c); cy <= Math.floor((p[1] + r) / c); cy++) {
+        var l = G.sgrid.get(G.key(cx, cy)); if (!l) continue;
+        for (var i = 0; i < l.length; i++) {
+          var si = l[i]; if (seen.has(si)) continue; seen.add(si);
+          var s = G.segs[si], h = segDist(p, G.xy[s[0]], G.xy[s[1]]);
+          if (h.d > r) continue;
+          (cand.get(s[3]) || cand.set(s[3], []).get(s[3])).push({ si: si, d: h.d, t: h.t, x: h.x, y: h.y });
+        }
+      }
+    var out = [];
+    cand.forEach(function (l) {
+      l.sort(function (a, b) { return a.si - b.si });
+      var runs = [], cur = null;
+      l.forEach(function (x) { if (cur && x.si === cur.last + 1) { cur.last = x.si; if (x.d < cur.best.d) cur.best = x; } else { cur = { last: x.si, best: x }; runs.push(cur); } });
+      var best = runs.map(function (r0) { return r0.best }).sort(function (a, b) { return a.d - b.d }), acc = [];
+      best.forEach(function (x) {
+        if (acc.length && x.d > 2 * acc[0].d + 30) return;
+        if (acc.some(function (y) { return Math.hypot(x.x - y.x, x.y - y.y) < 25 })) return;
+        if (acc.length < 3) acc.push(x);
+      });
+      out.push.apply(out, acc);
+    });
+    return out.sort(function (a, b) { return a.d - b.d }).slice(0, max || 8);
+  }
   /** nearest points on ways within r of p: at most one per way, the closest `max` ways */
   function snapsNear(G, p, r, max) {
     var c = G.CELL, best = new Map(), seen = new Set();
@@ -340,17 +372,30 @@
     }
     var gapC = function (d) { return d * o.gapCost + Math.max(0, d - (o.gapLongM || Infinity)) * ((o.gapCostLong || o.gapCost) - o.gapCost); };
     var L = Math.hypot(B[0] - A[0], B[1] - A[1]);
-    addE(S, T, gapC(L), L, 'gap');
-    snapsNear(G, A, o.linkM, 6).forEach(function (sn) { addE(S, snapNode(sn), sn.d * o.linkCost, sn.d, 'link'); });
+    var spf = o.samePieceGapF || 1;
+    // 1.4.0: a leg end joins the nearest way; a farther point of the same network piece (the other leg of a hairpin, a
+    // parallel track of the same network) costs samePieceGapF x: hopping across a switchback is not cheaper than driving it
+    // (and any way much farther than the nearest is reached like an off-piste hop: a click on a hairpin road must not
+    // hop 270 m onto another track that skips the hairpin)
+    var linkC = function (sns) {
+      var d0 = sns.length ? sns[0].d : 0;
+      return function (sn) { return sn.d > 2 * d0 + 30 ? gapC(sn.d) * spf : sn.d * o.linkCost; };
+    };
+    var sA = snapsBranches(G, A, o.linkM, 8), fA = linkC(sA);
+    sA.forEach(function (sn) { addE(S, snapNode(sn), fA(sn), sn.d, 'link'); });
     var nStartSnaps = extraSeg.length;
-    var endSnaps = snapsNear(G, B, o.linkM, 6).map(function (sn) { return [snapNode(sn), sn.d]; });
+    var sB = snapsBranches(G, B, o.linkM, 8), fB = linkC(sB);
+    var endSnaps = sB.map(function (sn) { return [snapNode(sn), sn.d, fB(sn)]; });
     // snap nodes next to the end can reach T with a link (added on expansion); the end snap nodes are joined to
     // the segments, and the segment ends must know about them too (done in snapNode)
-    var toT = new Map(); endSnaps.forEach(function (e) { toT.set(e[0], e[1]); });
+    var toT = new Map(), toTf = new Map(); endSnaps.forEach(function (e) { toT.set(e[0], e[1]); toTf.set(e[0], e[2]); });
     // 1.4.0: the network pieces the leg start / end already stand on (a way within linkM)
     var startC = new Set(), endC = new Set();
     extraSeg.forEach(function (si, i) { (i < nStartSnaps ? startC : endC).add(G.comp[G.segs[si][0]]); });
-    var spf = o.samePieceGapF || 1;
+    var compOf = function (k) { return k < N ? G.comp[k] : k === S || k === T ? -1 : G.comp[G.segs[extraSeg[k - N - 2]][0]]; };
+    // straight from start to end: dearer when both ends stand on the same network piece (1.4.0)
+    var both = false; startC.forEach(function (c) { if (endC.has(c)) both = true; });
+    addE(S, T, gapC(L) * (both ? spf : 1), L, 'gap');
     // the start may jump straight onto any node within jumpM (dearer onto the piece it already stands on)
     portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], gapC(n[1]) * (startC.has(G.comp[n[0]]) ? spf : 1), n[1], 'gap'); });
     // 1.3.0: a node counts as a dead end when at most one non-highway way meets it, so a track that ends on a highway
@@ -375,8 +420,8 @@
       var ex = extraAdj.get(u); if (ex) ex.forEach(function (e) { relax(e[0], e[1], e[2], e[3], e[4]); });
       if (u !== S) {
         var dT = Math.hypot(B[0] - pu[0], B[1] - pu[1]);
-        if (toT.has(u)) relax(T, toT.get(u) * o.linkCost, toT.get(u), 'link');
-        else relax(T, dT <= o.linkM ? dT * o.gapCost : gapC(dT) * (u < N && endC.has(G.comp[u]) ? spf : 1), dT, dT <= o.linkM ? 'link' : 'gap');
+        if (toT.has(u)) relax(T, toTf.get(u), toT.get(u), 'link');
+        else relax(T, (dT <= o.linkM ? dT * o.gapCost : gapC(dT)) * (endC.has(compOf(u)) ? spf : 1), dT, dT <= o.linkM ? 'link' : 'gap');
         // a dead end may jump to another piece of the network
         if (u < N && deg(u) <= 1) portalsNear(G, pu, o.jumpM).forEach(function (n) {
           if (G.comp[n[0]] !== G.comp[u]) relax(n[0], gapC(n[1]), n[1], 'gap');
@@ -437,10 +482,12 @@
       if (r.m < 200) return false;
       var p0 = r.pts[0], p1 = r.pts[r.pts.length - 1];
       var straight = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
-      if (r.m > o.roadDetourMax * Math.max(straight, 1)) return true;
-      var d0 = Math.hypot(B[0] - p0[0], B[1] - p0[1]), far = d0;
-      r.pts.forEach(function (p) { far = Math.max(far, Math.hypot(B[0] - p[0], B[1] - p[1])); });
-      return far - d0 > o.backtrackM;
+      // 1.4.0: back-track = at some point the road gets farther from the leg end than it already was, by more than
+      // backtrackM, or a tenth of the stretch (before: farther than where the stretch started, which missed a loop that comes back)
+      var best = Infinity, regress = 0;
+      r.pts.forEach(function (p) { var d = Math.hypot(B[0] - p[0], B[1] - p[1]); best = Math.min(best, d); regress = Math.max(regress, d - best); });
+      if (regress > Math.max(o.backtrackM, 0.1 * r.m)) return true;   // a long winding road may dip away a little more
+      return r.m > o.roadDetourMax * Math.max(straight, 1);
     });
   }
 
