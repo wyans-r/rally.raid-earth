@@ -14,28 +14,30 @@ function way(tags, pts, ids) {
 }
 const answer = els => ({ elements: els });
 
-test('way classes: tracks, paths and unpaved lanes in; paved / major roads out; footways last', () => {
+test('way classes: tracks, paths, small roads in; highways last resort, motorways out; footways last', () => {
   assert.strictEqual(TR.wayCost({ highway: 'track' }), 1);
   assert.ok(TR.wayCost({ highway: 'track', tracktype: 'grade5' }) > 1);
   assert.ok(TR.wayCost({ highway: 'path' }) > 1);
   assert.strictEqual(TR.wayCost({ highway: 'unclassified', surface: 'dirt' }), 1);
   assert.ok(TR.wayCost({ highway: 'unclassified' }) > 1);
   assert.ok(TR.wayCost({ highway: 'service', surface: 'gravel' }) > 0);
-  assert.ok(TR.wayCost({ highway: 'service', surface: 'asphalt' }) > 1.5, 'paved service: a connector only (1.1.0)');
+  assert.ok(TR.wayCost({ highway: 'service', surface: 'asphalt' }) >= 1.4 && TR.wayCost({ highway: 'service', surface: 'asphalt' }) < TR.DEFAULTS.gapCost, 'paved service: a small road (1.3.0)');
   assert.strictEqual(TR.wayCost({ highway: 'service', service: 'parking_aisle' }), null);
-  assert.strictEqual(TR.wayCost({ highway: 'primary' }), null);
   // 1.1.0: village streets and tertiary / secondary roads connect track networks (dearer than tracks, cheaper than a gap)
   assert.ok(TR.wayCost({ highway: 'tertiary' }) > 1.5 && TR.wayCost({ highway: 'tertiary' }) < TR.DEFAULTS.gapCost);
   assert.ok(TR.wayCost({ highway: 'residential' }) > 1.2 && TR.wayCost({ highway: 'residential' }) < TR.DEFAULTS.gapCost);
-  assert.ok(TR.wayCost({ highway: 'secondary', surface: 'asphalt' }) < TR.DEFAULTS.gapCost);
-  assert.strictEqual(TR.wayCost({ highway: 'trunk' }), null);
+  // 1.3.0: highways are a last resort (dearer than a long off-piste stretch); motorways never
+  assert.ok(TR.wayCost({ highway: 'secondary', surface: 'asphalt' }) > TR.DEFAULTS.gapCostLong);
+  assert.ok(TR.wayCost({ highway: 'primary' }) > TR.DEFAULTS.gapCostLong);
+  assert.strictEqual(TR.wayCost({ highway: 'motorway' }), null);
+  assert.ok(TR.wayCost({ highway: 'trunk' }) > TR.DEFAULTS.gapCostLong, 'trunk: last resort (1.3.0)');
   assert.ok(TR.wayCost({ highway: 'path' }) >= 1.5, 'paths are not built in BeamNG.Earth: a real track is preferred');
   assert.ok(TR.wayCost({ highway: 'tertiary', surface: 'gravel' }) > 0);
   assert.strictEqual(TR.wayCost({ highway: 'footway' }), null);
   assert.ok(TR.wayCost({ highway: 'footway', surface: 'dirt' }) > TR.wayCost({ highway: 'path' }));
   assert.strictEqual(TR.wayCost({ highway: 'track', area: 'yes' }), null);
   const q = TR.overpassQuery([31, -4.1, 31.1, -4]);
-  assert.match(q, /highway~"\^\(track\|path\|bridleway\|unclassified\|road\)\$"/);
+  assert.match(q, /highway~"\^\(track\|path\|bridleway\|unclassified\|road\|residential\|living_street\|tertiary\|tertiary_link\)\$"/);
   assert.match(q, /out body geom/);
 });
 
@@ -182,16 +184,17 @@ test('1.1.0: two track networks joined by a paved village street are routed thro
   els[1].tags = { highway: 'primary', surface: 'asphalt' };
   const r2 = TR.findPath(TR.buildGraph([answer(els)], LAT0), ll(0, 0), ll(8000, 0));
   assert.ok(r2.gapM > 500, 'primary is road mode only: gap ' + r2.gapM);
-  assert.match(TR.overpassQuery([31, -4.1, 31.1, -4]), /residential\|living_street\|tertiary\|tertiary_link\|secondary/);
+  assert.match(TR.overpassQuery([31, -4.1, 31.1, -4]), /residential\|living_street\|tertiary\|tertiary_link/);
 });
 
-test('1.1.1: the Overpass query stays lean: connector roads only when unpaved or untagged, no any-surface clauses', () => {
+test('1.3.0: the Overpass query: small roads any surface, highways (priced as a last resort), never motorways; service / foot ways stay lean', () => {
   const q = TR.overpassQuery([30, -6, 30.2, -5.8]);
+  assert.match(q, /way\[highway~"\^\(track\|path\|bridleway\|unclassified\|road\|residential\|living_street\|tertiary\|tertiary_link\)\$"\]\(/);
+  assert.match(q, /primary\|primary_link\|trunk\|trunk_link\|secondary\|secondary_link/);
+  assert.doesNotMatch(q, /motorway/);
   const clauses = q.split(';').filter(c => /^\(?way\[highway/.test(c));
-  for (const c of clauses) {
-    if (/residential|tertiary|secondary|service|footway/.test(c)) assert.ok(/\[surface~|\[!surface\]/.test(c), 'connector clause without a surface filter: ' + c);
-  }
-  assert.ok(/\[!surface\]/.test(q) && /residential/.test(q));
+  for (const c of clauses) if (/footway|cycleway/.test(c)) assert.match(c, /\[surface~/);
+  assert.match(q, /way\[highway=service\]\[!service\]/);
 });
 
 test('1.1.2: longitudes from another world copy (e.g. -371.3 after panning the map a turn west) are folded back before asking Overpass', async () => {
@@ -239,4 +242,28 @@ test('1.2.0 real data (Wyans 19 Nov 2026, Ourika valley, High Atlas): path 14617
     assert.strictEqual(r.status, 'ok', JSON.stringify({ way: r.wayM, gap: r.gapM }));
     assert.ok(r.wayM > 3700 && r.gapM === 0, JSON.stringify({ way: r.wayM, gap: r.gapM }));
   }
+});
+
+// 1.3.0 (Wyans 19 Nov 2026): "favor small roads rather than off-piste if they are not a back track or total re-route,
+// and still avoid highways when at all possible"
+test('1.3.0: a paved village road beats off-piste when it heads the right way', async () => {
+  const els = [way({ highway: 'residential', surface: 'asphalt' }, [[0, 0], [1000, 150], [2000, 0]])];
+  const r = await TR.createRouter({ overpass: async () => answer(els) }).route(ll(0, 0), ll(2000, 0));
+  assert.strictEqual(r.status, 'ok'); assert.ok(r.byClass.road > 1900 && r.gapM === 0, JSON.stringify(r.byClass));
+});
+test('1.3.0: a road that re-routes (> 1.5x) or back-tracks is not taken; the leg goes off-piste instead', async () => {
+  // a 2 km leg; the road loops 1.2 km away from the finish first (back-track), 6.8 km long (re-route)
+  const loop = [way({ highway: 'unclassified', surface: 'asphalt' }, [[0, 0], [-1200, 0], [-1200, 1200], [2000, 1200], [2000, 0]])];
+  const r = await TR.createRouter({ overpass: async () => answer(loop) }).route(ll(0, 0), ll(2000, 0), { gapCostLong: 8 });
+  assert.ok(r.roadWaysDropped >= 1 && r.byClass.road < 1, JSON.stringify({ byClass: r.byClass, gap: r.gapM, dropped: r.roadWaysDropped }));
+  // the same road with a setting of 4x and no back-track limit is used
+  const r2 = await TR.createRouter({ overpass: async () => answer(loop) }).route(ll(0, 0), ll(2000, 0), { gapCostLong: 8, roadDetourMax: 4, backtrackM: 5000 });
+  assert.ok(r2.byClass.road > 6000, JSON.stringify(r2.byClass));
+});
+test('1.3.0: highways are a last resort: off-piste is preferred to a primary road; motorways are never used', async () => {
+  const prim = [way({ highway: 'primary', surface: 'asphalt' }, [[0, 0], [1000, 100], [2000, 0]])];
+  const r = await TR.createRouter({ overpass: async () => answer(prim) }).route(ll(0, 0), ll(2000, 0));
+  assert.ok(r.byClass.highway < 1 && r.gapM > 1900, JSON.stringify(r.byClass));
+  assert.strictEqual(TR.wayCost({ highway: 'motorway' }), null);
+  assert.strictEqual(TR.wayCost({ highway: 'motorway_link' }), null);
 });

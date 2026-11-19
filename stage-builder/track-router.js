@@ -27,7 +27,7 @@
   else root.TrackRouter = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
 
   var DEFAULTS = {
     marginF: 0.25,        // bbox margin around the leg: 25 % of its length ...
@@ -46,6 +46,12 @@
     gapCostLong: 3.0,
     jumpM: 2500,          // a gap jump from a dead end (or the leg start) may reach this far
     sideJumpM: 0,         // 1.1.2 (off by default: costly in towns): a gap jump from the middle of a way onto another piece
+    // 1.3.0 (Wyans 19 Nov 2026): small roads beat off-piste unless they back-track or re-route. After the search, every
+    // stretch on small roads must stay within roadDetourMax x its straight length and never head away from the leg end by
+    // more than backtrackM; a stretch that fails is taken out and the leg searched again (up to roadRetries times).
+    roadDetourMax: 1.5,
+    backtrackM: 250,
+    roadRetries: 4,
     overpassTimeoutS: 40
   };
 
@@ -60,32 +66,42 @@
     var hw = t.highway, sf = t.surface || '', unp = UNPAVED.test(sf), pav = PAVED.test(sf);
     var f = null;
     if (hw === 'track') f = /^grade[45]$/.test(t.tracktype || '') ? 1.08 : 1.0;
-    else if (hw === 'unclassified' || hw === 'road') f = unp ? 1.0 : pav ? 1.8 : 1.15;
     // paths / bridleways: not built in the game (bare ground there), so a real track is preferred clearly
     else if (hw === 'path') f = pav ? null : 1.6;
     else if (hw === 'bridleway') f = pav ? null : 1.65;
-    else if (hw === 'service') f = unp ? 1.1 : /^(driveway|parking_aisle|drive-through|emergency_access)$/.test(t.service || '') ? null : pav ? 1.9 : (t.service ? 1.9 : 1.6);
-    // connectors (1.1.0): any surface; dearer than a track, cheaper than a straight gap (gapCost 2.0)
-    else if (hw === 'residential' || hw === 'living_street') f = unp ? 1.15 : pav ? 1.8 : 1.45;
-    else if (/^(tertiary|secondary)(_link)?$/.test(hw)) f = unp ? 1.15 : 1.9;
+    // 1.3.0 small roads (any surface): dearer than a track, clearly cheaper than off-piste (gap 2.0, 3.0 past 300 m)
+    else if (hw === 'unclassified' || hw === 'road') f = unp ? 1.0 : pav ? 1.45 : 1.15;
+    else if (hw === 'service') f = /^(driveway|parking_aisle|drive-through|emergency_access)$/.test(t.service || '') ? null : unp ? 1.1 : 1.5;
+    else if (hw === 'residential' || hw === 'living_street') f = unp ? 1.15 : 1.45;
+    else if (hw === 'tertiary' || hw === 'tertiary_link') f = unp ? 1.15 : 1.55;
+    // highways: only when nothing else connects (dearer per metre than a long off-piste stretch); motorways never
+    else if (hw === 'secondary' || hw === 'secondary_link') f = unp ? 1.3 : 3.2;
+    else if (/^(primary|primary_link|trunk|trunk_link)$/.test(hw)) f = unp ? 1.5 : 3.6;
     else if (hw === 'footway' || hw === 'cycleway') f = unp ? 3.0 : null;
     if (f == null) return null;
     if (t.access === 'private' || t.access === 'no' || t.motor_vehicle === 'no' || t.vehicle === 'no') f *= 1.3;
     return f;
   }
+  /** 1.3.0: way class for the route summary: track | path | road (small roads) | highway (primary / secondary / trunk) */
+  function wayClass(t) {
+    var hw = (t && t.highway) || '';
+    if (hw === 'track') return 'track';
+    if (/^(path|bridleway|footway|cycleway)$/.test(hw)) return 'path';
+    if (/^(primary|primary_link|trunk|trunk_link|secondary|secondary_link)$/.test(hw)) return 'highway';
+    return 'road';
+  }
   /** short name of a way class, for the status line */
-  function wayKind(t) { return t.highway === 'track' ? 'track' : /^(path|bridleway|footway|cycleway)$/.test(t.highway) ? 'path' : 'minor road'; }
+  function wayKind(t) { var c = wayClass(t); return c === 'road' ? 'minor road' : c; }
 
   function overpassQuery(b, timeoutS) {
     var B = '(' + b.map(function (x) { return (+x).toFixed(4) }).join(',') + ')';
     return '[out:json][timeout:' + (timeoutS || DEFAULTS.overpassTimeoutS) + '];(' +
-      'way[highway~"^(track|path|bridleway|unclassified|road)$"]' + B + ';' +
-      // connectors (1.1.1): unpaved or untagged only. Paved ones cost ~1.8-1.9 vs a straight gap's 2.0, so they barely
-      // change a route, but in towns they were 3-4x the answer (a 0.2 degree tile near Lisbon: 36 MB instead of 10 MB),
-      // which is what made legs time out on a cold cache.
-      'way[highway~"^(residential|living_street|tertiary|tertiary_link|secondary|secondary_link|service|footway|cycleway)$"][surface~"^(' + UNPAVED_Q + ')$"]' + B + ';' +
-      'way[highway~"^(residential|living_street|tertiary|tertiary_link|secondary|secondary_link)$"][!surface]' + B + ';' +
-      'way[highway=service][!surface][!service]' + B + ';' +
+      'way[highway~"^(track|path|bridleway|unclassified|road|residential|living_street|tertiary|tertiary_link)$"]' + B + ';' +
+      // 1.3.0: small roads of any surface (they now beat off-piste). Highways (primary / secondary / trunk) too, priced as a
+      // last resort; motorways never. Service roads and foot / cycle ways only when unpaved or untagged (towns: size).
+      'way[highway~"^(primary|primary_link|trunk|trunk_link|secondary|secondary_link)$"]' + B + ';' +
+      'way[highway~"^(service|footway|cycleway)$"][surface~"^(' + UNPAVED_Q + ')$"]' + B + ';' +
+      'way[highway=service][!service]' + B + ';' +
       ');out body geom qt;';
   }
 
@@ -138,7 +154,7 @@
 
   // ------------------------------------------------------------------ graph
   /* elements: Overpass ways with nodes + geometry (any number of answers merged; duplicates skipped) */
-  function buildGraph(answers, lat0) {
+  function buildGraph(answers, lat0, skip) {
     var P = projector(lat0), idx = new Map(), ll = [], xy = [], adj = [], seen = new Set(), nWays = 0, kinds = {};
     function node(id, g) {
       var k = idx.get(id);
@@ -152,7 +168,7 @@
         if (e.type !== 'way' || !e.geometry || !e.nodes || seen.has(e.id)) return;
         seen.add(e.id);
         var f = wayCost(e.tags);
-        if (f == null) return;
+        if (f == null || (skip && skip.has(e.id))) return;
         var wi = ways.length; ways.push({ id: e.id, tags: e.tags, f: f }); nWays++;
         var kd = wayKind(e.tags); kinds[kd] = (kinds[kd] || 0) + 1;
         var prev = -1;
@@ -204,7 +220,9 @@
     // components (union-find)
     var par = new Int32Array(ll.length); for (var i = 0; i < par.length; i++) par[i] = i;
     var find = function (x) { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
-    segs.forEach(function (s) { var a = find(s[0]), b = find(s[1]); if (a !== b) par[a] = b; });
+    // 1.3.0: highways don't join pieces, so a jump between two track networks that only meet via a highway stays possible
+    var hiW = ways.map(function (w) { return wayClass(w.tags) === 'highway'; });
+    segs.forEach(function (s) { if (hiW[s[3]]) return; var a = find(s[0]), b = find(s[1]); if (a !== b) par[a] = b; });
     var comp = new Int32Array(ll.length); for (var j = 0; j < ll.length; j++) comp[j] = find(j);
     G.comp = comp;
     xy.forEach(function (p, k) { var kk = key(Math.floor(p[0] / CELL), Math.floor(p[1] / CELL)); (grid.get(kk) || grid.set(kk, []).get(kk)).push(k); });
@@ -263,14 +281,14 @@
     var nodeXY = function (k) { return k < N ? G.xy[k] : k === S ? A : k === T ? B : extraXY[k - N - 2]; };
     var nodeLL = function (k) { return k < N ? G.ll[k] : k === S ? a : k === T ? b : extraLL[k - N - 2]; };
     var extraAdj = new Map(); // node -> [[to, cost, len, kind]]
-    var addE = function (u, v, cost, len, kind) { (extraAdj.get(u) || extraAdj.set(u, []).get(u)).push([v, cost, len, kind]); };
+    var addE = function (u, v, cost, len, kind, wi) { (extraAdj.get(u) || extraAdj.set(u, []).get(u)).push([v, cost, len, kind, wi]); };
     // snap points: split the segment with a virtual node, joined both ways to its segment ends
     function snapNode(sn) {
       var s = G.segs[sn.si], k = N + 2 + extraXY.length, f = s[2];
       extraXY.push([sn.x, sn.y]); extraLL.push(G.P.ll([sn.x, sn.y]));
       var pu = G.xy[s[0]], pv = G.xy[s[1]];
       var lu = Math.hypot(sn.x - pu[0], sn.y - pu[1]), lv = Math.hypot(sn.x - pv[0], sn.y - pv[1]);
-      addE(k, s[0], lu * f, lu, 'way'); addE(s[0], k, lu * f, lu, 'way'); addE(k, s[1], lv * f, lv, 'way'); addE(s[1], k, lv * f, lv, 'way');
+      addE(k, s[0], lu * f, lu, 'way', s[3]); addE(s[0], k, lu * f, lu, 'way', s[3]); addE(k, s[1], lv * f, lv, 'way', s[3]); addE(s[1], k, lv * f, lv, 'way', s[3]);
       return k;
     }
     var gapC = function (d) { return d * o.gapCost + Math.max(0, d - (o.gapLongM || Infinity)) * ((o.gapCostLong || o.gapCost) - o.gapCost); };
@@ -283,7 +301,10 @@
     var toT = new Map(); endSnaps.forEach(function (e) { toT.set(e[0], e[1]); });
     // the start may jump straight onto any node within jumpM (when no way is within linkM)
     portalsNear(G, A, o.jumpM).forEach(function (n) { if (n[1] > o.linkM * 0.5) addE(S, n[0], gapC(n[1]), n[1], 'gap'); });
-    var deg = function (k) { return k < N ? G.adj[k].length : 2; };
+    // 1.3.0: a node counts as a dead end when at most one non-highway way meets it, so a track that ends on a highway
+    // may still jump off-piste to the next track (the highway is a last resort, not the only way on)
+    var hiW = G.ways.map(function (w) { return wayClass(w.tags) === 'highway'; });
+    var deg = function (k) { if (k >= N) return 2; var n = 0, l = G.adj[k]; for (var i = 0; i < l.length; i++) if (!hiW[l[i][3]]) n++; return n; };
     var g = new Map(), from = new Map(), closed = new Set(), H = new Heap();
     var h = function (k) { var p = nodeXY(k); return Math.hypot(B[0] - p[0], B[1] - p[1]) * Math.min(1, o.linkCost); };
     g.set(S, 0); H.push(h(S), S);
@@ -299,7 +320,7 @@
         if (!(g.has(v)) || nv < g.get(v)) { g.set(v, nv); from.set(v, [u, kind, len, wi]); H.push(nv + h(v), v); }
       };
       if (u < N) G.adj[u].forEach(function (e) { relax(e[0], e[1], e[2], 'way', e[3]); });
-      var ex = extraAdj.get(u); if (ex) ex.forEach(function (e) { relax(e[0], e[1], e[2], e[3]); });
+      var ex = extraAdj.get(u); if (ex) ex.forEach(function (e) { relax(e[0], e[1], e[2], e[3], e[4]); });
       if (u !== S) {
         var dT = Math.hypot(B[0] - pu[0], B[1] - pu[1]);
         if (toT.has(u)) relax(T, toT.get(u) * o.linkCost, toT.get(u), 'link');
@@ -318,11 +339,18 @@
     // walk back
     var seq = [], k = T;
     if (!from.has(T)) return null;
-    while (k !== S) { var f = from.get(k); seq.push({ to: k, from: f[0], kind: f[1], len: f[2] }); k = f[0]; }
+    while (k !== S) { var f = from.get(k); seq.push({ to: k, from: f[0], kind: f[1], len: f[2], wi: f[3] }); k = f[0]; }
     seq.reverse();
-    var parts = [], wayM = 0, linkM = 0, gapM = 0;
+    var parts = [], wayM = 0, linkM = 0, gapM = 0, byClass = { track: 0, path: 0, road: 0, highway: 0 }, runs = [], run = null;
     seq.forEach(function (s) {
       var kind = s.kind;
+      // 1.3.0: metres per way class, and the stretches on small roads / highways (checked for back-tracking by route())
+      var wc = kind === 'way' && s.wi != null && G.ways[s.wi] ? wayClass(G.ways[s.wi].tags) : null;
+      if (wc) byClass[wc] += s.len;
+      if (wc === 'road' || wc === 'highway') {
+        if (!run) { run = { pts: [nodeXY(s.from)], m: 0, ways: new Set() }; runs.push(run); }
+        run.pts.push(nodeXY(s.to)); run.m += s.len; run.ways.add(G.ways[s.wi].id);
+      } else run = null;
       if (kind === 'gap' && s.len <= o.linkM && (s.from === S || s.to === T)) kind = 'link';
       if (kind === 'way') wayM += s.len; else if (kind === 'link') linkM += s.len; else gapM += s.len;
       var last = parts[parts.length - 1];
@@ -345,9 +373,24 @@
       if (pt.kind === 'gap') gapIdx.push([i0, i1]);
       at = i1;
     });
-    return { points: points, parts: parts, gapIdx: gapIdx, wayM: wayM, linkM: linkM, gapM: gapM, expanded: expanded };
+    return { points: points, parts: parts, gapIdx: gapIdx, wayM: wayM, linkM: linkM, gapM: gapM, expanded: expanded, byClass: byClass, roadRuns: runs, Bxy: B };
   }
   function dedupe(pts) { return pts.filter(function (p, i) { return !i || p[0] !== pts[i - 1][0] || p[1] !== pts[i - 1][1] }); }
+
+  /** 1.3.0: stretches on roads that re-route (longer than roadDetourMax x straight) or back-track (head away from the
+   *  leg end by more than backtrackM). Short stretches (< 200 m) are always fine. */
+  function badRoadRuns(res, o) {
+    var B = res.Bxy;
+    return (res.roadRuns || []).filter(function (r) {
+      if (r.m < 200) return false;
+      var p0 = r.pts[0], p1 = r.pts[r.pts.length - 1];
+      var straight = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+      if (r.m > o.roadDetourMax * Math.max(straight, 1)) return true;
+      var d0 = Math.hypot(B[0] - p0[0], B[1] - p0[1]), far = d0;
+      r.pts.forEach(function (p) { far = Math.max(far, Math.hypot(B[0] - p[0], B[1] - p[1])); });
+      return far - d0 > o.backtrackM;
+    });
+  }
 
   // ------------------------------------------------------------------ the router (data + cache + search)
   function createRouter(io) {
@@ -357,7 +400,7 @@
     var loaded = []; // [box, answer] already in memory, for "inside a loaded box" hits
     var inside = function (b, c) { return b[0] >= c[0] && b[1] >= c[1] && b[2] <= c[2] && b[3] <= c[3] };
     function tile(box, o) {
-      var key = 'tr3:' + box.join(',');   // tr3 = 1.1.1 query (lean connector roads); tr1/tr2 answers differ
+      var key = 'tr4:' + box.join(',');   // tr4 = 1.3.0 query (small roads any surface + highways); tr1-tr3 answers differ
       if (mem.has(key)) return Promise.resolve(mem.get(key));
       for (var i = 0; i < loaded.length; i++) if (inside(box, loaded[i][0])) return Promise.resolve(loaded[i][1]);
       if (inflight.has(key)) return inflight.get(key);
@@ -394,8 +437,16 @@
       var t0 = Date.now(), done = 0;
       return Promise.all(boxes.map(function (bx) { return tile(bx, o).then(function (r) { done++; if (o.onProgress) o.onProgress(done, boxes.length); return r; }) })).then(function (answers) {
         var t1 = Date.now();
-        var G = buildGraph(answers, (a[0] + b[0]) / 2);
-        var res = findPath(G, a, b, o) || { points: [a, b], parts: [{ kind: 'gap', points: [a, b], m: L }], gapIdx: [[0, 1]], wayM: 0, linkM: 0, gapM: L };
+        var skip = new Set(), G, res, dropped = 0;
+        for (var tries = 0; ; tries++) {
+          G = buildGraph(answers, (a[0] + b[0]) / 2, skip);
+          res = findPath(G, a, b, o);
+          var bad = res ? badRoadRuns(res, o) : [];
+          if (!bad.length || tries >= o.roadRetries) break;
+          bad.forEach(function (r) { r.ways.forEach(function (id) { skip.add(id) }); dropped += r.ways.size; });
+        }
+        res = res || { points: [a, b], parts: [{ kind: 'gap', points: [a, b], m: L }], gapIdx: [[0, 1]], wayM: 0, linkM: 0, gapM: L, byClass: { track: 0, path: 0, road: 0, highway: 0 } };
+        res.roadWaysDropped = dropped; delete res.roadRuns; delete res.Bxy;
         var totalM = res.wayM + res.linkM + res.gapM;
         res.totalM = totalM;
         res.onShare = totalM ? res.wayM / totalM : 0;
@@ -430,5 +481,5 @@
   }
 
   return { VERSION: VERSION, viaRoadbookGen: viaRoadbookGen, DEFAULTS: DEFAULTS, wayCost: wayCost, overpassQuery: overpassQuery, legBbox: legBbox, queryBoxes: queryBoxes,
-    buildGraph: buildGraph, findPath: findPath, createRouter: createRouter, dist: dist, wrapLon: wrapLon };
+    buildGraph: buildGraph, findPath: findPath, wayClass: wayClass, badRoadRuns: badRoadRuns, createRouter: createRouter, dist: dist, wrapLon: wrapLon };
 });
